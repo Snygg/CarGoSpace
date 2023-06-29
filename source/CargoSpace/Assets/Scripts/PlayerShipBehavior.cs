@@ -34,4 +34,9 @@ public class PlayerShipBehavior : MonoBehaviour
         threaten,
         trade
     }
+
+    public void Move(Vector2 vector)
+    {
+        //todo: move the ship
+    }
 }
