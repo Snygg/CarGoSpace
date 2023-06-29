@@ -4,13 +4,13 @@ using UnityEngine;
 
 public class PlayerShipBehavior : MonoBehaviour
 {
-    public GameObject Bus;
-    private BusBehavior BusBehavior;
+    public GameObject BusObj;
+    private BusBehavior Bus;
     // Start is called before the first frame update
     void Start()
     {
-        BusBehavior = Bus.GetComponent<BusBehavior>();
-        BusBehavior.Publish("InitObj", BusBehavior.EmptyDictionary);
+        Bus = BusObj.GetComponent<BusBehavior>();
+        Bus.Publish("InitObj", BusBehavior.EmptyDictionary);
     }
 
     // Update is called once per frame
@@ -24,7 +24,7 @@ public class PlayerShipBehavior : MonoBehaviour
         //to do: don't use some undefined literal
         var msg = new Dictionary<string, string>();
         msg.Add("CommsMessage", message.ToString());
-        BusBehavior.Publish("CommsMessage", msg);
+        Bus.Publish("CommsMessage", msg);
     }
 
     //to do: move to shared location
