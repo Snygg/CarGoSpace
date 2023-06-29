@@ -5,7 +5,6 @@ using UnityEngine;
 
 public class PlayerInputBehavior : BusParticipant
 {
-    public GameObject BusObject;
     public GameObject PlayerShip;
     private PlayerShipBehavior _playerShip;
 
