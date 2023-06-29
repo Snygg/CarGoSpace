@@ -157,7 +157,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0345a704314e6014f8558def59ecdd45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BusObj: {fileID: 0}
+  BusObj: {fileID: 14274798}
 --- !u!4 &326857467
 Transform:
   m_ObjectHideFlags: 0
