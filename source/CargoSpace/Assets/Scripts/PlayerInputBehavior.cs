@@ -40,14 +40,14 @@ public class PlayerInputBehavior : BusParticipant
         }
 
         Vector2 input = new Vector2(horz, vert);
-        
+
         //todo: set this factor via config so that player ship does not know about input scaling
-        Vector2 inputFactor = Vector2.one;
+        //Vector2 inputFactor = Vector2.one;
+        float inputFactor = .001f;
 
-        //Vector2 vector = inputFactor * input;
+        Vector2 vector = inputFactor * input;
 
-        //_playerShip.Move(vector);
-        _playerShip.Move(input);
+        _playerShip.Move(vector);
     }
 
     // Update is called once per frame

@@ -6,6 +6,8 @@ public class PlayerShipBehavior : MonoBehaviour
 {
     public GameObject BusObj;
     private BusBehavior Bus;
+    public GameObject PlayerShip;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -38,5 +40,8 @@ public class PlayerShipBehavior : MonoBehaviour
     public void Move(Vector2 vector)
     {
         //todo: move the ship
+        var current = PlayerShip.transform.position;
+
+        PlayerShip.transform.position = new Vector3(current.x + vector.x, current.y + vector.y, current.z);
     }
 }

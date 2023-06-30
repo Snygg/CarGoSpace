@@ -159,6 +159,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BusObj: {fileID: 14274798}
+  PlayerShip: {fileID: 326857465}
 --- !u!4 &326857467
 Transform:
   m_ObjectHideFlags: 0
