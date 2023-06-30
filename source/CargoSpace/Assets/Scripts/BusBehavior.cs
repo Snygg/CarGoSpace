@@ -29,6 +29,7 @@ public class BusBehavior : MonoBehaviour
         if (!Subscriptions.TryGetValue(topic, out var sublist))
         {
             sublist = new HashSet<SubscriptionBehavior>();
+            Subscriptions.Add(topic, sublist);
         }
 
         sublist.Add(sub);

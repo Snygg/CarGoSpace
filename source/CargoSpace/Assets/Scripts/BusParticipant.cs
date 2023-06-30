@@ -14,7 +14,10 @@ public class BusParticipant : MonoBehaviour
     void Start()
     {
         _bus = BusObject.GetComponent<BusBehavior>();
+        InitializeSubscriptions();
     }
+
+    protected virtual void InitializeSubscriptions() { }
 
     // Update is called once per frame
     void Update()

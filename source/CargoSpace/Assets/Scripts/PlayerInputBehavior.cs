@@ -5,13 +5,12 @@ using UnityEngine;
 
 public class PlayerInputBehavior : BusParticipant
 {
-    public GameObject BusObject;
     public GameObject PlayerShip;
     private PlayerShipBehavior _playerShip;
 
     
     // Start is called before the first frame update
-    void Start()
+    protected override void InitializeSubscriptions()
     {
         _playerShip = PlayerShip.GetComponent<PlayerShipBehavior>();
         AddLifeTimeSubscription(Subscribe("Input", OnInput));
@@ -45,9 +44,10 @@ public class PlayerInputBehavior : BusParticipant
         //todo: set this factor via config so that player ship does not know about input scaling
         Vector2 inputFactor = Vector2.one;
 
-        Vector2 vector = inputFactor * input;
+        //Vector2 vector = inputFactor * input;
 
-        _playerShip.Move(vector);
+        //_playerShip.Move(vector);
+        _playerShip.Move(input);
     }
 
     // Update is called once per frame
