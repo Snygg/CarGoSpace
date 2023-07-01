@@ -39,9 +39,17 @@ public class PlayerShipBehavior : MonoBehaviour
 
     public void Move(Vector2 vector)
     {
-        //todo: move the ship
         var current = PlayerShip.transform.position;
 
         PlayerShip.transform.position = new Vector3(current.x + vector.x, current.y + vector.y, current.z);
+        PublishLocation();
+    }
+
+    private void PublishLocation()
+    {
+        var body = new Dictionary<string, string>();
+        body["position"] = PlayerShip.transform.position.ToString();
+
+        Bus.Publish("PlayerTransform", body);
     }
 }
