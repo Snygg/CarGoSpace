@@ -28,7 +28,8 @@ public class MovableBehavior : MonoBehaviour
         var current = Movable.transform.position;
         var path = new Vector3(target.x, target.y, 0) - current;
         var normalized = path.normalized;
-        var destination = normalized * SpeedFactor;
+        var destination = current + (normalized * SpeedFactor);
+
         MoveTo(destination);
     }
 
