@@ -16,8 +16,8 @@ public static class VectorUtils
             return false;
         }
 
-        input.Replace("(", "").Replace(")", "").Replace(" ", "");
-        var values = input.Split(',');
+        var replaced = input.Replace("(", "").Replace(")", "").Replace(" ", "");
+        var values = replaced.Split(',');
         if (values.Length != 3)
         {
             return false;

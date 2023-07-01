@@ -13,6 +13,11 @@ public class BusParticipant : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (BusObject == null)
+        {
+            //todo: log warning: you forgot to attach BusObject
+            int x = 0;
+        }
         _bus = BusObject.GetComponent<BusBehavior>();
         InitializeSubscriptions();
     }
@@ -47,6 +52,11 @@ public class BusParticipant : MonoBehaviour
 
     protected IDisposable Subscribe(string topic, Func<Dictionary<string, string>, Task> handler)
     {
+        if (_bus == null)
+        {
+            //todo: log this
+            int x = 0;
+        }
         return _bus.Subscribe(topic, handler);
     }
 
