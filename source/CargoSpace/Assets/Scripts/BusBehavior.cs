@@ -17,7 +17,7 @@ public class BusBehavior : MonoBehaviour
 
         foreach(var sub in sublist)
         {
-            sub.Callback(body).RunSynchronously();
+            sub.Callback(body).Wait();
         }
     }
 
