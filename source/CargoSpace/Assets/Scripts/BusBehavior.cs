@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class BusBehavior : MonoBehaviour
 {
-    private readonly Dictionary<string, HashSet<SubscriptionBehavior>> Subscriptions = new Dictionary<string, HashSet<SubscriptionBehavior>>();
+    private readonly Dictionary<string, HashSet<Subscription>> Subscriptions = new Dictionary<string, HashSet<Subscription>>();
 
     public void Publish(string topic, Dictionary<string, string> body)
     {
@@ -23,12 +23,12 @@ public class BusBehavior : MonoBehaviour
 
     public IDisposable Subscribe(string topic, Func<Dictionary<string,string>, Task> callback)
     {
-        SubscriptionBehavior sub = null;
-        sub = new SubscriptionBehavior(callback, () => Unsubscribe(topic, sub));
+        Subscription sub = null;
+        sub = new Subscription(callback, () => Unsubscribe(topic, sub));
         
         if (!Subscriptions.TryGetValue(topic, out var sublist))
         {
-            sublist = new HashSet<SubscriptionBehavior>();
+            sublist = new HashSet<Subscription>();
             Subscriptions.Add(topic, sublist);
         }
 
@@ -51,7 +51,32 @@ public class BusBehavior : MonoBehaviour
         
     }
 
-    void Unsubscribe(string topic, SubscriptionBehavior sb)
+    private void OnDestroy()
+    {
+        if (Subscriptions != null)
+        {
+            foreach (var kvp in Subscriptions)
+            {
+                if (kvp.Value == null)
+                {
+                    continue;
+                }
+                foreach (var subscription in kvp.Value)
+                {
+                    try
+                    {
+                        Unsubscribe(kvp.Key, subscription);
+                    }
+                    catch
+                    {
+                        //todo: log this, probably not critical
+                    }
+                }
+            }
+        }
+    }
+
+    void Unsubscribe(string topic, Subscription sb)
     {
         if (!Subscriptions.TryGetValue(topic, out var sublist))
         {

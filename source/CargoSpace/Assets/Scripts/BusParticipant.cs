@@ -10,8 +10,8 @@ public class BusParticipant : MonoBehaviour
     private BusBehavior _bus;
     private List<IDisposable> _subscriptions = new List<IDisposable>();
 
-    // Start is called before the first frame update
-    void Start()
+    // Awake is called before Start
+    void Awake()
     {
         if (BusObject == null)
         {
@@ -21,7 +21,17 @@ public class BusParticipant : MonoBehaviour
         _bus = BusObject.GetComponent<BusBehavior>();
         InitializeSubscriptions();
     }
+    
+    // Start is called before the first frame update
+    void Start()
+    {
+        
+    }
 
+    /// <summary>
+    /// Override this when subscribing in Start() is too late in the lifetime of a monobehavior. This will be
+    /// called immediately after Awake() on the base class
+    /// </summary>
     protected virtual void InitializeSubscriptions() { }
 
     // Update is called once per frame
