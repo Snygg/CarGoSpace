@@ -8,14 +8,19 @@ public class PlayerInputBehavior : BusParticipant
     public GameObject PlayerShip;
     private PlayerShipBehavior _playerShip;
 
-    
     // Start is called before the first frame update
-    protected override void InitializeSubscriptions()
+    void Start()
     {
         _playerShip = PlayerShip.GetComponent<PlayerShipBehavior>();
         AddLifeTimeSubscription(Subscribe("Input", OnInput));
     }
 
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+    
     private async Task OnInput(Dictionary<string, string> arg)
     {
         if (arg == null)
@@ -49,10 +54,6 @@ public class PlayerInputBehavior : BusParticipant
 
         _playerShip.Move(vector);
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
+    
 }

@@ -7,11 +7,11 @@ public class PlayerTrackerBehavior : BusParticipant
 {
     public Vector3 PlayerPosition { get; private set; } = Vector3.zero;
     
-    protected override void InitializeSubscriptions()
+    // Start is called before the first frame update
+    void Start()
     {
         AddLifeTimeSubscription(Subscribe("PlayerTransform", OnPlayerMoved));
     }
-
 
     // Update is called once per frame
     void Update()

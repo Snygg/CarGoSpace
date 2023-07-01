@@ -11,7 +11,7 @@ public class BusParticipant : MonoBehaviour
     private List<IDisposable> _subscriptions = new List<IDisposable>();
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         if (BusObject == null)
         {
