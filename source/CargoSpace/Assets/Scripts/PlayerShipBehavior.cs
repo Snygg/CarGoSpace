@@ -34,20 +34,4 @@ public class PlayerShipBehavior : BusParticipant
         threaten,
         trade
     }
-
-    public void Move(Vector2 vector)
-    {
-        var current = PlayerShip.transform.position;
-
-        PlayerShip.transform.position = new Vector3(current.x + vector.x, current.y + vector.y, current.z);
-        PublishLocation();
-    }
-
-    private void PublishLocation()
-    {
-        var body = new Dictionary<string, string>();
-        body["position"] = PlayerShip.transform.position.ToString();
-
-        Publish("PlayerTransform", body);
-    }
 }
