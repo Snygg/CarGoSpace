@@ -159,8 +159,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0345a704314e6014f8558def59ecdd45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BusObject: {fileID: 14274798}
-  PlayerShip: {fileID: 326857465}
 --- !u!4 &326857467
 Transform:
   m_ObjectHideFlags: 0
@@ -471,7 +469,6 @@ GameObject:
   - component: {fileID: 852262154}
   - component: {fileID: 852262155}
   - component: {fileID: 852262156}
-  - component: {fileID: 852262157}
   m_Layer: 0
   m_Name: Mod1
   m_TagString: Untagged
@@ -565,8 +562,8 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!254 &852262156
-RelativeJoint2D:
+--- !u!255 &852262156
+FixedJoint2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -578,31 +575,11 @@ RelativeJoint2D:
   m_ConnectedRigidBody: {fileID: 326857469}
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
-  m_MaxForce: 10000
-  m_MaxTorque: 10000
-  m_CorrectionScale: 0.3
-  m_AutoConfigureOffset: 1
-  m_LinearOffset: {x: 2.07, y: 0}
-  m_AngularOffset: 0
---- !u!254 &852262157
-RelativeJoint2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 852262152}
-  m_Enabled: 1
-  serializedVersion: 4
-  m_EnableCollision: 0
-  m_ConnectedRigidBody: {fileID: 932909270}
-  m_BreakForce: Infinity
-  m_BreakTorque: Infinity
-  m_MaxForce: 10000
-  m_MaxTorque: 10000
-  m_CorrectionScale: 0.3
-  m_AutoConfigureOffset: 1
-  m_LinearOffset: {x: 2.06, y: 0}
-  m_AngularOffset: 0
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0.06, y: 0}
+  m_ConnectedAnchor: {x: -1.9499999, y: 0}
+  m_DampingRatio: 1
+  m_Frequency: 0
 --- !u!1 &932909267
 GameObject:
   m_ObjectHideFlags: 0
@@ -615,7 +592,6 @@ GameObject:
   - component: {fileID: 932909269}
   - component: {fileID: 932909270}
   - component: {fileID: 932909271}
-  - component: {fileID: 932909272}
   m_Layer: 0
   m_Name: Mod2
   m_TagString: Untagged
@@ -709,8 +685,8 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!254 &932909271
-RelativeJoint2D:
+--- !u!255 &932909271
+FixedJoint2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -722,31 +698,11 @@ RelativeJoint2D:
   m_ConnectedRigidBody: {fileID: 326857469}
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
-  m_MaxForce: 10000
-  m_MaxTorque: 10000
-  m_CorrectionScale: 0.3
-  m_AutoConfigureOffset: 1
-  m_LinearOffset: {x: 0.01, y: 0}
-  m_AngularOffset: 0
---- !u!254 &932909272
-RelativeJoint2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 932909267}
-  m_Enabled: 1
-  serializedVersion: 4
-  m_EnableCollision: 0
-  m_ConnectedRigidBody: {fileID: 1420359558}
-  m_BreakForce: Infinity
-  m_BreakTorque: Infinity
-  m_MaxForce: 10000
-  m_MaxTorque: 10000
-  m_CorrectionScale: 0.3
-  m_AutoConfigureOffset: 1
-  m_LinearOffset: {x: 2.05, y: 0}
-  m_AngularOffset: 0
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0, y: 0}
+  m_ConnectedAnchor: {x: -0.01, y: 0}
+  m_DampingRatio: 1
+  m_Frequency: 0
 --- !u!1 &1388786977
 GameObject:
   m_ObjectHideFlags: 0
@@ -887,7 +843,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 100
+  m_Mass: 10
   m_LinearDrag: 0.1
   m_AngularDrag: 0.05
   m_GravityScale: 1
@@ -896,8 +852,8 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!254 &1420359559
-RelativeJoint2D:
+--- !u!255 &1420359559
+FixedJoint2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -909,12 +865,11 @@ RelativeJoint2D:
   m_ConnectedRigidBody: {fileID: 326857469}
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
-  m_MaxForce: 10000
-  m_MaxTorque: 10000
-  m_CorrectionScale: 0.3
-  m_AutoConfigureOffset: 1
-  m_LinearOffset: {x: -2.04, y: 0}
-  m_AngularOffset: 0
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0, y: 0}
+  m_ConnectedAnchor: {x: 2.04, y: 0}
+  m_DampingRatio: 1
+  m_Frequency: 0
 --- !u!1001 &2120537559
 PrefabInstance:
   m_ObjectHideFlags: 0
