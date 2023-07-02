@@ -1,18 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
-public class PlayerShipBehavior : MonoBehaviour
+public class PlayerShipBehavior : BusParticipant
 {
-    public GameObject BusObj;
-    private BusBehavior Bus;
     public GameObject PlayerShip;
 
     // Start is called before the first frame update
     void Start()
     {
-        Bus = BusObj.GetComponent<BusBehavior>();
-        Bus.Publish("InitObj", BusBehavior.EmptyDictionary);
+        
     }
 
     // Update is called once per frame
@@ -26,7 +24,7 @@ public class PlayerShipBehavior : MonoBehaviour
         //to do: don't use some undefined literal
         var msg = new Dictionary<string, string>();
         msg.Add("CommsMessage", message.ToString());
-        Bus.Publish("CommsMessage", msg);
+        Publish("CommsMessage", msg);
     }
 
     //to do: move to shared location
@@ -50,6 +48,6 @@ public class PlayerShipBehavior : MonoBehaviour
         var body = new Dictionary<string, string>();
         body["position"] = PlayerShip.transform.position.ToString();
 
-        Bus.Publish("PlayerTransform", body);
+        Publish("PlayerTransform", body);
     }
 }
