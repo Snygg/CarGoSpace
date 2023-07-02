@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class BusBehavior : MonoBehaviour
@@ -10,6 +11,11 @@ public class BusBehavior : MonoBehaviour
 
     public void Publish(string topic, Dictionary<string, string> body)
     {
+        if (string.IsNullOrWhiteSpace(topic))
+        {
+            //todo: log error "topic cannot be blank"
+            return;
+        }
         if (!Subscriptions.TryGetValue(topic, out var sublist))
         {
             return;
@@ -23,6 +29,15 @@ public class BusBehavior : MonoBehaviour
 
     public IDisposable Subscribe(string topic, Func<Dictionary<string,string>, Task> callback)
     {
+        if (string.IsNullOrWhiteSpace(topic))
+        {
+            throw new ArgumentException("topic cannot be blank", nameof(topic));
+        }
+
+        if (callback == null)
+        {
+            throw new ArgumentException("callback cannnot be null", nameof(callback));
+        }
         Subscription sub = null;
         sub = new Subscription(callback, () => Unsubscribe(topic, sub));
         
@@ -55,13 +70,13 @@ public class BusBehavior : MonoBehaviour
     {
         if (Subscriptions != null)
         {
-            foreach (var kvp in Subscriptions)
+            foreach (var kvp in Subscriptions.ToArray())
             {
                 if (kvp.Value == null)
                 {
                     continue;
                 }
-                foreach (var subscription in kvp.Value)
+                foreach (var subscription in kvp.Value.ToArray())
                 {
                     try
                     {
