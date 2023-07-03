@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -17,19 +18,24 @@ public class PlayerShipMovementBehavior : BusParticipant
     // Start is called before the first frame update
     void Start()
     {
+        Publish("bad key", BusBehavior.EmptyDictionary);
+        _logger = Logging.InitializeLogger();
         if (PlayerShip == null)
         {
-            //todo: log error, forgot to link player ship game object
+            _logger.System.LogError("forgot to link player ship game object", context: this); 
         }
         _playerShipRigidBody = PlayerShip.GetComponent<Rigidbody2D>();
         if (_playerShipRigidBody == null)
         {
-            //todo: log error, could not find playership physics
+            _logger.System.LogError("could not find playership physics", context: this);
         }
         AddLifeTimeSubscription(Subscribe("Input", OnInput));
     }
 
     private Vector2 _lastLocation;
+
+    private LogBehavior _logger;
+
     // Update is called once per frame
     void Update()
     {
@@ -41,26 +47,26 @@ public class PlayerShipMovementBehavior : BusParticipant
         }
     }
     
-    private async Task OnInput(Dictionary<string, string> arg)
+    private async Task OnInput(Dictionary<string, string> body)
     {
-        if (arg == null)
+        if (body == null)
         {
-            //todo: log this
+            _logger.System.LogError(new ArgumentException("got a null body", nameof(body)), context: this);
             return;
         }
 
         const string vertKey = "vert";
         const string horzKey = "horz";
-        if (!arg.ContainsKey(vertKey) || !arg.ContainsKey(horzKey))
+        if (!body.ContainsKey(vertKey) || !body.ContainsKey(horzKey))
         {
-            //todo: log this
+            _logger.System.LogError(new ArgumentException("expected keys not found", nameof(body)), context: this);
             return;
         }
 
-        if (!float.TryParse(arg[vertKey], out var vert) ||
-            !float.TryParse(arg[horzKey], out var horz))
+        if (!float.TryParse(body[vertKey], out var vert) ||
+            !float.TryParse(body[horzKey], out var horz))
         {
-            //todo: log this
+            _logger.System.LogError(new ArgumentException("could not parse body values", nameof(body)), context: this);
             return;
         }
 

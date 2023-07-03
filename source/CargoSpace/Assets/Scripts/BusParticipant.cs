@@ -9,14 +9,15 @@ public class BusParticipant : MonoBehaviour
     public GameObject BusObject;
     private BusBehavior _bus;
     private List<IDisposable> _subscriptions = new List<IDisposable>();
+    private LogBehavior _busLogger;
 
     // Awake is called before Start
     void Awake()
     {
+        _busLogger = Logging.InitializeLogger();
         if (BusObject == null)
         {
-            //todo: log warning: you forgot to attach BusObject
-            int x = 0;
+            _busLogger.System.LogWarning($"{nameof(BusObject)} is null. Maybe you forgot to assign it.", context:this);
         }
         _bus = BusObject.GetComponent<BusBehavior>();
         InitializeSubscriptions();
@@ -48,15 +49,19 @@ public class BusParticipant : MonoBehaviour
             {
                 subscription.Dispose();
             }
-            catch 
+            catch (Exception ex)
             {
-                //todo: log this, but dont throw
+                _busLogger.System.LogWarning($"Error disposing susbscription: {ex.ToString()}", context:this);
             }
         }
     }
 
     protected void Publish(string topic, Dictionary<string, string> body)
     {
+        if (_bus == null)
+        {
+            _busLogger.Bus.LogError(new ArgumentException($"{nameof(_bus)} is null. Cannot publish"), context:this);
+        }
         _bus.Publish(topic, body);
     }
 
@@ -64,8 +69,7 @@ public class BusParticipant : MonoBehaviour
     {
         if (_bus == null)
         {
-            //todo: log this
-            int x = 0;
+            _busLogger.Bus.LogError(new ArgumentException($"{nameof(_bus)} is null. Cannot subscribe"), context:this);
         }
         return _bus.Subscribe(topic, handler);
     }
@@ -74,7 +78,7 @@ public class BusParticipant : MonoBehaviour
     {
         if (subscription == null)
         {
-            //todo: log this, but dont throw
+            _busLogger.Bus.LogWarning("cannot add null subscription", context:this);
             return;
         }
         _subscriptions.Add(subscription);
