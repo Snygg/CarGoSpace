@@ -12,6 +12,5 @@ namespace Logging
         public readonly CgsLogger Combat = new CgsLogger();
         public readonly CgsLogger Bus = new CgsLogger();
         //todo: add any other categories of logs here
-
     }
 }

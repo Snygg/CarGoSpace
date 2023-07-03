@@ -19,7 +19,7 @@ public class BusBehavior : MonoBehaviour
         }
         if (!Subscriptions.TryGetValue(topic, out var sublist))
         {
-            _logger.Bus.LogVerbose($"topic has no subscribers: {topic}", context:this);
+            _logger.Bus.LogInformation($"topic has no subscribers: {topic}", context:this);
             return;
         }
 
@@ -49,6 +49,7 @@ public class BusBehavior : MonoBehaviour
             Subscriptions.Add(topic, sublist);
         }
 
+        _logger.Bus.LogVerbose($"Subscribe:{topic}", context:this);
         sublist.Add(sub);
 
         return sub;

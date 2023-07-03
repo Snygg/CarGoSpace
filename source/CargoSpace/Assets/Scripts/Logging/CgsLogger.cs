@@ -11,16 +11,20 @@ namespace Logging
         /// </summary>
         private readonly Logger _logger = new Logger(Debug.unityLogger.logHandler);
 
-        public CgsLogLevel LogLevel { get; private set; } = DefaultLogLevel;
+        public CgsLogLevel LogLevel { get; private set; }
     
         public const CgsLogLevel DefaultLogLevel =
 #if UNITY_EDITOR
                 CgsLogLevel.Debug
 #else
-        CgsLogLevel.Warning
+        CgsLogLevel.Info
 #endif
             ;
 
+        public CgsLogger(CgsLogLevel logLevelOverride = DefaultLogLevel)
+        {
+            LogLevel = logLevelOverride;
+        }
         public void Log(
             CgsLogLevel logLevel, 
             string format, 
@@ -36,8 +40,8 @@ namespace Logging
                 case CgsLogLevel.Warning:
                     LogWarning(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
                     break;
-                case CgsLogLevel.Verbose:
-                    LogVerbose(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
+                case CgsLogLevel.Info:
+                    LogInformation(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
                     break;
                 case CgsLogLevel.Debug:
                     LogDebug(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
@@ -72,6 +76,10 @@ namespace Logging
             [CallerMemberName] string callerMemberName = "",
             [CallerLineNumber] int callerLineNumber = -1)
         {
+            if (LogLevel < CgsLogLevel.Error)
+            {
+                return;
+            }
             _logger.LogException(exception, context);
         }
 
@@ -82,17 +90,25 @@ namespace Logging
             [CallerLineNumber] int callerLineNumber = -1,
             params object[] values)
         {
+            if (LogLevel < CgsLogLevel.Warning)
+            {
+                return;
+            }
             LogFormat(LogType.Warning,$"{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
         }
     
-        public void LogVerbose(
+        public void LogInformation(
             string format,
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "",
             [CallerLineNumber] int callerLineNumber = -1,
             params object[] values)
         {
-            LogFormat(LogType.Log,$"[Verbose]{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
+            if (LogLevel < CgsLogLevel.Info)
+            {
+                return;
+            }
+            LogFormat(LogType.Log,$"[Info]{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
         }
     
         public void LogDebug(
@@ -102,7 +118,25 @@ namespace Logging
             [CallerLineNumber] int callerLineNumber = -1,
             params object[] values)
         {
+            if (LogLevel < CgsLogLevel.Debug)
+            {
+                return;
+            }
             LogFormat(LogType.Log,$"[Debug]{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
+        }
+        
+        public void LogVerbose(
+            string format,
+            UnityEngine.Object context = null,
+            [CallerMemberName] string callerMemberName = "",
+            [CallerLineNumber] int callerLineNumber = -1,
+            params object[] values)
+        {
+            if (LogLevel < CgsLogLevel.Verbose)
+            {
+                return;
+            }
+            LogFormat(LogType.Log,$"[Verbose]{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
         }
 
         private void LogFormat(
