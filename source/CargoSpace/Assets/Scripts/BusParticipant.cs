@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Logging;
 using UnityEngine;
 
 public class BusParticipant : MonoBehaviour
@@ -14,7 +15,7 @@ public class BusParticipant : MonoBehaviour
     // Awake is called before Start
     void Awake()
     {
-        _busLogger = Logging.InitializeLogger();
+        _busLogger = LogManager.InitializeLogger();
         if (BusObject == null)
         {
             _busLogger.System.LogWarning($"{nameof(BusObject)} is null. Maybe you forgot to assign it.", context:this);

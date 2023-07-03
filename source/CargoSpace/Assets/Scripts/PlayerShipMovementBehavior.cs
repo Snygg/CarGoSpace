@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Logging;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -18,8 +19,7 @@ public class PlayerShipMovementBehavior : BusParticipant
     // Start is called before the first frame update
     void Start()
     {
-        Publish("bad key", BusBehavior.EmptyDictionary);
-        _logger = Logging.InitializeLogger();
+        _logger = LogManager.InitializeLogger();
         if (PlayerShip == null)
         {
             _logger.System.LogError("forgot to link player ship game object", context: this); 

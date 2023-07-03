@@ -1,8 +1,11 @@
-﻿public enum CgsLogLevel
+﻿namespace Logging
 {
-    Error,
-    Warning,
-    Verbose,
-    Debug,
-    None
+    public enum CgsLogLevel
+    {
+        Error,
+        Warning,
+        Verbose,
+        Debug,
+        None
+    }
 }
