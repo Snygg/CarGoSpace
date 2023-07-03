@@ -18,7 +18,7 @@ public class BusParticipant : MonoBehaviour
         _busLogger = LogManager.InitializeLogger();
         if (BusObject == null)
         {
-            _busLogger.System.LogWarning($"{nameof(BusObject)} is null. Maybe you forgot to assign it.", context:this);
+            _busLogger.System.LogWarning($"{nameof(BusObject)} is null. Maybe you forgot to assign it.");
         }
         _bus = BusObject.GetComponent<BusBehavior>();
         InitializeSubscriptions();
@@ -52,7 +52,7 @@ public class BusParticipant : MonoBehaviour
             }
             catch (Exception ex)
             {
-                _busLogger.System.LogWarning($"Error disposing susbscription: {ex.ToString()}", context:this);
+                _busLogger.Bus.LogWarning($"Error disposing susbscription: {ex.ToString()}");
             }
         }
     }
@@ -61,7 +61,7 @@ public class BusParticipant : MonoBehaviour
     {
         if (_bus == null)
         {
-            _busLogger.Bus.LogError(new ArgumentException($"{nameof(_bus)} is null. Cannot publish"), context:this);
+            _busLogger.Bus.LogError(new ArgumentException($"{nameof(_bus)} is null. Cannot publish"));
         }
         _bus.Publish(topic, body);
     }
@@ -70,7 +70,7 @@ public class BusParticipant : MonoBehaviour
     {
         if (_bus == null)
         {
-            _busLogger.Bus.LogError(new ArgumentException($"{nameof(_bus)} is null. Cannot subscribe"), context:this);
+            _busLogger.Bus.LogError(new ArgumentException($"{nameof(_bus)} is null. Cannot subscribe"));
         }
         return _bus.Subscribe(topic, handler);
     }
@@ -79,7 +79,7 @@ public class BusParticipant : MonoBehaviour
     {
         if (subscription == null)
         {
-            _busLogger.Bus.LogWarning("cannot add null subscription", context:this);
+            _busLogger.Bus.LogWarning("cannot add null subscription");
             return;
         }
         _subscriptions.Add(subscription);
