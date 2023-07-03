@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Logging;
 using UnityEngine;
 
 public class BusBehavior : MonoBehaviour
@@ -13,11 +14,12 @@ public class BusBehavior : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(topic))
         {
-            //todo: log error "topic cannot be blank"
+            _logger.Bus.LogError(new ArgumentException("topic cannot be blank", nameof(topic)), context:this);
             return;
         }
         if (!Subscriptions.TryGetValue(topic, out var sublist))
         {
+            _logger.Bus.LogInformation($"topic has no subscribers: {topic}", context:this);
             return;
         }
 
@@ -47,17 +49,19 @@ public class BusBehavior : MonoBehaviour
             Subscriptions.Add(topic, sublist);
         }
 
+        _logger.Bus.LogVerbose($"Subscribe:{topic}", context:this);
         sublist.Add(sub);
 
         return sub;
     }
 
     public static readonly Dictionary<string, string> EmptyDictionary = new Dictionary<string, string>();
+    private LogBehavior _logger;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        _logger = Logging.LogManager.InitializeLogger();
     }
 
     // Update is called once per frame

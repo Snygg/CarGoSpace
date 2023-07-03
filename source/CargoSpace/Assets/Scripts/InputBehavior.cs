@@ -10,7 +10,6 @@ public class InputBehavior : MonoBehaviour
     void Start()
     {
         Bus = BusObj.GetComponent<BusBehavior>();
-        Bus.Publish("InitObj", BusBehavior.EmptyDictionary);
     }
 
     // Update is called once per frame
