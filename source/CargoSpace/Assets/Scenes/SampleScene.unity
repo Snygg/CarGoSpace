@@ -830,6 +830,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   LogObject: {fileID: 864374682}
   BusObject: {fileID: 2014389450}
+  PlayerShipObject: {fileID: 0}
 --- !u!4 &1388786979
 Transform:
   m_ObjectHideFlags: 0
@@ -860,6 +861,8 @@ MonoBehaviour:
   BusObject: {fileID: 2014389450}
   DummyNpc: {fileID: 5518216183435660030, guid: 677fa926f7228954ab161e939033effa, type: 3}
   DirectorObject: {fileID: 1388786977}
+  PlayerShipObject: {fileID: 326857465}
+  LaserPrefab: {fileID: 4636465334105788736, guid: 4e3de7aa2bf2f4d449d16b713f3ae0f7, type: 3}
 --- !u!1 &1420359555
 GameObject:
   m_ObjectHideFlags: 0
