@@ -56,9 +56,13 @@ public class DirectorBehavior : BusParticipant
             return;
         }
         _logger.Combat.LogDebug("Got command {0}", values: body);
-        var go = Instantiate<GameObject>(LaserPrefab, Vector3.zero, new Quaternion());
-        var lineRenderer = go.GetComponentInChildren<LineRenderer>();
-        lineRenderer.positionCount=2;
-        lineRenderer.SetPositions(new []{Vector3.zero, PlayerShipObject.transform.position});
+        foreach (var npc in _npcs)
+        {
+            var go = Instantiate<GameObject>(LaserPrefab, Vector3.zero, new Quaternion());
+            var lineRenderer = go.GetComponentInChildren<LineRenderer>();
+            lineRenderer.positionCount=2;
+            lineRenderer.SetPositions(new []{npc.transform.position, PlayerShipObject.transform.position});
+        }
+        
     }
 }

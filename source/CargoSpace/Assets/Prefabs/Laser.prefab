@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91c25d9e4afcd4f4e88cf1e11399d55b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FramesRemaining: 10
+  FramesRemaining: 20
   ToDestroy: {fileID: 4636465334105788736}
 --- !u!1 &4636465335188087153
 GameObject:
