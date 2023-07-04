@@ -14,6 +14,11 @@ public class DebugInputBehavior : BusParticipant
     {
         if (Input.GetKeyUp(KeyCode.Alpha1))
         {
+            if (Input.mousePosition.x < 0 || Input.mousePosition.x > Screen.width
+                || Input.mousePosition.y < 0 || Input.mousePosition.y > Screen.height)
+            {
+                return;
+            }
             Dictionary<string, string> body = new Dictionary<string, string>();
             body.Add("location", Input.mousePosition.ToString());
             //...
@@ -27,5 +32,5 @@ public class DebugInputBehavior : BusParticipant
             //...
             Publish("npcCommand", body);
         }
-    }
+1    }
 }
