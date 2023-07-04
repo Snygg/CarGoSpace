@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Bus;
 using UnityEngine;
 
 public class AutoHitBehavior : BusParticipant
