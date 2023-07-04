@@ -10,6 +10,7 @@ public class NpcFollowPlayerBehavior : MonoBehaviour
     public float MinFollowDistance = 2;
 
     private PlayerTrackerBehavior _playerTrackerBehavior;
+
     // Start is called before the first frame update
     void Start()
     {

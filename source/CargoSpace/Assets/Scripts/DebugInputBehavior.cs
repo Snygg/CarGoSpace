@@ -20,8 +20,11 @@ public class DebugInputBehavior : BusParticipant
             {
                 return;
             }
+
+            Vector3 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            worldPosition.z = 0;
             Dictionary<string, string> body = new Dictionary<string, string>();
-            body.Add("location", Input.mousePosition.ToString());
+            body.Add("location", worldPosition.ToString());
             //...
             Publish("npcCreate", body);
         }
