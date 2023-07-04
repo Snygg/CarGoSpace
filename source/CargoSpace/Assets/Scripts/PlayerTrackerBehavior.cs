@@ -14,7 +14,7 @@ public class PlayerTrackerBehavior : BusParticipant
     // Start is called before the first frame update
     void Start()
     {
-        _logger = Logging.LogManager.Initialize();
+        _logger = LogManager.Initialize(LogObject);
         AddLifeTimeSubscription(Subscribe("PlayerTransform", OnPlayerMoved));
     }
 

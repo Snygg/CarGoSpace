@@ -20,7 +20,7 @@ public class PlayerShipMovementBehavior : BusParticipant
     // Start is called before the first frame update
     void Start()
     {
-        _logger = LogManager.Initialize();
+        _logger = LogManager.Initialize(LogObject);
         if (PlayerShip == null)
         {
             _logger.System.LogError("forgot to link player ship game object", context: this); 
