@@ -32,5 +32,5 @@ public class DebugInputBehavior : BusParticipant
             //...
             Publish("npcCommand", body);
         }
-1    }
+    }
 }
