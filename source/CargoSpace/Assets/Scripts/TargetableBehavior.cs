@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Bus;
 using Logging;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ public class TargetableBehavior : BusParticipant
     // Start is called before the first frame update
     void Start()
     {
-        _logger = Logging.LogManager.InitializeLogger();
+        _logger = Logging.LogManager.Initialize();
         Subscribe($"AutoHit{id}", (attack) => OnAutoHitAction(attack));
     }
 
