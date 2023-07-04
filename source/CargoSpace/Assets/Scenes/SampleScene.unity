@@ -443,7 +443,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27c655c64289a834ea7b5546a57482de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BusObj: {fileID: 14274798}
+  BusObject: {fileID: 14274798}
 --- !u!1 &852262152
 GameObject:
   m_ObjectHideFlags: 0

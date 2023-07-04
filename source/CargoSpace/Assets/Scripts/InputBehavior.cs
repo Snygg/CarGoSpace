@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using Bus;
 using UnityEngine;
 
-public class InputBehavior : MonoBehaviour
+public class InputBehavior : BusParticipant
 {
-    public GameObject BusObj;
-    private BusBehavior Bus;
     // Start is called before the first frame update
     void Start()
     {
-        Bus = BusManager.Initialize(BusObj);
+        
     }
 
     // Update is called once per frame
@@ -23,7 +21,7 @@ public class InputBehavior : MonoBehaviour
             var body = new Dictionary<string, string>();
             body["vert"] = vert.ToString();
             body["horz"] = horz.ToString();
-            Bus.Publish("Input", body);
+            Publish("Input", body);
         }
     }
 }
