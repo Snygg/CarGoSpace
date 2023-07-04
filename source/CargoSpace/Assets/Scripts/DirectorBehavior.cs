@@ -40,6 +40,8 @@ public class DirectorBehavior : BusParticipant
         var go = Instantiate<GameObject>(DummyNpc, location, new Quaternion());
         var follow = go.GetComponent<NpcFollowPlayerBehavior>();
         follow.DirectorObject = DirectorObject;
+        
+        //todo: remove them from the list when they get destroyed
         _npcs.Add(go);
     }
 
