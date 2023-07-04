@@ -86,7 +86,7 @@ namespace Logging
         public void LogWarning(
             string format,
             UnityEngine.Object context = null,
-            [CallerMemberName] string callerMemberName = "",
+            [CallerMemberName] string callerMemberName = "unknownCaller",
             [CallerLineNumber] int callerLineNumber = -1,
             params object[] values)
         {

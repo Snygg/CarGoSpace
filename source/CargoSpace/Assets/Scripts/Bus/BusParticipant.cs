@@ -18,7 +18,7 @@ namespace Bus
         void Awake()
         {
             _busLogger = LogManager.Initialize();
-            _bus = BusManager.Initialize(BusObject);
+            _bus = BusManager.Initialize(BusObject, _busLogger);
             InitializeSubscriptions();
         }
     
