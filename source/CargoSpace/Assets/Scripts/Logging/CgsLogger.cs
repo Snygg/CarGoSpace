@@ -31,6 +31,7 @@ namespace Logging
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName="",
             [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile",
             params object[] values)
         {
             switch (logLevel)
@@ -38,17 +39,17 @@ namespace Logging
                 case CgsLogLevel.None:
                     break;
                 case CgsLogLevel.Warning:
-                    LogWarning(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
+                    LogWarning(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, callerFilePath:callerFilePath, values: values);
                     break;
                 case CgsLogLevel.Info:
-                    LogInformation(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
+                    LogInformation(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, callerFilePath:callerFilePath, values: values);
                     break;
                 case CgsLogLevel.Debug:
-                    LogDebug(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
+                    LogDebug(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, callerFilePath:callerFilePath, values: values);
                     break;
                 case CgsLogLevel.Error:
                 default:
-                    LogError(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, values: values);
+                    LogError(format, context:context, callerMemberName:callerMemberName, callerLineNumber: callerLineNumber, callerFilePath:callerFilePath, values: values);
                     break;
             }
         }
@@ -58,9 +59,10 @@ namespace Logging
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "",
             [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile",
             params object[] values)
         {
-            LogFormat(LogType.Error,$"{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
+            LogFormat(LogType.Error,format, callerMemberName, callerLineNumber,callerFilePath, context:context, values: values);
         }
     
         /// <summary>
@@ -74,13 +76,14 @@ namespace Logging
             Exception exception,
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "",
-            [CallerLineNumber] int callerLineNumber = -1)
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
         {
             if (LogLevel < CgsLogLevel.Error)
             {
                 return;
             }
-            _logger.LogException(exception, context);
+            _logger.LogException(new Exception($"{callerMemberName}:{callerFilePath}({callerLineNumber})",exception), context);
         }
 
         public void LogWarning(
@@ -88,13 +91,14 @@ namespace Logging
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "unknownCaller",
             [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile",
             params object[] values)
         {
             if (LogLevel < CgsLogLevel.Warning)
             {
                 return;
             }
-            LogFormat(LogType.Warning,$"{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
+            LogFormat(LogType.Warning,format, callerMemberName, callerLineNumber,callerFilePath, context:context, values: values);
         }
     
         public void LogInformation(
@@ -102,13 +106,14 @@ namespace Logging
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "",
             [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile",
             params object[] values)
         {
             if (LogLevel < CgsLogLevel.Info)
             {
                 return;
             }
-            LogFormat(LogType.Log,$"[Info]{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
+            LogFormat(LogType.Log,$"[Info]{format}", callerMemberName, callerLineNumber,callerFilePath, context:context, values: values);
         }
     
         public void LogDebug(
@@ -116,13 +121,14 @@ namespace Logging
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "",
             [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile",
             params object[] values)
         {
             if (LogLevel < CgsLogLevel.Debug)
             {
                 return;
             }
-            LogFormat(LogType.Log,$"[Debug]{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
+            LogFormat(LogType.Log,$"[Debug]{format}", callerMemberName, callerLineNumber,callerFilePath, context:context, values: values);
         }
         
         public void LogVerbose(
@@ -130,28 +136,39 @@ namespace Logging
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "",
             [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile",
             params object[] values)
         {
             if (LogLevel < CgsLogLevel.Verbose)
             {
                 return;
             }
-            LogFormat(LogType.Log,$"[Verbose]{format} \n Caller:{callerMemberName}({callerLineNumber})", context:context, values: values);
+            LogFormat(LogType.Log,$"[Verbose]{format}", callerMemberName, callerLineNumber,callerFilePath, context:context, values: values);
         }
 
         private void LogFormat(
             LogType logType,
             string format,
+            string callerMemberName,
+            int callerLineNumber,
+            string callerFilePath,
             UnityEngine.Object context = null,
             params object[] values)
         {
             try
             {
-                _logger.LogFormat(logType,context, format, values);
+                _logger.LogFormat(
+                    logType,
+                    context, 
+                    $"{format} \n {callerMemberName}:{callerFilePath}({callerLineNumber})" , 
+                    values);
             }
             catch (FormatException)
             {
-                _logger.LogFormat(LogType.Error,context,$"<bold>Error in format:</bold> {format.Replace("{","-").Replace("}","-")}",values);
+                _logger.LogFormat(
+                    LogType.Error,
+                    context,
+                    $"Error in format: {format.Replace("{","-").Replace("}","-")}",values);
             }
         }
     }

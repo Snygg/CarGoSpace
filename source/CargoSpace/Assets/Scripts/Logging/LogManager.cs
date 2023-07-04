@@ -10,7 +10,8 @@ namespace Logging
         public static LogBehavior Initialize(
             GameObject linkedGameObject = null,
             [CallerMemberName] string callerMemberName = "unknownCaller",
-            [CallerLineNumber] int callerLineNumber = -1)
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
         {
             if (linkedGameObject)
             {
@@ -33,13 +34,15 @@ namespace Logging
             behavior.System.LogWarning(
                 "This object does not link the log object", 
                 callerMemberName:callerMemberName, 
-                callerLineNumber: callerLineNumber);
+                callerLineNumber: callerLineNumber,
+                callerFilePath: callerFilePath);
             if (hadToAddToScene)
             {
                 behavior.System.LogInformation(
                     "Creating Log Object on scene", 
                     callerMemberName:callerMemberName, 
-                    callerLineNumber: callerLineNumber);
+                    callerLineNumber: callerLineNumber,
+                    callerFilePath: callerFilePath);
             }
             return behavior;
         }

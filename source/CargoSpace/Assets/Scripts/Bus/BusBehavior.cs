@@ -9,6 +9,7 @@ namespace Bus
 {
     public class BusBehavior : MonoBehaviour
     {
+        public GameObject LogObject;
         private readonly Dictionary<string, HashSet<Subscription>> Subscriptions = new Dictionary<string, HashSet<Subscription>>();
 
         public void Publish(string topic, Dictionary<string, string> body)
@@ -61,7 +62,7 @@ namespace Bus
 
         void Awake()
         {
-            _logger = LogManager.Initialize();
+            _logger = LogManager.Initialize(LogObject);
         }
 
         // Update is called once per frame

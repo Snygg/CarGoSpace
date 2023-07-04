@@ -9,6 +9,7 @@ namespace Bus
 {
     public class BusParticipant : MonoBehaviour
     {
+        public GameObject LogObject; 
         public GameObject BusObject;
         private BusBehavior _bus;
         private List<IDisposable> _subscriptions = new List<IDisposable>();
@@ -17,7 +18,7 @@ namespace Bus
         // Awake is called before Start
         void Awake()
         {
-            _busLogger = LogManager.Initialize();
+            _busLogger = LogManager.Initialize(LogObject);
             _bus = BusManager.Initialize(BusObject, _busLogger);
             InitializeSubscriptions();
         }

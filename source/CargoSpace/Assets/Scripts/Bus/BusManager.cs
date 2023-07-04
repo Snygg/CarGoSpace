@@ -12,7 +12,8 @@ namespace Bus
             GameObject linkedGameObject = null,
             LogBehavior logger = null,
             [CallerMemberName] string callerMemberName = "unknownCaller",
-            [CallerLineNumber] int callerLineNumber = -1)
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
         {
             if (!logger)
             {
@@ -26,7 +27,8 @@ namespace Bus
             logger.System.LogWarning(
                 "This object does not link the bus object", 
                 callerMemberName:callerMemberName, 
-                callerLineNumber: callerLineNumber);
+                callerLineNumber: callerLineNumber,
+                callerFilePath: callerFilePath);
             const string objectName = "BusObject";
             var existingObject = SceneManager.GetActiveScene().GetRootGameObjects().FirstOrDefault(go => go.name == objectName);
             if (!existingObject)
