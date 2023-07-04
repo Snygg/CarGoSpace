@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -157,11 +159,21 @@ namespace Logging
         {
             try
             {
+                var parsedValues = values.Select(v =>
+                {
+                    if (!(v is Dictionary<string, string> dictionary))
+                    {
+                        return v;
+                    }
+
+                    //this is a special handler for the very common "body" type in the bus
+                    return string.Join(", ", dictionary.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+                }).ToArray();
                 _logger.LogFormat(
                     logType,
                     context, 
                     $"{format} \n {callerMemberName}:{callerFilePath}({callerLineNumber})" , 
-                    values);
+                    parsedValues);
             }
             catch (FormatException)
             {

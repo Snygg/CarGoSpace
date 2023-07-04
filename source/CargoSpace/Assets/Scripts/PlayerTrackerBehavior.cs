@@ -8,6 +8,7 @@ using UnityEngine;
 
 public class PlayerTrackerBehavior : BusParticipant
 {
+    public GameObject PlayerShipObject;
     private LogBehavior _logger;
     public Vector3 PlayerPosition { get; private set; } = Vector3.zero;
 
