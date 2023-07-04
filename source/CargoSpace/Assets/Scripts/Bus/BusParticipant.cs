@@ -17,7 +17,7 @@ namespace Bus
         // Awake is called before Start
         void Awake()
         {
-            _busLogger = LogManager.InitializeLogger();
+            _busLogger = LogManager.Initialize();
             if (BusObject == null)
             {
                 _busLogger.System.LogWarning($"{nameof(BusObject)} is null. Maybe you forgot to assign it.");

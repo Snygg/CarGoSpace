@@ -10,7 +10,7 @@ public class InputBehavior : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Bus = BusObj.GetComponent<BusBehavior>();
+        Bus = BusManager.Initialize(BusObj);
     }
 
     // Update is called once per frame

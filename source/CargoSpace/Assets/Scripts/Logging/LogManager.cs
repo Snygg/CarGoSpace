@@ -6,7 +6,7 @@ namespace Logging
 {
     public static class LogManager
     {
-        public static LogBehavior InitializeLogger()
+        public static LogBehavior Initialize()
         {
             const string objectName = "LoggerObject";
             var existingLogger = SceneManager.GetActiveScene().GetRootGameObjects().FirstOrDefault(go =>

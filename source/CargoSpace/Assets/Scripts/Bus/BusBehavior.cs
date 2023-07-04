@@ -62,7 +62,7 @@ namespace Bus
         // Start is called before the first frame update
         void Start()
         {
-            _logger = Logging.LogManager.InitializeLogger();
+            _logger = Logging.LogManager.Initialize();
         }
 
         // Update is called once per frame
