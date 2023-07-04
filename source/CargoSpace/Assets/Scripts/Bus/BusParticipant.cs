@@ -18,11 +18,7 @@ namespace Bus
         void Awake()
         {
             _busLogger = LogManager.Initialize();
-            if (BusObject == null)
-            {
-                _busLogger.System.LogWarning($"{nameof(BusObject)} is null. Maybe you forgot to assign it.");
-            }
-            _bus = BusObject.GetComponent<BusBehavior>();
+            _bus = BusManager.Initialize(BusObject);
             InitializeSubscriptions();
         }
     

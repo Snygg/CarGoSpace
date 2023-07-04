@@ -59,10 +59,9 @@ namespace Bus
         public static readonly Dictionary<string, string> EmptyDictionary = new Dictionary<string, string>();
         private LogBehavior _logger;
 
-        // Start is called before the first frame update
-        void Start()
+        void Awake()
         {
-            _logger = Logging.LogManager.Initialize();
+            _logger = LogManager.Initialize();
         }
 
         // Update is called once per frame
