@@ -10,6 +10,7 @@ public class TargetableBehavior : BusParticipant
 {
     private LogBehavior _logger;
     string id { get; }
+    public bool Indestructable;
 
     // Start is called before the first frame update
     void Start()
@@ -48,6 +49,10 @@ public class TargetableBehavior : BusParticipant
 
     private void OnLaser(Dictionary<string, string> body)
     {
+        if (Indestructable)
+        {
+            return;
+        }
         if (body.TryGetValue("strength", out string strength))
         {
             //calculate and apply damage
