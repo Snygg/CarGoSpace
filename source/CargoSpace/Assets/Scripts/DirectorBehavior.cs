@@ -58,11 +58,13 @@ public class DirectorBehavior : BusParticipant
             //Debug.DrawLine(playerPosition,gameObject.transform.position, Color.red,1);
             FireLazer(playerPosition,gameObject.transform.position);
             _playerTargeted = gameObject;
+            _logger.Combat.LogDebug("Player hit target");
         }
         else
         {
             _playerTargeted = null;
             FireLazer(playerPosition,targetPosition * 100);
+            _logger.Combat.LogVerbose("Player fired and missed");
         }
     }
 
