@@ -23,5 +23,15 @@ public class InputBehavior : BusParticipant
             body["horz"] = horz.ToString();
             Publish("Input", body);
         }
+
+        var fire1Axis = Input.GetAxis("Fire1");
+        if (fire1Axis > 0)
+        {
+            var x = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            var y = 0;
+            var r = new RaycastHit2D();
+            var rc = Physics2D.Raycast(x, Vector2.up);
+            var gameObject = rc.collider.gameObject;
+        }
     }
 }
