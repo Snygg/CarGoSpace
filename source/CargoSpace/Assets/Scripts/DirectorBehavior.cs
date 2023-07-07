@@ -14,7 +14,7 @@ public class DirectorBehavior : BusParticipant
     public GameObject DirectorObject;
     private List<GameObject> _npcs = new List<GameObject>();
     public GameObject PlayerShipObject;
-    [FormerlySerializedAs("LazerPrefab")] public GameObject LaserPrefab;
+    public GameObject LaserPrefab;
     private LogBehavior _logger;
     private GameObject _playerTargeted;
 
