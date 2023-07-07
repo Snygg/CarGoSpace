@@ -11,6 +11,7 @@ public class InputBehavior : BusParticipant
         
     }
 
+    private bool isFiring;
     // Update is called once per frame
     void Update()
     {
@@ -25,13 +26,16 @@ public class InputBehavior : BusParticipant
         }
 
         var fire1Axis = Input.GetAxis("Fire1");
-        if (fire1Axis > 0)
+        var wasFiring = isFiring;
+        isFiring = fire1Axis > 0;
+
+        if (wasFiring && !isFiring)
         {
-            var x = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            var y = 0;
-            var r = new RaycastHit2D();
-            var rc = Physics2D.Raycast(x, Vector2.up);
-            var gameObject = rc.collider.gameObject;
+            var worldLocation = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Publish("PlayerFired", new Dictionary<string, string>
+            {
+                {"Position", ((Vector2) worldLocation).ToString()}
+            });
         }
     }
 }

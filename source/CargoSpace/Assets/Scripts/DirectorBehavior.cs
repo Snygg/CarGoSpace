@@ -1,3 +1,4 @@
+using System;
 using Bus;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ public class DirectorBehavior : BusParticipant
     public GameObject PlayerShipObject;
     [FormerlySerializedAs("LazerPrefab")] public GameObject LaserPrefab;
     private LogBehavior _logger;
+    private GameObject _playerTargeted;
 
     // Start is called before the first frame update
     void Start()
@@ -22,6 +24,44 @@ public class DirectorBehavior : BusParticipant
         _logger = LogManager.Initialize(LogObject);
         AddLifeTimeSubscription(Subscribe("npcCreate", OnCreateNpc));
         AddLifeTimeSubscription(Subscribe("npcCommand", OnNpcCommand));
+        AddLifeTimeSubscription(Subscribe("PlayerFired",OnPlayerFired));
+    }
+
+    private async Task OnPlayerFired(Dictionary<string, string> arg)
+    {
+        if (arg == null)
+        {
+            _logger.Bus.LogError(new ArgumentException("arg was null", nameof(arg)));
+            return;
+        }
+
+        const string positionKey = "Position";
+        if (!arg.ContainsKey(positionKey))
+        {
+            _logger.Bus.LogError(new ArgumentException($"arg does not contain {positionKey}", nameof(arg)));
+            return;
+        }
+        
+        if(!VectorUtils.TryParseVector2(arg[positionKey], out var position))
+        {
+            _logger.Bus.LogError(new ArgumentException($"{positionKey} not a valid vector", nameof(arg)));
+            return;
+        }
+        
+        //todo: pass in list, so we know all the things we hit
+        var raycastHit2D = Physics2D.Raycast(position, Vector2.up);
+        if (raycastHit2D.collider && raycastHit2D.collider.gameObject)
+        {
+            var gameObject = raycastHit2D.collider.gameObject;
+            _playerTargeted = gameObject;
+        }
+        else
+        {
+            _playerTargeted = null;
+        }
+
+        
+
     }
 
     // Update is called once per frame

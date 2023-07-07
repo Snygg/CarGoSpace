@@ -31,5 +31,32 @@ public static class VectorUtils
 
         return false;
     }
+    
+    public static bool TryParseVector2(this string input, out Vector2 output)
+    {
+        //"(0.0, 0.0, 0.0)"
+        if (string.IsNullOrEmpty(input) || !(input.StartsWith("(") && input.EndsWith(")")))
+        {
+            output = Vector2.zero;
+            return false;
+        }
+
+        var replaced = input.Replace("(", "").Replace(")", "").Replace(" ", "");
+        var values = replaced.Split(',');
+        if (values.Length < 2)
+        {
+            output = Vector2.zero;
+            return false;
+        }
+
+        if (!float.TryParse(values[0], out float x) || !float.TryParse(values[1], out float y))
+        {
+            output = Vector2.zero;
+            return false;
+        }
+        
+        output = new Vector2(x, y);
+        return true;
+    }
 }
 
