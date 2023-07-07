@@ -51,9 +51,11 @@ public class DirectorBehavior : BusParticipant
         //todo: pass in list, so we know all the things we hit
         var playerPosition = PlayerShipObject.transform.position;
         var targetDirection = targetPosition - (Vector2)playerPosition;
-        var raycastHit2D = Physics2D.Raycast(playerPosition, targetDirection);
-        if (raycastHit2D.collider && raycastHit2D.collider.gameObject)
+        List<RaycastHit2D> hitResults = new List<RaycastHit2D>();
+        Physics2D.Raycast(playerPosition, targetDirection, new ContactFilter2D(),hitResults);
+        if (hitResults.Count >0)
         {
+            var raycastHit2D = hitResults.First(hr=>hr.collider && hr.collider.gameObject);
             var gameObject = raycastHit2D.collider.gameObject;
             //Debug.DrawLine(playerPosition,gameObject.transform.position, Color.red,1);
             FireLazer(playerPosition,gameObject.transform.position);
