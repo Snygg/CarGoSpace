@@ -42,26 +42,26 @@ public class DirectorBehavior : BusParticipant
             return;
         }
         
-        if(!VectorUtils.TryParseVector2(arg[positionKey], out var position))
+        if(!VectorUtils.TryParseVector2(arg[positionKey], out var targetPosition))
         {
             _logger.Bus.LogError(new ArgumentException($"{positionKey} not a valid vector", nameof(arg)));
             return;
         }
         
         //todo: pass in list, so we know all the things we hit
-        var raycastHit2D = Physics2D.Raycast(position, Vector2.up);
+        var playerPosition = PlayerShipObject.transform.position;
+        var targetDirection = targetPosition - (Vector2)playerPosition;
+        var raycastHit2D = Physics2D.Raycast(playerPosition, targetDirection);
         if (raycastHit2D.collider && raycastHit2D.collider.gameObject)
         {
             var gameObject = raycastHit2D.collider.gameObject;
+            //Debug.DrawLine(playerPosition,gameObject.transform.position, Color.red,1);
             _playerTargeted = gameObject;
         }
         else
         {
             _playerTargeted = null;
         }
-
-        
-
     }
 
     // Update is called once per frame
