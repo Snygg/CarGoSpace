@@ -56,11 +56,13 @@ public class DirectorBehavior : BusParticipant
         {
             var gameObject = raycastHit2D.collider.gameObject;
             //Debug.DrawLine(playerPosition,gameObject.transform.position, Color.red,1);
+            FireLazer(playerPosition,gameObject.transform.position);
             _playerTargeted = gameObject;
         }
         else
         {
             _playerTargeted = null;
+            FireLazer(playerPosition,targetPosition * 100);
         }
     }
 
@@ -100,11 +102,19 @@ public class DirectorBehavior : BusParticipant
         _logger.Combat.LogDebug("Got command {0}", values: body);
         foreach (var npc in _npcs)
         {
-            var go = Instantiate<GameObject>(LaserPrefab, Vector3.zero, new Quaternion());
-            var lineRenderer = go.GetComponentInChildren<LineRenderer>();
-            lineRenderer.positionCount=2;
-            lineRenderer.SetPositions(new []{npc.transform.position, PlayerShipObject.transform.position});
+            var startPosition = npc.transform.position;
+            var endPosition = PlayerShipObject.transform.position;
+            
+            FireLazer(startPosition, endPosition);
         }
         
+    }
+
+    private void FireLazer(Vector3 startPosition, Vector3 endPosition)
+    {
+        var go = Instantiate<GameObject>(LaserPrefab, Vector3.zero, new Quaternion());
+        var lineRenderer = go.GetComponentInChildren<LineRenderer>();
+        lineRenderer.positionCount = 2;
+        lineRenderer.SetPositions(new[] {startPosition, endPosition});
     }
 }
