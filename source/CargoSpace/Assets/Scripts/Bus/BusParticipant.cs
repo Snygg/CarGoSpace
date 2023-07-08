@@ -65,7 +65,7 @@ namespace Bus
             _bus.Publish(topic, body);
         }
 
-        protected IDisposable Subscribe(string topic, Func<Dictionary<string, string>, Task> handler)
+        protected IDisposable Subscribe(string topic, Func<IReadOnlyDictionary<string, string>, Task> handler)
         {
             if (_bus == null)
             {

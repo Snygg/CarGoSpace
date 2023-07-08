@@ -16,7 +16,7 @@ public class TargetableBehavior : BusParticipant
     void Start()
     {
         _logger = Logging.LogManager.Initialize();
-        Subscribe($"AutoHit{id}", (attack) => OnAutoHitAction(attack));
+        Subscribe($"AutoHit{id}", OnAutoHitAction);
     }
 
     // Update is called once per frame
@@ -25,7 +25,7 @@ public class TargetableBehavior : BusParticipant
         
     }
 
-    private async Task OnAutoHitAction(Dictionary<string, string> body)
+    private async Task OnAutoHitAction(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {
@@ -47,7 +47,7 @@ public class TargetableBehavior : BusParticipant
         }
     }
 
-    private void OnLaser(Dictionary<string, string> body)
+    private void OnLaser(IReadOnlyDictionary<string, string> body)
     {
         if (Indestructable)
         {
@@ -64,7 +64,7 @@ public class TargetableBehavior : BusParticipant
         }
     }
 
-    private void OnTractorBeam(Dictionary<string, string> body)
+    private void OnTractorBeam(IReadOnlyDictionary<string, string> body)
     {
         if (body.TryGetValue("strength", out string strength))
         {
