@@ -32,13 +32,7 @@ public class DirectorBehavior : BusParticipant
     private async Task OnPlayerClicked(IReadOnlyDictionary<string, string> body)
     {
         const string key = "location";
-        if (!body.ContainsKey(key))
-        {
-            _logger.Bus.LogError(new ArgumentException($"arg does not contain {key}", nameof(body)));
-            return;
-        }
-
-        if (!VectorUtils.TryParseVector2(body[key], out var location))
+        if (!body.TryGetVector2(key, out var location))
         {
             _logger.Bus.LogError(new ArgumentException($"{key} not a valid vector", nameof(body)));
             return;
@@ -93,13 +87,7 @@ public class DirectorBehavior : BusParticipant
     private async Task OnTurretFired(IReadOnlyDictionary<string, string> body)
     {
         const string key = "source";
-        if (!body.ContainsKey(key))
-        {
-            _logger.Bus.LogError(new ArgumentException($"arg does not contain {key}", nameof(body)));
-            return;
-        }
-
-        if (!VectorUtils.TryParseVector2(body[key], out var location))
+        if (!body.TryGetVector2(key, out var location))
         {
             _logger.Bus.LogError(new ArgumentException($"{key} not a valid vector", nameof(body)));
             return;
@@ -108,8 +96,6 @@ public class DirectorBehavior : BusParticipant
 
         FireLaser(location, (Vector2) PlayerTargeted.transform.position - location);
     }
-
-
 
     private void FireLaser(Vector2 source, Vector2 targetDirection)
     {
@@ -140,8 +126,10 @@ public class DirectorBehavior : BusParticipant
 
     private async Task OnCreateNpc(IReadOnlyDictionary<string, string> body)
     {
-        if (!body.TryGetValue("location", out string loc) || !loc.TryParseVector3(out var location))
+        const string locationKey = "location";
+        if (!body.TryGetVector3(locationKey, out var location))
         {
+            _logger.Bus.LogError(new Exception($"{locationKey} was not a valid vector"));
             return;
         }
 
