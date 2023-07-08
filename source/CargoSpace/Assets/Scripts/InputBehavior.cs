@@ -32,9 +32,10 @@ public class InputBehavior : BusParticipant
         if (wasFiring && !isFiring)
         {
             var worldLocation = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Publish("PlayerFired", new Dictionary<string, string>
+
+            Publish("playerClicked", new Dictionary<string, string>
             {
-                {"Position", ((Vector2) worldLocation).ToString()}
+                {"location",  ((Vector2) worldLocation).ToString()}
             });
         }
     }
