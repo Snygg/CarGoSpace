@@ -34,7 +34,7 @@ public class AutoHitBehavior : BusParticipant
 
     private void SetNextShot() => _nextShot = DateTime.Now.AddSeconds(Interval);
 
-    private async Task OnPlayerTargetSelected(Dictionary<string, string> body)
+    private async Task OnPlayerTargetSelected(IReadOnlyDictionary<string, string> body)
     {
         //check if has target
         if (!body.TryGetValue("hasTarget", out var hasTarget))
