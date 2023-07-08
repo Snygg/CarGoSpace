@@ -11,6 +11,7 @@ public class InputBehavior : BusParticipant
         
     }
 
+    private bool isFiring;
     // Update is called once per frame
     void Update()
     {
@@ -22,6 +23,19 @@ public class InputBehavior : BusParticipant
             body["vert"] = vert.ToString();
             body["horz"] = horz.ToString();
             Publish("Input", body);
+        }
+
+        var fire1Axis = Input.GetAxis("Fire1");
+        var wasFiring = isFiring;
+        isFiring = fire1Axis > 0;
+
+        if (wasFiring && !isFiring)
+        {
+            var worldLocation = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Publish("PlayerFired", new Dictionary<string, string>
+            {
+                {"Position", ((Vector2) worldLocation).ToString()}
+            });
         }
     }
 }
