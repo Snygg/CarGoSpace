@@ -12,7 +12,7 @@ namespace Bus
         public GameObject LogObject;
         private readonly Dictionary<string, HashSet<Subscription>> Subscriptions = new Dictionary<string, HashSet<Subscription>>();
 
-        public void Publish(string topic, Dictionary<string, string> body)
+        public void Publish(string topic, IReadOnlyDictionary<string, string> body)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {
@@ -31,7 +31,7 @@ namespace Bus
             }
         }
 
-        public IDisposable Subscribe(string topic, Func<Dictionary<string,string>, Task> callback)
+        public IDisposable Subscribe(string topic, Func<IReadOnlyDictionary<string, string>, Task> callback)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {

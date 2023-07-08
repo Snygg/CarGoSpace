@@ -56,7 +56,7 @@ namespace Bus
             }
         }
 
-        protected void Publish(string topic, Dictionary<string, string> body)
+        protected void Publish(string topic, IReadOnlyDictionary<string, string> body)
         {
             if (_bus == null)
             {
@@ -65,7 +65,7 @@ namespace Bus
             _bus.Publish(topic, body);
         }
 
-        protected IDisposable Subscribe(string topic, Func<Dictionary<string, string>, Task> handler)
+        protected IDisposable Subscribe(string topic, Func<IReadOnlyDictionary<string, string>, Task> handler)
         {
             if (_bus == null)
             {

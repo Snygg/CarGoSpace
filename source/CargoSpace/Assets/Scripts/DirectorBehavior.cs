@@ -27,7 +27,7 @@ public class DirectorBehavior : BusParticipant
         AddLifeTimeSubscription(Subscribe("PlayerFired",OnPlayerFired));
     }
 
-    private async Task OnPlayerFired(Dictionary<string, string> arg)
+    private async Task OnPlayerFired(IReadOnlyDictionary<string, string> arg)
     {
         if (arg == null)
         {
@@ -79,7 +79,7 @@ public class DirectorBehavior : BusParticipant
         
     }
 
-    private async Task OnCreateNpc(Dictionary<string, string> body)
+    private async Task OnCreateNpc(IReadOnlyDictionary<string, string> body)
     {
         if (!body.TryGetValue("location", out string loc) || !loc.TryParseVector3(out var location))
         {
@@ -94,7 +94,7 @@ public class DirectorBehavior : BusParticipant
         _npcs.Add(go);
     }
 
-    private async Task OnNpcCommand(Dictionary<string, string> body)
+    private async Task OnNpcCommand(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {
