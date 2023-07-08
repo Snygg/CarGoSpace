@@ -48,7 +48,7 @@ public class PlayerShipMovementBehavior : BusParticipant
         }
     }
     
-    private async Task OnInput(Dictionary<string, string> body)
+    private async Task OnInput(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {

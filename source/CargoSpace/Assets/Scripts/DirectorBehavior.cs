@@ -29,7 +29,7 @@ public class DirectorBehavior : BusParticipant
         AddLifeTimeSubscription(Subscribe("turretFired", OnTurretFired));
     }
 
-    private async Task OnPlayerClicked(Dictionary<string, string> body)
+    private async Task OnPlayerClicked(IReadOnlyDictionary<string, string> body)
     {
         const string key = "location";
         if (!body.ContainsKey(key))
@@ -90,7 +90,7 @@ public class DirectorBehavior : BusParticipant
         return result.collider.gameObject;
     }
 
-    private async Task OnTurretFired(Dictionary<string, string> body)
+    private async Task OnTurretFired(IReadOnlyDictionary<string, string> body)
     {
         const string key = "source";
         if (!body.ContainsKey(key))
@@ -138,7 +138,7 @@ public class DirectorBehavior : BusParticipant
         
     }
 
-    private async Task OnCreateNpc(Dictionary<string, string> body)
+    private async Task OnCreateNpc(IReadOnlyDictionary<string, string> body)
     {
         if (!body.TryGetValue("location", out string loc) || !loc.TryParseVector3(out var location))
         {
@@ -153,7 +153,7 @@ public class DirectorBehavior : BusParticipant
         _npcs.Add(go);
     }
 
-    private async Task OnNpcCommand(Dictionary<string, string> body)
+    private async Task OnNpcCommand(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {

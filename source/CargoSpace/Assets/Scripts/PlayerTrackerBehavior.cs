@@ -25,7 +25,7 @@ public class PlayerTrackerBehavior : BusParticipant
 
     }
 
-    private async Task OnPlayerMoved(Dictionary<string, string> body)
+    private async Task OnPlayerMoved(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {
