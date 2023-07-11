@@ -95,7 +95,6 @@ public class DirectorBehavior : BusParticipant
             return;
         }
 
-
         FireLaser(location, (Vector2) PlayerTargeted.transform.position - location);
     }
 
@@ -109,8 +108,8 @@ public class DirectorBehavior : BusParticipant
             hr.collider.gameObject.GetComponent<TargetableBehavior>());
         if (raycastHit2D)
         {
-            var gameObject = raycastHit2D.collider.gameObject;
-            RenderLazer(source, gameObject.transform.position);
+            var closest = raycastHit2D.collider.ClosestPoint(source);
+            RenderLazer(source, closest);
             _logger.Combat.LogDebug("Player hit target");
         }
         else
