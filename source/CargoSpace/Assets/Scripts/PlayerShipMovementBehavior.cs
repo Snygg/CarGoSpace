@@ -58,14 +58,7 @@ public class PlayerShipMovementBehavior : BusParticipant
 
         const string vertKey = "vert";
         const string horzKey = "horz";
-        if (!body.ContainsKey(vertKey) || !body.ContainsKey(horzKey))
-        {
-            _logger.System.LogError(new ArgumentException("expected keys not found", nameof(body)), context: this);
-            return;
-        }
-
-        if (!float.TryParse(body[vertKey], out var vert) ||
-            !float.TryParse(body[horzKey], out var horz))
+        if (!body.TryGetFloat(vertKey, out var vert) || !body.TryGetFloat(horzKey, out var horz))
         {
             _logger.System.LogError(new ArgumentException("could not parse body values", nameof(body)), context: this);
             return;
@@ -73,7 +66,6 @@ public class PlayerShipMovementBehavior : BusParticipant
 
         Vector2 input = new Vector2(horz, vert);
 
-        
         Vector2 thrustVector = ThrustFactor * input;
         if (thrustVector.magnitude <= float.Epsilon)
         {

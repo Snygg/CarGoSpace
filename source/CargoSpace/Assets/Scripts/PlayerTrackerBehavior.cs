@@ -34,14 +34,7 @@ public class PlayerTrackerBehavior : BusParticipant
         }
 
         var positionKey = "position";
-        if (!body.ContainsKey(positionKey))
-        {
-            _logger.System.LogError(new ArgumentException("body does not contain required values", nameof(body)),
-                context: this);
-            return;
-        }
-
-        if (!body[positionKey].TryParseVector3(out var vec))
+        if (!body.TryGetVector3(positionKey,out var vec))
         {
             _logger.System.LogError(new ArgumentException($"{positionKey} is not a valid {nameof(Vector3)}", nameof(body)),
                 context: this);
