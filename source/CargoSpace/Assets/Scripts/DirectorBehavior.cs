@@ -39,7 +39,9 @@ public class DirectorBehavior : BusParticipant
         }
 
         var clicked = GetClickedObject(GetRayCastHitList(location));
-        if (_npcs.Contains(clicked)) // next: needs to only set target if turret is selected
+        var targets = clicked.GetComponentsInChildren<TargetableBehavior>();
+        var otherTarget = targets.FirstOrDefault(t => !t.IsPlayer);
+        if (otherTarget) // next: needs to only set target if turret is selected
         {
             PlayerTargeted = clicked;
             //publish 
@@ -136,6 +138,13 @@ public class DirectorBehavior : BusParticipant
         var go = Instantiate<GameObject>(DummyNpc, location, new Quaternion());
         var follow = go.GetComponent<NpcFollowPlayerBehavior>();
         follow.DirectorObject = DirectorObject;
+
+        var targetable = go.GetComponentsInChildren<TargetableBehavior>(includeInactive: false);
+        foreach (var targetableBehavior in targetable)
+        {
+            targetableBehavior.LogObject = LogObject;
+            targetableBehavior.BusObject = BusObject;
+        }
         
         //todo: remove them from the list when they get destroyed
         _npcs.Add(go);

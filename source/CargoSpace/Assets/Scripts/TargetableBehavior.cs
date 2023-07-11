@@ -11,6 +11,7 @@ public class TargetableBehavior : BusParticipant
     private LogBehavior _logger;
     string id { get; }
     public bool Indestructable;
+    public bool IsPlayer;
 
     // Start is called before the first frame update
     void Start()
