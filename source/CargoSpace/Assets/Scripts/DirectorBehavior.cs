@@ -108,8 +108,7 @@ public class DirectorBehavior : BusParticipant
             hr.collider.gameObject.GetComponent<TargetableBehavior>());
         if (raycastHit2D)
         {
-            var closest = raycastHit2D.collider.ClosestPoint(source);
-            RenderLazer(source, closest);
+            RenderLazer(source, raycastHit2D.point);
             _logger.Combat.LogDebug("Player hit target");
         }
         else
