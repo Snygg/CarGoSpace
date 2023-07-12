@@ -48,7 +48,7 @@ public class TargetableBehavior : BusParticipant
 
         if (CurrentHealth == 0)
         {
-            joint.enabled = false;
+            Destroy(joint);
             Module.transform.parent = null;
         }
     }
