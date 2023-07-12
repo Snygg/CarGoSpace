@@ -95,10 +95,39 @@ public class DirectorBehavior : BusParticipant
             return;
         }
 
-        FireLaser(location, (Vector2) PlayerTargeted.transform.position - location);
+        if (body == null)
+        {
+            _logger.Combat.LogError(new ArgumentException("body cannot be null", nameof(body)), context: this);
+            return;
+        }
+
+        if (body.TryGetValue("type", out string hitType))
+        {
+            if (!body.TryGetFloat("strength", out float strength))
+            {
+                //log
+                return;
+            }
+
+            if (!body.TryGetValue("source", out string source))
+            {
+                //log
+                return;
+            }
+
+            switch (hitType)
+            {
+                case "laser":
+                    FireLaser(location, (Vector2)PlayerTargeted.transform.position - location, strength);
+                    break;
+                case "tractor":
+                    //FireTractorBeam(source, strength);
+                    break;
+            }
+        }
     }
 
-    private void FireLaser(Vector2 source, Vector2 targetDirection)
+    private void FireLaser(Vector2 source, Vector2 targetDirection, float strength)
     {
         List<RaycastHit2D> hitResults = new List<RaycastHit2D>();
         Physics2D.Raycast(source, targetDirection, new ContactFilter2D(), hitResults);
@@ -109,6 +138,8 @@ public class DirectorBehavior : BusParticipant
         if (raycastHit2D)
         {
             RenderLazer(source, raycastHit2D.point);
+            var tgt = raycastHit2D.collider.gameObject.GetComponent<TargetableBehavior>();
+            tgt.ApplyDamage(strength);
             _logger.Combat.LogDebug("Player hit target");
         }
         else
@@ -142,6 +173,7 @@ public class DirectorBehavior : BusParticipant
         {
             targetableBehavior.LogObject = LogObject;
             targetableBehavior.BusObject = BusObject;
+            targetableBehavior.Module = targetableBehavior.gameObject;
         }
         
         //todo: remove them from the list when they get destroyed

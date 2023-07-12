@@ -27,7 +27,7 @@ public class AutoHitBehavior : BusParticipant
         }
         if (_nextShot <= DateTime.Now)
         {
-            Fire(Turret.transform.position, "fake", 9000.1f);
+            Fire(Turret.transform.position, "laser", 9000.1f);
             SetNextShot();
         }
     }

@@ -188,6 +188,7 @@ GameObject:
   - component: {fileID: 216617356}
   - component: {fileID: 216617355}
   - component: {fileID: 216617354}
+  - component: {fileID: 216617357}
   m_Layer: 0
   m_Name: Mod1
   m_TagString: Untagged
@@ -265,6 +266,24 @@ MonoBehaviour:
   BusObject: {fileID: 2014389450}
   Interval: 1
   Turret: {fileID: 852262152}
+--- !u!114 &216617357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 216617352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eff37fae2e4871e4fa43d2de8ce3d6dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  LogObject: {fileID: 864374682}
+  BusObject: {fileID: 2014389450}
+  Indestructable: 0
+  IsPlayer: 0
+  InitialHealth: 1
+  Module: {fileID: 216617352}
 --- !u!1 &248894277
 GameObject:
   m_ObjectHideFlags: 0
@@ -805,6 +824,7 @@ GameObject:
   - component: {fileID: 782454245}
   - component: {fileID: 782454247}
   - component: {fileID: 782454246}
+  - component: {fileID: 782454248}
   m_Layer: 0
   m_Name: Mod3
   m_TagString: Untagged
@@ -866,6 +886,24 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &782454248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 782454244}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eff37fae2e4871e4fa43d2de8ce3d6dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  LogObject: {fileID: 864374682}
+  BusObject: {fileID: 2014389450}
+  Indestructable: 0
+  IsPlayer: 0
+  InitialHealth: 1
+  Module: {fileID: 782454244}
 --- !u!1 &812877880
 GameObject:
   m_ObjectHideFlags: 0
@@ -1219,6 +1257,8 @@ MonoBehaviour:
   BusObject: {fileID: 0}
   Indestructable: 1
   IsPlayer: 0
+  InitialHealth: 1
+  Module: {fileID: 0}
 --- !u!212 &1374504332
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1352,6 +1392,7 @@ GameObject:
   - component: {fileID: 2113600752}
   - component: {fileID: 2113600751}
   - component: {fileID: 2113600753}
+  - component: {fileID: 2113600754}
   m_Layer: 0
   m_Name: Mod2
   m_TagString: Untagged
@@ -1429,6 +1470,24 @@ MonoBehaviour:
   BusObject: {fileID: 2014389450}
   Module: {fileID: 2113600749}
   ThrustFactor: 1
+--- !u!114 &2113600754
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2113600749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eff37fae2e4871e4fa43d2de8ce3d6dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  LogObject: {fileID: 864374682}
+  BusObject: {fileID: 2014389450}
+  Indestructable: 0
+  IsPlayer: 0
+  InitialHealth: 1
+  Module: {fileID: 2113600749}
 --- !u!1001 &5573722694658453934
 PrefabInstance:
   m_ObjectHideFlags: 0
