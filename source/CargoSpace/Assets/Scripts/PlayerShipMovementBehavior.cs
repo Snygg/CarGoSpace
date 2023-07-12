@@ -9,8 +9,8 @@ using UnityEngine.Serialization;
 
 public class PlayerShipMovementBehavior : BusParticipant
 {
-    public GameObject PlayerShip;
-    private Rigidbody2D _playerShipRigidBody;
+    public GameObject Module;
+    private Rigidbody2D _moduleRigidBody;
     /// <summary>
     /// The amount of input that becomes thrust
     /// </summary>
@@ -21,14 +21,16 @@ public class PlayerShipMovementBehavior : BusParticipant
     void Start()
     {
         _logger = LogManager.Initialize(LogObject);
-        if (PlayerShip == null)
+        if (!Module)
         {
-            _logger.System.LogError("forgot to link player ship game object", context: this); 
+            _logger.System.LogError("forgot to link player ship game object", context: this);
+            return;
         }
-        _playerShipRigidBody = PlayerShip.GetComponent<Rigidbody2D>();
-        if (_playerShipRigidBody == null)
+        _moduleRigidBody = Module.GetComponent<Rigidbody2D>();
+        if (!_moduleRigidBody)
         {
             _logger.System.LogError("could not find playership physics", context: this);
+            return;
         }
         AddLifeTimeSubscription(Subscribe("Input", OnInput));
     }
@@ -40,7 +42,7 @@ public class PlayerShipMovementBehavior : BusParticipant
     // Update is called once per frame
     void Update()
     {
-        var currentLocation = (Vector2)_playerShipRigidBody.transform.position;
+        var currentLocation = (Vector2)_moduleRigidBody.transform.position;
         var distance = Vector2.Distance(currentLocation, _lastLocation);
         if (distance > float.Epsilon)
         {
@@ -78,15 +80,15 @@ public class PlayerShipMovementBehavior : BusParticipant
     //thrusts in the direction of the vector with the given magnitude
     private void ThrustTowards(Vector2 vector)
     {
-        _playerShipRigidBody.AddForce(vector);
+        _moduleRigidBody.AddForce(vector);
     }
 
     //changes the location of the ship by the given amounts in x and y
     private void MoveByMeasure(Vector2 vector)
     {
-        var current = PlayerShip.transform.position;
+        var current = Module.transform.position;
 
-        PlayerShip.transform.position = new Vector3(current.x + vector.x, current.y + vector.y, current.z);
+        Module.transform.position = new Vector3(current.x + vector.x, current.y + vector.y, current.z);
         PublishLocation(current);
     }
 
