@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 6004065410969233853}
   - component: {fileID: 8697734908444753593}
   - component: {fileID: 1698226492106411508}
+  - component: {fileID: 3009930222314770198}
+  - component: {fileID: 6092029135027136452}
   m_Layer: 0
   m_Name: Mod1
   m_TagString: Untagged
@@ -74,6 +76,48 @@ MonoBehaviour:
   LogObject: {fileID: 0}
   BusObject: {fileID: 0}
   Indestructable: 0
+  IsPlayer: 0
+  Health: 1
+  Module: {fileID: 0}
+--- !u!50 &3009930222314770198
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 337739285858332792}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!255 &6092029135027136452
+FixedJoint2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 337739285858332792}
+  m_Enabled: 1
+  serializedVersion: 4
+  m_EnableCollision: 0
+  m_ConnectedRigidBody: {fileID: 0}
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0, y: 0}
+  m_ConnectedAnchor: {x: 0.17999992, y: 0}
+  m_DampingRatio: 0
+  m_Frequency: 0
 --- !u!1 &1642580965723872067
 GameObject:
   m_ObjectHideFlags: 0
@@ -396,6 +440,8 @@ GameObject:
   - component: {fileID: 367780565206016589}
   - component: {fileID: 723760527292735581}
   - component: {fileID: 1540582300184995984}
+  - component: {fileID: 1833549608336953554}
+  - component: {fileID: 1558339613199175394}
   m_Layer: 0
   m_Name: Mod2
   m_TagString: Untagged
@@ -459,6 +505,48 @@ MonoBehaviour:
   LogObject: {fileID: 0}
   BusObject: {fileID: 0}
   Indestructable: 0
+  IsPlayer: 0
+  Health: 1
+  Module: {fileID: 0}
+--- !u!50 &1833549608336953554
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6545563329387634921}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!255 &1558339613199175394
+FixedJoint2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6545563329387634921}
+  m_Enabled: 1
+  serializedVersion: 4
+  m_EnableCollision: 0
+  m_ConnectedRigidBody: {fileID: 0}
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0, y: 0}
+  m_ConnectedAnchor: {x: -0.25, y: 0}
+  m_DampingRatio: 0
+  m_Frequency: 0
 --- !u!1 &7580540174216694346
 GameObject:
   m_ObjectHideFlags: 0
@@ -468,6 +556,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7635621169159545615}
+  - component: {fileID: 8684163216593836374}
   m_Layer: 0
   m_Name: Hull
   m_TagString: Untagged
@@ -490,3 +579,24 @@ Transform:
   m_Father: {fileID: 5518216183435660025}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!50 &8684163216593836374
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7580540174216694346}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
