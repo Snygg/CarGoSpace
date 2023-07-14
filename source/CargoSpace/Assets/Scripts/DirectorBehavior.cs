@@ -18,6 +18,7 @@ public class DirectorBehavior : BusParticipant
     public GameObject PlayerTargeted { get; private set; }
     public GameObject PlayerShipObject;
     public GameObject LaserPrefab;
+    public GameObject PlayerReticle;
 
     // Start is called before the first frame update
     void Start()
@@ -27,6 +28,30 @@ public class DirectorBehavior : BusParticipant
         AddLifeTimeSubscription(Subscribe("npcCommand", OnNpcCommand));
         AddLifeTimeSubscription(Subscribe("playerClicked", OnPlayerClicked));
         AddLifeTimeSubscription(Subscribe("turretFired", OnTurretFired));
+        AddLifeTimeSubscription(Subscribe("keyPressed", OnKeyPressed));
+    }
+
+    private async Task OnKeyPressed(IReadOnlyDictionary<string, string> body)
+    {
+        if (!PlayerTargeted)
+        {
+            return;
+        }
+
+        if (!body.TryGetValue("key", out var key))
+        {
+            return;
+        }
+
+        FireWeaponGroup(key);
+    }
+
+    private void FireWeaponGroup(string group)
+    {
+        Publish("toggleWeaponGroup", new Dictionary<string, string>
+        {
+            {"group", group }
+        });
     }
 
     private async Task OnPlayerClicked(IReadOnlyDictionary<string, string> body)
@@ -44,6 +69,9 @@ public class DirectorBehavior : BusParticipant
         if (otherTarget) // next: needs to only set target if turret is selected
         {
             PlayerTargeted = clicked;
+            //add reticle , get component elsewhere
+            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
+            ret.TargetedObject = PlayerTargeted;
             //publish 
             Publish("playerTargetSelected", new Dictionary<string, string>
             {
@@ -57,6 +85,8 @@ public class DirectorBehavior : BusParticipant
         else
         {
             PlayerTargeted = null;
+            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
+            ret.TargetedObject = null;
             Publish("playerTargetSelected", new Dictionary<string, string>
             {
                 { "hasTarget", "false" }

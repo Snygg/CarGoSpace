@@ -38,5 +38,28 @@ public class InputBehavior : BusParticipant
                 {"location",  ((Vector2) worldLocation).ToString()}
             });
         }
+
+        var key3 = Input.GetKeyDown(KeyCode.Alpha3);
+        var key4 = Input.GetKeyDown(KeyCode.Alpha4);
+        
+        var keyPressedTopic = "keyPressed";
+
+        if (key3)
+        {
+            Publish(keyPressedTopic,
+                new Dictionary<string, string>
+                {
+                    { "key", "3" }
+                });
+        }
+
+        if (key4)
+        {
+            Publish(keyPressedTopic,
+                new Dictionary<string, string>
+                {
+                    { "key", "333" }
+                });
+        }
     }
 }

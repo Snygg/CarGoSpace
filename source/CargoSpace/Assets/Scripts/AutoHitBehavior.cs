@@ -12,10 +12,12 @@ public class AutoHitBehavior : BusParticipant
 
     public double Interval;
     public GameObject Turret;
+    public string WeaponGroup = "3";
+
     // Start is called before the first frame update
     void Start()
     {
-        AddLifeTimeSubscription(Subscribe("playerTargetSelected", OnPlayerTargetSelected));
+        AddLifeTimeSubscription(Subscribe("toggleWeaponGroup", OnPlayerTargetSelected));
     }
 
     // Update is called once per frame
@@ -37,12 +39,17 @@ public class AutoHitBehavior : BusParticipant
     private async Task OnPlayerTargetSelected(IReadOnlyDictionary<string, string> body)
     {
         //check if has target
-        if (!body.TryGetValue("hasTarget", out var hasTarget))
+        if (!body.TryGetValue("group", out var group))
         {
             //log
             return;
         }
-        if (!bool.TryParse(hasTarget, out var has) || !has)
+        if (group != WeaponGroup)
+        {
+            return;
+        }
+
+        if (_nextShot != null)
         {
             _nextShot = null;
             return;
