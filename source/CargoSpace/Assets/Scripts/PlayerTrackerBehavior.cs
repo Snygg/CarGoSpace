@@ -13,16 +13,11 @@ public class PlayerTrackerBehavior : BusParticipant
     public Vector3 PlayerPosition { get; private set; } = Vector3.zero;
 
     // Start is called before the first frame update
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         _logger = LogManager.Initialize(LogObject);
         AddLifeTimeSubscription(Subscribe("PlayerTransform", OnPlayerMoved));
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
     private async Task OnPlayerMoved(IReadOnlyDictionary<string, string> body)

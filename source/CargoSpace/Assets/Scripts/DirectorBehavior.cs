@@ -20,8 +20,9 @@ public class DirectorBehavior : BusParticipant
     public GameObject LaserPrefab;
 
     // Start is called before the first frame update
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         _logger = LogManager.Initialize(LogObject);
         AddLifeTimeSubscription(Subscribe("npcCreate", OnCreateNpc));
         AddLifeTimeSubscription(Subscribe("npcCommand", OnNpcCommand));
@@ -147,12 +148,6 @@ public class DirectorBehavior : BusParticipant
             RenderLazer(source, targetDirection * 100);
             _logger.Combat.LogVerbose("Player fired and missed");
         }
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     private async Task OnCreateNpc(IReadOnlyDictionary<string, string> body)

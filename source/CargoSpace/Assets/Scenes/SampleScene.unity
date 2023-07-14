@@ -1253,12 +1253,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eff37fae2e4871e4fa43d2de8ce3d6dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LogObject: {fileID: 0}
-  BusObject: {fileID: 0}
+  LogObject: {fileID: 864374682}
+  BusObject: {fileID: 2014389450}
   Indestructable: 1
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 0}
+  Module: {fileID: 395913579}
 --- !u!212 &1374504332
 SpriteRenderer:
   m_ObjectHideFlags: 0

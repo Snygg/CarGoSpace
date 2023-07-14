@@ -5,16 +5,11 @@ using UnityEngine;
 
 public class InputBehavior : BusParticipant
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     private bool isFiring;
     // Update is called once per frame
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         var vert = Input.GetAxis("Vertical");
         var horz = Input.GetAxis("Horizontal");
         if (vert != 0.0 || horz != 0)

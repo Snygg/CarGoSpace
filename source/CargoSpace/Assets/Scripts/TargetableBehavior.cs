@@ -18,24 +18,17 @@ public class TargetableBehavior : BusParticipant
     private FixedJoint2D joint;
 
     // Start is called before the first frame update
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         CurrentHealth = InitialHealth;
-        _logger = Logging.LogManager.Initialize();
+        _logger = Logging.LogManager.Initialize(LogObject);
         
         if (Module)
         {
             joint = Module.GetComponent<FixedJoint2D>();
         }
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    
 
     public void ApplyDamage(float strength)
     {

@@ -13,14 +13,16 @@ public class AutoHitBehavior : BusParticipant
     public double Interval;
     public GameObject Turret;
     // Start is called before the first frame update
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         AddLifeTimeSubscription(Subscribe("playerTargetSelected", OnPlayerTargetSelected));
     }
 
     // Update is called once per frame
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         if (_nextShot == null)
         {
             return;

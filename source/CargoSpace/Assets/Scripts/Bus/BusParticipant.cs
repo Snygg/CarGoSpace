@@ -15,16 +15,16 @@ namespace Bus
         private List<IDisposable> _subscriptions = new List<IDisposable>();
         private LogBehavior _busLogger;
 
-        // Awake is called before Start
-        void Awake()
+        /// Awake is called before Start
+        protected virtual void Awake()
         {
             _busLogger = LogManager.Initialize(LogObject);
             _bus = BusManager.Initialize(BusObject, _busLogger);
             InitializeSubscriptions();
         }
     
-        // Start is called before the first frame update
-        void Start()
+        /// Start is called before the first frame update
+        protected virtual void Start()
         {
         
         }
@@ -35,13 +35,16 @@ namespace Bus
         /// </summary>
         protected virtual void InitializeSubscriptions() { }
 
-        // Update is called once per frame
-        void Update()
+        /// Update is called once per frame
+        protected virtual void Update()
         {
         
         }
 
-        private void OnDestroy()
+        /// <summary>
+        /// called when the object is being destroyed
+        /// </summary>
+        protected virtual  void OnDestroy()
         {
             foreach (var subscription in _subscriptions ?? Enumerable.Empty<IDisposable>())
             {

@@ -5,14 +5,10 @@ using UnityEngine;
 
 public class DebugInputBehavior : BusParticipant
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
-
     // Update is called once per frame
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         if (Input.GetKeyUp(KeyCode.Alpha1))
         {
             if (Input.mousePosition.x < 0 || Input.mousePosition.x > Screen.width
