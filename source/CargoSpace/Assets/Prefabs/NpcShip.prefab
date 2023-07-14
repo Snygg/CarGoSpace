@@ -77,8 +77,9 @@ MonoBehaviour:
   BusObject: {fileID: 0}
   Indestructable: 0
   IsPlayer: 0
-  Health: 1
+  InitialHealth: 1
   Module: {fileID: 0}
+  DamageableChildren: []
 --- !u!50 &3009930222314770198
 Rigidbody2D:
   serializedVersion: 4
@@ -291,8 +292,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5518216183435660025}
-  - component: {fileID: 5518216183435660031}
-  - component: {fileID: 5518216183435660024}
   m_Layer: 0
   m_Name: NpcShip
   m_TagString: Untagged
@@ -317,36 +316,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5518216183435660031
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5518216183435660030}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf3b2a83770636d4cb6b72cb78f7519d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Movable: {fileID: 5518216183435660030}
-  SpeedFactor: 0.001
---- !u!114 &5518216183435660024
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5518216183435660030}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c4cc6032883d72e40b97826be6650041, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DirectorObject: {fileID: 0}
-  MovableFollower: {fileID: 5518216183435660030}
-  _movable: {fileID: 5518216183435660031}
-  MinFollowDistance: 1
 --- !u!1 &5518216184064495925
 GameObject:
   m_ObjectHideFlags: 0
@@ -442,6 +411,8 @@ GameObject:
   - component: {fileID: 1540582300184995984}
   - component: {fileID: 1833549608336953554}
   - component: {fileID: 1558339613199175394}
+  - component: {fileID: 2133979881089681166}
+  - component: {fileID: 385349085426014806}
   m_Layer: 0
   m_Name: Mod2
   m_TagString: Untagged
@@ -506,8 +477,9 @@ MonoBehaviour:
   BusObject: {fileID: 0}
   Indestructable: 0
   IsPlayer: 0
-  Health: 1
+  InitialHealth: 1
   Module: {fileID: 0}
+  DamageableChildren: []
 --- !u!50 &1833549608336953554
 Rigidbody2D:
   serializedVersion: 4
@@ -547,6 +519,35 @@ FixedJoint2D:
   m_ConnectedAnchor: {x: -0.25, y: 0}
   m_DampingRatio: 0
   m_Frequency: 0
+--- !u!114 &2133979881089681166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6545563329387634921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4cc6032883d72e40b97826be6650041, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  DirectorObject: {fileID: 0}
+  MovableFollower: {fileID: 6545563329387634921}
+  MinFollowDistance: 1
+--- !u!114 &385349085426014806
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6545563329387634921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf3b2a83770636d4cb6b72cb78f7519d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Movable: {fileID: 6545563329387634921}
+  SpeedFactor: 0.001
 --- !u!1 &7580540174216694346
 GameObject:
   m_ObjectHideFlags: 0

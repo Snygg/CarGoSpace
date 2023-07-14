@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NpcFollowPlayerBehavior : MonoBehaviour
+public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
 {
     public GameObject DirectorObject;
     public GameObject MovableFollower;
-    public MovableBehavior _movable;
+    private MovableBehavior _movable;
     public float MinFollowDistance = 2;
 
     private PlayerTrackerBehavior _playerTrackerBehavior;
@@ -18,8 +18,7 @@ public class NpcFollowPlayerBehavior : MonoBehaviour
         _movable = MovableFollower.GetComponent<MovableBehavior>();
     }
 
-    // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         var curDistance = Vector3.Distance(MovableFollower.transform.position, _playerTrackerBehavior.PlayerPosition);
         if (curDistance <= MinFollowDistance)
@@ -27,5 +26,17 @@ public class NpcFollowPlayerBehavior : MonoBehaviour
             return;
         }
         _movable.MoveTowards(_playerTrackerBehavior.PlayerPosition);
+    }
+
+    public float LastPercentHp { get; private set; } = 100;
+    public void OnDamageChanged(float percentHp)
+    {
+        const float epsilon = 0.0001f;
+        if (!LastPercentHp.HasChanged(percentHp, epsilon))
+        {
+            return;
+        }
+
+        enabled = percentHp > 0;
     }
 }

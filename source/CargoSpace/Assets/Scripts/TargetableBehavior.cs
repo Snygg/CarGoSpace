@@ -16,11 +16,16 @@ public class TargetableBehavior : BusParticipant
     public float CurrentHealth { get; private set; }
     public GameObject Module;
     private FixedJoint2D joint;
+    /// <summary>
+    /// This should contain a list of sibling behaviors which implement the <see cref="IDamageable"/> interface
+    /// </summary>
+    public List<MonoBehaviour> DamageableChildren;
 
     // Start is called before the first frame update
     void Start()
     {
         CurrentHealth = InitialHealth;
+        _previousPercentHealth = GetPercent(CurrentHealth, InitialHealth);
         _logger = Logging.LogManager.Initialize();
         
         if (Module)
@@ -35,8 +40,7 @@ public class TargetableBehavior : BusParticipant
         
     }
 
-    
-
+    private float _previousPercentHealth =0;
     public void ApplyDamage(float strength)
     {
         if (Indestructable)
@@ -44,6 +48,7 @@ public class TargetableBehavior : BusParticipant
             return;
         }
 
+        var previousHealth = CurrentHealth;
         CurrentHealth = Math.Max(0, CurrentHealth - strength);
 
         if (CurrentHealth == 0)
@@ -51,10 +56,50 @@ public class TargetableBehavior : BusParticipant
             Destroy(joint);
             Module.transform.parent = null;
         }
+
+        const float epsilon = 0.001f;
+        if (!previousHealth.HasChanged(CurrentHealth, epsilon))
+        {
+            return;
+        }
+
+        var percentHealth = GetPercent(CurrentHealth, InitialHealth);
+        if (!_previousPercentHealth.HasChanged(percentHealth, epsilon))
+        {
+            return;
+        }
+
+        _previousPercentHealth = percentHealth;
+        foreach (var damageableChild in DamageableChildren.ToArray())
+        {
+            if (!damageableChild)
+            {
+                continue;
+            }
+
+            if (!(damageableChild is IDamageable damageable))
+            {
+                _logger.Combat.LogWarning($"this object is in the damageable list, but does not implement {nameof(IDamageable)}:{damageableChild.name}");
+                DamageableChildren.Remove(damageableChild);
+                continue;
+            }
+            damageable.OnDamageChanged(percentHealth);
+        }
+    }
+
+    private static float GetPercent(float current, float max)
+    {
+        var percentHealth = Mathf.Clamp((current / max) * 100, 0, 100);
+        return percentHealth;
     }
 
     private void OnTractorBeam(string source, float strength)
     {
         //...
     }
+}
+
+public interface IDamageable
+{
+    void OnDamageChanged(float percentHp);
 }
