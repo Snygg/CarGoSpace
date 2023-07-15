@@ -116,7 +116,7 @@ FixedJoint2D:
   m_BreakTorque: Infinity
   m_AutoConfigureConnectedAnchor: 1
   m_Anchor: {x: 0, y: 0}
-  m_ConnectedAnchor: {x: 0.18000002, y: 0}
+  m_ConnectedAnchor: {x: 0.18, y: 0}
   m_DampingRatio: 1
   m_Frequency: 0
 --- !u!1 &1642580965723872067
@@ -548,7 +548,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Movable: {fileID: 6545563329387634921}
-  SpeedFactor: 1
+  SpeedFactor: 10
 --- !u!1 &7580540174216694346
 GameObject:
   m_ObjectHideFlags: 0
