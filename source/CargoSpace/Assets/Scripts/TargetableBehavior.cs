@@ -8,14 +8,13 @@ using UnityEngine;
 
 public class TargetableBehavior : BusParticipant
 {
+    private FixedJoint2D joint;
     private LogBehavior _logger;
-    string id { get; }
     public bool Indestructable;
     public bool IsPlayer;
     public float InitialHealth = 1;
     public float CurrentHealth { get; private set; }
     public GameObject Module;
-    private FixedJoint2D joint;
 
     // Start is called before the first frame update
     void Start()
