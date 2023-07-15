@@ -165,16 +165,28 @@ public class DirectorBehavior : BusParticipant
         }
 
         var go = Instantiate<GameObject>(DummyNpc, location, new Quaternion());
-        var follow = go.GetComponent<NpcFollowPlayerBehavior>();
-        follow.DirectorObject = DirectorObject;
-
+        
         var targetable = go.GetComponentsInChildren<TargetableBehavior>(includeInactive: false);
         foreach (var targetableBehavior in targetable)
         {
             targetableBehavior.LogObject = LogObject;
             targetableBehavior.BusObject = BusObject;
-            targetableBehavior.Module = targetableBehavior.gameObject;
+            targetableBehavior.SetModule(targetableBehavior.gameObject);
         }
+
+        var movables = go.GetComponentsInChildren<MovableBehavior>(includeInactive: false);
+        foreach (var movable in movables)
+        {
+            movable.SetMovable(movable.gameObject);
+        }
+
+        var npcFollowers = go.GetComponentsInChildren<NpcFollowPlayerBehavior>(includeInactive:false);
+        foreach (var npcFollower in npcFollowers)
+        {
+            npcFollower.SetDirectorObject(gameObject);
+            npcFollower.SetMovableFollower(npcFollower.gameObject);
+        }
+        
         
         //todo: remove them from the list when they get destroyed
         _npcs.Add(go);

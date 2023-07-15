@@ -78,7 +78,7 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 0}
+  Module: {fileID: 337739285858332792}
   DamageableChildren: []
 --- !u!50 &3009930222314770198
 Rigidbody2D:
@@ -92,15 +92,15 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDrag: 0
+  m_Mass: 10
+  m_LinearDrag: 0.1
   m_AngularDrag: 0.05
   m_GravityScale: 1
   m_Material: {fileID: 0}
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!255 &6092029135027136452
 FixedJoint2D:
   m_ObjectHideFlags: 0
@@ -111,13 +111,13 @@ FixedJoint2D:
   m_Enabled: 1
   serializedVersion: 4
   m_EnableCollision: 0
-  m_ConnectedRigidBody: {fileID: 0}
+  m_ConnectedRigidBody: {fileID: 8684163216593836374}
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
   m_AutoConfigureConnectedAnchor: 1
   m_Anchor: {x: 0, y: 0}
-  m_ConnectedAnchor: {x: 0.17999992, y: 0}
-  m_DampingRatio: 0
+  m_ConnectedAnchor: {x: 0.18000002, y: 0}
+  m_DampingRatio: 1
   m_Frequency: 0
 --- !u!1 &1642580965723872067
 GameObject:
@@ -478,8 +478,9 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 0}
-  DamageableChildren: []
+  Module: {fileID: 6545563329387634921}
+  DamageableChildren:
+  - {fileID: 2133979881089681166}
 --- !u!50 &1833549608336953554
 Rigidbody2D:
   serializedVersion: 4
@@ -492,15 +493,15 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDrag: 0
+  m_Mass: 10
+  m_LinearDrag: 0.1
   m_AngularDrag: 0.05
   m_GravityScale: 1
   m_Material: {fileID: 0}
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!255 &1558339613199175394
 FixedJoint2D:
   m_ObjectHideFlags: 0
@@ -511,13 +512,13 @@ FixedJoint2D:
   m_Enabled: 1
   serializedVersion: 4
   m_EnableCollision: 0
-  m_ConnectedRigidBody: {fileID: 0}
+  m_ConnectedRigidBody: {fileID: 8684163216593836374}
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
   m_AutoConfigureConnectedAnchor: 1
   m_Anchor: {x: 0, y: 0}
   m_ConnectedAnchor: {x: -0.25, y: 0}
-  m_DampingRatio: 0
+  m_DampingRatio: 1
   m_Frequency: 0
 --- !u!114 &2133979881089681166
 MonoBehaviour:
@@ -547,7 +548,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Movable: {fileID: 6545563329387634921}
-  SpeedFactor: 0.001
+  SpeedFactor: 1
 --- !u!1 &7580540174216694346
 GameObject:
   m_ObjectHideFlags: 0
@@ -593,7 +594,7 @@ Rigidbody2D:
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
-  m_LinearDrag: 0
+  m_LinearDrag: 0.1
   m_AngularDrag: 0.05
   m_GravityScale: 1
   m_Material: {fileID: 0}

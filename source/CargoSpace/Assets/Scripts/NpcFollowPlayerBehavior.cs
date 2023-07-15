@@ -14,8 +14,8 @@ public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
     // Start is called before the first frame update
     void Start()
     {
-        _playerTrackerBehavior = DirectorObject.GetComponent<PlayerTrackerBehavior>();
-        _movable = MovableFollower.GetComponent<MovableBehavior>();
+        SetDirectorObject(DirectorObject);
+        SetMovableFollower(MovableFollower);
     }
 
     void FixedUpdate()
@@ -25,7 +25,7 @@ public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
         {
             return;
         }
-        _movable.MoveTowards(_playerTrackerBehavior.PlayerPosition);
+        _movable.ThrustTowards(_playerTrackerBehavior.PlayerPosition);
     }
 
     public float LastPercentHp { get; private set; } = 100;
@@ -38,5 +38,23 @@ public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
         }
 
         enabled = percentHp > 0;
+    }
+
+    public void SetDirectorObject(GameObject gameObject)
+    {
+        if (!gameObject)
+        {
+            return;
+        }
+        _playerTrackerBehavior = gameObject.GetComponent<PlayerTrackerBehavior>();
+    }
+
+    public void SetMovableFollower(GameObject npcFollowerGameObject)
+    {
+        if (!npcFollowerGameObject)
+        {
+            return;
+        }
+        _movable = MovableFollower.GetComponent<MovableBehavior>();
     }
 }

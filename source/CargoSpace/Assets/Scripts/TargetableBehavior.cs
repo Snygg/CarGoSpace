@@ -28,10 +28,7 @@ public class TargetableBehavior : BusParticipant
         _previousPercentHealth = GetPercent(CurrentHealth, InitialHealth);
         _logger = Logging.LogManager.Initialize();
         
-        if (Module)
-        {
-            joint = Module.GetComponent<FixedJoint2D>();
-        }
+        SetModule(Module);
     }
 
     // Update is called once per frame
@@ -96,6 +93,20 @@ public class TargetableBehavior : BusParticipant
     private void OnTractorBeam(string source, float strength)
     {
         //...
+    }
+
+    /// <summary>
+    /// Should only be used to initialize an object that has just been instantiated from prefab
+    /// </summary>
+    /// <param name="targetableBehaviorGameObject"></param>
+    public void SetModule(GameObject targetableBehaviorGameObject)
+    {
+        if (!targetableBehaviorGameObject)
+        {
+            return;
+        }
+
+        joint = targetableBehaviorGameObject.GetComponent<FixedJoint2D>();
     }
 }
 
