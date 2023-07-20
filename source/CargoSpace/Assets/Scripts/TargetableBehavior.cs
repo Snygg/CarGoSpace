@@ -1,12 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bus;
 using Logging;
 using UnityEngine;
 
-public class TargetableBehavior : BusParticipant
+public class TargetableBehavior : BusParticipant, ITargetable
 {
     private LogBehavior _logger;
     string id { get; }
@@ -14,12 +15,9 @@ public class TargetableBehavior : BusParticipant
     public bool IsPlayer;
     public float InitialHealth = 1;
     public float CurrentHealth { get; private set; }
-    public GameObject Module;
-    private FixedJoint2D joint;
-    /// <summary>
-    /// This should contain a list of sibling behaviors which implement the <see cref="IDamageable"/> interface
-    /// </summary>
-    public List<MonoBehaviour> DamageableChildren;
+    private float _previousPercentHealth =0;
+    private List<IDamageable> _damageables;
+    
 
     // Start is called before the first frame update
     void Start()
@@ -28,7 +26,18 @@ public class TargetableBehavior : BusParticipant
         _previousPercentHealth = GetPercent(CurrentHealth, InitialHealth);
         _logger = Logging.LogManager.Initialize();
         
-        SetModule(Module);
+        SetModule(gameObject);
+    }
+
+    public void SetModule(GameObject module)
+    {
+        if (!module)
+        {
+            return;
+        }
+        _damageables = new List<IDamageable>(module.GetComponentsInChildren<IDamageable>());
+        
+        //todo: create an IsDirty flag and re-find damageables/children when it is true
     }
 
     // Update is called once per frame
@@ -37,8 +46,7 @@ public class TargetableBehavior : BusParticipant
         
     }
 
-    private float _previousPercentHealth =0;
-    public void ApplyDamage(float strength)
+    public void OnDamaged(float strength)
     {
         if (Indestructable)
         {
@@ -47,12 +55,6 @@ public class TargetableBehavior : BusParticipant
 
         var previousHealth = CurrentHealth;
         CurrentHealth = Math.Max(0, CurrentHealth - strength);
-
-        if (CurrentHealth == 0)
-        {
-            Destroy(joint);
-            Module.transform.parent = null;
-        }
 
         const float epsilon = 0.001f;
         if (!previousHealth.HasChanged(CurrentHealth, epsilon))
@@ -67,20 +69,9 @@ public class TargetableBehavior : BusParticipant
         }
 
         _previousPercentHealth = percentHealth;
-        foreach (var damageableChild in DamageableChildren.ToArray())
+        foreach (var damageable in _damageables)
         {
-            if (!damageableChild)
-            {
-                continue;
-            }
-
-            if (!(damageableChild is IDamageable damageable))
-            {
-                _logger.Combat.LogWarning($"this object is in the damageable list, but does not implement {nameof(IDamageable)}:{damageableChild.name}");
-                DamageableChildren.Remove(damageableChild);
-                continue;
-            }
-            damageable.OnDamageChanged(percentHealth);
+            damageable.OnHpPercentChanged(percentHealth);
         }
     }
 
@@ -94,23 +85,4 @@ public class TargetableBehavior : BusParticipant
     {
         //...
     }
-
-    /// <summary>
-    /// Should only be used to initialize an object that has just been instantiated from prefab
-    /// </summary>
-    /// <param name="targetableBehaviorGameObject"></param>
-    public void SetModule(GameObject targetableBehaviorGameObject)
-    {
-        if (!targetableBehaviorGameObject)
-        {
-            return;
-        }
-
-        joint = targetableBehaviorGameObject.GetComponent<FixedJoint2D>();
-    }
-}
-
-public interface IDamageable
-{
-    void OnDamageChanged(float percentHp);
 }

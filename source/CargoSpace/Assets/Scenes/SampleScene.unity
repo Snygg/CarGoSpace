@@ -283,8 +283,6 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 216617352}
-  DamageableChildren: []
 --- !u!1 &248894277
 GameObject:
   m_ObjectHideFlags: 0
@@ -904,8 +902,6 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 782454244}
-  DamageableChildren: []
 --- !u!1 &812877880
 GameObject:
   m_ObjectHideFlags: 0
@@ -1260,8 +1256,6 @@ MonoBehaviour:
   Indestructable: 1
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 0}
-  DamageableChildren: []
 --- !u!212 &1374504332
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1490,8 +1484,6 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 2113600749}
-  DamageableChildren: []
 --- !u!1001 &5573722694658453934
 PrefabInstance:
   m_ObjectHideFlags: 0

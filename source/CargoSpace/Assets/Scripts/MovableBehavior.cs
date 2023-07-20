@@ -1,18 +1,31 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class MovableBehavior : MonoBehaviour
 {
-    public GameObject Movable;
+    public float MaxSpeedFactor = 1;
+    public float CurrentSpeedFactor { get; private set; }
 
-    public float SpeedFactor = 1;
+    private Rigidbody2D _rb2d = null;
+    private Rigidbody2D _rigidbody2D
+    {
+        get
+        {
+            if (!_rb2d)
+            {
+                _rb2d =gameObject.GetComponent<Rigidbody2D>();;
+            }
 
-    private Rigidbody2D _rigidbody2D;
+            return _rb2d;
+        }
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        SetMovable(Movable);
+        CurrentSpeedFactor = MaxSpeedFactor;
     }
 
     // Update is called once per frame
@@ -27,25 +40,25 @@ public class MovableBehavior : MonoBehaviour
     /// <param name="target">position to move to</param>
     public void MoveTowards(Vector2 target)
     {
-        var current = Movable.transform.position;
+        var current = transform.position;
         var path = new Vector3(target.x, target.y, 0) - current;
         var normalized = path.normalized;
-        var destination = current + (normalized * SpeedFactor);
+        var destination = current + (normalized * CurrentSpeedFactor);
 
         MoveTo(destination);
     }
 
     public void MoveTo(Vector3 destination)
     {
-        Movable.transform.position = destination;
+        transform.position = destination;
     }
 
     public void ThrustTowards(Vector2 target)
     {
-        var current = (Vector2)Movable.transform.position;
+        var current = (Vector2)transform.position;
         var path = new Vector2(target.x, target.y) - current;
         var normalized = path.normalized;
-        var factored = normalized * SpeedFactor;
+        var factored = normalized * CurrentSpeedFactor;
         ApplyThrust(factored);
     }
 
@@ -54,12 +67,8 @@ public class MovableBehavior : MonoBehaviour
         _rigidbody2D.AddForce(force);
     }
 
-    public void SetMovable(GameObject movableGameObject)
+    public void SetCurrentSpeedFactor(float factor)
     {
-        if (!Movable)
-        {
-            return;
-        }
-        _rigidbody2D = Movable.GetComponent<Rigidbody2D>();
+        CurrentSpeedFactor = factor;
     }
 }

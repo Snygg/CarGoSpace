@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Logging;
+using Module;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -133,13 +134,11 @@ public class DirectorBehavior : BusParticipant
         Physics2D.Raycast(source, targetDirection, new ContactFilter2D(), hitResults);
         var raycastHit2D = hitResults.FirstOrDefault(hr =>
             hr.collider &&
-            hr.collider.gameObject &&
-            hr.collider.gameObject.GetComponent<TargetableBehavior>());
-        if (raycastHit2D)
+            hr.collider.gameObject);
+        if (raycastHit2D && raycastHit2D.collider.gameObject.TryGetComponent<ITargetable>(out var tgt))
         {
             RenderLazer(source, raycastHit2D.point);
-            var tgt = raycastHit2D.collider.gameObject.GetComponent<TargetableBehavior>();
-            tgt.ApplyDamage(strength);
+            tgt.OnDamaged(strength);
             _logger.Combat.LogDebug("Player hit target");
         }
         else
@@ -165,7 +164,14 @@ public class DirectorBehavior : BusParticipant
         }
 
         var go = Instantiate<GameObject>(DummyNpc, location, new Quaternion());
-        
+
+        var movables = go.GetComponentsInChildren<MovableBehavior>();
+        foreach (var movable in movables)
+        {
+            var npcFollower = movable.gameObject.AddComponent<NpcFollowPlayerBehavior>();
+            npcFollower.SetDirectorObject(gameObject);   
+        }
+
         var targetable = go.GetComponentsInChildren<TargetableBehavior>(includeInactive: false);
         foreach (var targetableBehavior in targetable)
         {
@@ -174,20 +180,18 @@ public class DirectorBehavior : BusParticipant
             targetableBehavior.SetModule(targetableBehavior.gameObject);
         }
 
-        var movables = go.GetComponentsInChildren<MovableBehavior>(includeInactive: false);
-        foreach (var movable in movables)
+        var modules = go.GetComponentsInChildren<ModuleBehavior>(includeInactive: false);
+        foreach (var module in modules)
         {
-            movable.SetMovable(movable.gameObject);
+            module.LogObject = LogObject;
+            module.BusObject = BusObject;
+            
+            //todo: fix this horrible hack, avoid searching for things by name
+            var monoBehaviours = go.transform.GetComponentsInChildren<Rigidbody2D>();
+            var hull = monoBehaviours.First(m=>m.gameObject.name=="Hull");
+            module.AttachModule(hull, module.transform);
         }
 
-        var npcFollowers = go.GetComponentsInChildren<NpcFollowPlayerBehavior>(includeInactive:false);
-        foreach (var npcFollower in npcFollowers)
-        {
-            npcFollower.SetDirectorObject(gameObject);
-            npcFollower.SetMovableFollower(npcFollower.gameObject);
-        }
-        
-        
         //todo: remove them from the list when they get destroyed
         _npcs.Add(go);
     }
