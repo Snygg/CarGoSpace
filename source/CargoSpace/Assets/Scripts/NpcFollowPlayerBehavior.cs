@@ -44,9 +44,11 @@ public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
 
     public void OnHpPercentChanged(float percentHp)
     {
-        var speedFactor = percentHp > 10
+        var speedFactor = percentHp > 30
             ? _movable.MaxSpeedFactor
-            : _movable.MaxSpeedFactor * 0.5f;
+            : percentHp > 0
+            ? _movable.MaxSpeedFactor * 0.5f
+            : 0;
         _movable.SetCurrentSpeedFactor(speedFactor);
     }
 
