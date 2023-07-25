@@ -12,7 +12,9 @@ GameObject:
   - component: {fileID: 393724362615131568}
   - component: {fileID: 393724362615131569}
   - component: {fileID: 393724362615131534}
-  - component: {fileID: 4202774046960540875}
+  - component: {fileID: 8799193441679251881}
+  - component: {fileID: 8683592301741172382}
+  - component: {fileID: 3976840437646815949}
   m_Layer: 0
   m_Name: EmptyModule
   m_TagString: Untagged
@@ -94,13 +96,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eff37fae2e4871e4fa43d2de8ce3d6dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LogObject: {fileID: 0}
-  BusObject: {fileID: 0}
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
-  Module: {fileID: 393724362615131532}
---- !u!114 &4202774046960540875
+--- !u!114 &8799193441679251881
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -109,12 +108,37 @@ MonoBehaviour:
   m_GameObject: {fileID: 393724362615131532}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 684f7af7243ee02459f279f478cea177, type: 3}
+  m_Script: {fileID: 11500000, guid: 493388647b5f20a47adcd3a5fef4a243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LogObject: {fileID: 0}
-  BusObject: {fileID: 0}
-  Module: {fileID: 393724362615131532}
+  Joint: {fileID: 0}
+  ParentTransform: {fileID: 0}
+  ParentBody: {fileID: 0}
+--- !u!114 &8683592301741172382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 393724362615131532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b1608995d2c54843979670b6a326025, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3976840437646815949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 393724362615131532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c8f425741a43734bb589d80050fb29d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  DetachHpPercent: 0
 --- !u!1 &393724363484779388
 GameObject:
   m_ObjectHideFlags: 0

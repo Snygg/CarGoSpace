@@ -1,22 +1,22 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Bus;
 using Logging;
+using Module;
 using UnityEngine;
 
-public class TargetableBehavior : BusParticipant, ITargetable
+public class TargetableBehavior : ModuleBusParticipant, ITargetable
 {
-    private LogBehavior _logger;
     string id { get; }
     public bool Indestructable;
     public bool IsPlayer;
     public float InitialHealth = 1;
     public float CurrentHealth { get; private set; }
     private float _previousPercentHealth =0;
-    private List<IDamageable> _damageables;
     
 
     // Start is called before the first frame update
@@ -24,26 +24,6 @@ public class TargetableBehavior : BusParticipant, ITargetable
     {
         CurrentHealth = InitialHealth;
         _previousPercentHealth = GetPercent(CurrentHealth, InitialHealth);
-        _logger = Logging.LogManager.Initialize();
-        
-        SetModule(gameObject);
-    }
-
-    public void SetModule(GameObject module)
-    {
-        if (!module)
-        {
-            return;
-        }
-        _damageables = new List<IDamageable>(module.GetComponentsInChildren<IDamageable>());
-        
-        //todo: create an IsDirty flag and re-find damageables/children when it is true
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     public void OnDamaged(float strength)
@@ -67,12 +47,13 @@ public class TargetableBehavior : BusParticipant, ITargetable
         {
             return;
         }
-
-        _previousPercentHealth = percentHealth;
-        foreach (var damageable in _damageables)
+        Publish(ModuleEvents.HpPercentChanged, new Dictionary<string, string>
         {
-            damageable.OnHpPercentChanged(percentHealth);
-        }
+            {"Previous", _previousPercentHealth.ToString()},
+            {"PercentHp", percentHealth.ToString()}
+        });
+        _previousPercentHealth = percentHealth;
+        
     }
 
     private static float GetPercent(float current, float max)

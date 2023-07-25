@@ -164,32 +164,12 @@ public class DirectorBehavior : BusParticipant
         }
 
         var go = Instantiate<GameObject>(DummyNpc, location, new Quaternion());
-
+        
         var movables = go.GetComponentsInChildren<MovableBehavior>();
         foreach (var movable in movables)
         {
             var npcFollower = movable.gameObject.AddComponent<NpcFollowPlayerBehavior>();
             npcFollower.SetDirectorObject(gameObject);   
-        }
-
-        var targetable = go.GetComponentsInChildren<TargetableBehavior>(includeInactive: false);
-        foreach (var targetableBehavior in targetable)
-        {
-            targetableBehavior.LogObject = LogObject;
-            targetableBehavior.BusObject = BusObject;
-            targetableBehavior.SetModule(targetableBehavior.gameObject);
-        }
-
-        var modules = go.GetComponentsInChildren<ModuleBehavior>(includeInactive: false);
-        foreach (var module in modules)
-        {
-            module.LogObject = LogObject;
-            module.BusObject = BusObject;
-            
-            //todo: fix this horrible hack, avoid searching for things by name
-            var monoBehaviours = go.transform.GetComponentsInChildren<Rigidbody2D>();
-            var hull = monoBehaviours.First(m=>m.gameObject.name=="Hull");
-            module.AttachModule(hull, module.transform);
         }
 
         //todo: remove them from the list when they get destroyed
