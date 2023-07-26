@@ -72,9 +72,9 @@ public class DirectorBehavior : BusParticipant
             ret.TargetedObject = null;
             return;
         }
-        var targets = clicked.GetComponentsInChildren<TargetableBehavior>();
+        var targets = clicked.GetComponentsInChildren<ITargetable>();
         var otherTarget = targets.FirstOrDefault(t => !t.IsPlayer);
-        if (otherTarget) // next: needs to only set target if turret is selected
+        if (otherTarget != null) // next: needs to only set target if turret is selected
         {
             PlayerTargeted = clicked;
             //add reticle , get component elsewhere
@@ -105,7 +105,7 @@ public class DirectorBehavior : BusParticipant
         var result = hitResults.FirstOrDefault(hr =>
             hr.collider &&
             hr.collider.gameObject &&
-            hr.collider.gameObject.GetComponent<TargetableBehavior>());
+            hr.collider.gameObject.TryGetComponent<ITargetable>(out _));
 
         if (!result)
         {

@@ -14,6 +14,7 @@ public class TargetableBehavior : ModuleBusParticipant, ITargetable
     string id { get; }
     public bool Indestructable;
     public bool IsPlayer;
+    bool ITargetable.IsPlayer => IsPlayer;
     public float InitialHealth = 1;
     public float CurrentHealth { get; private set; }
     private float _previousPercentHealth =0;
