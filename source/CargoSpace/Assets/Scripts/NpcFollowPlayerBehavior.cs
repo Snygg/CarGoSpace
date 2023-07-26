@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using Bus;
+using Module;
 using UnityEngine;
 
-public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
+public class NpcFollowPlayerBehavior : ModuleBusParticipant
 {
     public GameObject DirectorObject;
 
@@ -23,6 +25,11 @@ public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
 
     private PlayerTrackerBehavior _playerTrackerBehavior;
 
+    protected override void Awoke()
+    {
+        AddLifeTimeSubscription(Subscribe(ModuleEvents.HpPercentChanged, OnHpPercentChanged));
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -42,8 +49,12 @@ public class NpcFollowPlayerBehavior : MonoBehaviour, IDamageable
         _movable.ThrustTowards(_playerTrackerBehavior.PlayerPosition);
     }
 
-    public void OnHpPercentChanged(float percentHp)
+    private void OnHpPercentChanged(IReadOnlyDictionary<string,string> body)
     {
+        if (!body.TryGetFloat("PercentHp", out var percentHp))
+        {
+            return;
+        }
         var speedFactor = percentHp > 30
             ? _movable.MaxSpeedFactor
             : percentHp > 0
