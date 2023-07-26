@@ -65,6 +65,10 @@ public class DirectorBehavior : BusParticipant
         }
 
         var clicked = GetClickedObject(GetRayCastHitList(location));
+        if (!clicked)
+        {
+            return;
+        }
         var targets = clicked.GetComponentsInChildren<TargetableBehavior>();
         var otherTarget = targets.FirstOrDefault(t => !t.IsPlayer);
         if (otherTarget) // next: needs to only set target if turret is selected
@@ -73,11 +77,6 @@ public class DirectorBehavior : BusParticipant
             //add reticle , get component elsewhere
             var ret = PlayerReticle.GetComponent<ReticleBehavior>();
             ret.TargetedObject = PlayerTargeted;
-            //publish 
-            Publish("playerTargetSelected", new Dictionary<string, string>
-            {
-                { "hasTarget", "true" }
-            });
         }
         //else if (clicked == <one of the turrets>)
         //{
@@ -88,10 +87,6 @@ public class DirectorBehavior : BusParticipant
             PlayerTargeted = null;
             var ret = PlayerReticle.GetComponent<ReticleBehavior>();
             ret.TargetedObject = null;
-            Publish("playerTargetSelected", new Dictionary<string, string>
-            {
-                { "hasTarget", "false" }
-            });
         }
     }
 
