@@ -17,8 +17,8 @@ namespace Module
             }
         }
 
-        Rigidbody2D IAttachTarget.AttachTargetRigidbody { get=>AttachTargetRigidbody; set=>AttachTargetRigidbody=value; }
-        Transform IAttachTarget.AttachTargetTransform { get=>AttachTargetTransform; set=>AttachTargetTransform=value; }
+        Rigidbody2D IAttachTarget.AttachTargetRigidbody { get=>AttachTargetRigidbody; }
+        Transform IAttachTarget.AttachTargetTransform { get=>AttachTargetTransform; }
         public Rigidbody2D AttachTargetRigidbody;
         public Transform AttachTargetTransform;
     }

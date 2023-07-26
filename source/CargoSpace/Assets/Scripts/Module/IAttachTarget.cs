@@ -4,7 +4,7 @@ namespace Module
 {
     public interface IAttachTarget
     {
-        Rigidbody2D AttachTargetRigidbody { get; set; }
-        Transform AttachTargetTransform { get; set; }
+        Rigidbody2D AttachTargetRigidbody { get; }
+        Transform AttachTargetTransform { get; }
     }
 }
