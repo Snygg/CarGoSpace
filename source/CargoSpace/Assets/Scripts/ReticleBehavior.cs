@@ -5,20 +5,19 @@ using UnityEngine;
 public class ReticleBehavior : MonoBehaviour
 {
     public bool IsActive;
-    public GameObject ReticleObject;
     public GameObject TargetedObject;
     // Start is called before the first frame update
     void Start()
     {
-        
+       
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (TargetedObject && TargetedObject.transform && TargetedObject.transform.position != null)
+        if (TargetedObject)
         {
-            ReticleObject.transform.position = TargetedObject.transform.position;
+            transform.position = TargetedObject.transform.position;
         }
         
     }
