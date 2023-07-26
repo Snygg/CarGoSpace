@@ -67,6 +67,9 @@ public class DirectorBehavior : BusParticipant
         var clicked = GetClickedObject(GetRayCastHitList(location));
         if (!clicked)
         {
+            PlayerTargeted = null;
+            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
+            ret.TargetedObject = null;
             return;
         }
         var targets = clicked.GetComponentsInChildren<TargetableBehavior>();
@@ -114,6 +117,10 @@ public class DirectorBehavior : BusParticipant
 
     private async Task OnTurretFired(IReadOnlyDictionary<string, string> body)
     {
+        if (!PlayerTargeted)
+        {
+            return;
+        }
         const string key = "source";
         if (!body.TryGetVector2(key, out var location))
         {
