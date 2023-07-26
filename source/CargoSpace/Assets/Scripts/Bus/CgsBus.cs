@@ -7,7 +7,7 @@ using Logging;
 
 namespace Bus
 {
-    public class CgsBus : IDisposable
+    public sealed class CgsBus : IDisposable
     {
         private readonly Dictionary<string, HashSet<Subscription>> _subscriptions;
         public static readonly IReadOnlyDictionary<string, string> EmptyDictionary = new Dictionary<string, string>();
@@ -19,8 +19,7 @@ namespace Bus
             _subscriptions = new Dictionary<string, HashSet<Subscription>>();
         }
 
-        [Obsolete("use Publish with a BusTopic instead")]
-        public void Publish(
+        private void Publish(
             string topic, 
             IReadOnlyDictionary<string, string> body = null,
             UnityEngine.Object context = null,
@@ -72,8 +71,7 @@ namespace Bus
                 callerFilePath: callerFilePath);
         }
 
-        [Obsolete("use Subscribe with a BusTopic")]
-        public IDisposable Subscribe(
+        private IDisposable Subscribe(
             string topic, 
             Func<IReadOnlyDictionary<string,string>, Task> callback,
             UnityEngine.Object context = null,
@@ -148,7 +146,7 @@ namespace Bus
             sublist.Remove(sb);
         }
 
-        protected virtual void Dispose(bool disposing)
+        protected void Dispose(bool disposing)
         {
             if (!disposing)
             {

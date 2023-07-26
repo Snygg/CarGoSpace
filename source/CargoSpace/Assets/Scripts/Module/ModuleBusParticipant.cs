@@ -105,7 +105,7 @@ namespace Module
             [CallerLineNumber] int callerLineNumber = -1,
             [CallerFilePath] string callerFilePath = "unknownFile")
         {
-            ModuleBus.Publish(topic.Name, 
+            ModuleBus.Publish(topic, 
                 body ?? CgsBus.EmptyDictionary,
                 context: context ?? this,
                 callerMemberName: callerMemberName,
