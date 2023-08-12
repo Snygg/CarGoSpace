@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Logging;
+using Module;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -18,6 +19,7 @@ public class DirectorBehavior : BusParticipant
     public GameObject PlayerTargeted { get; private set; }
     public GameObject PlayerShipObject;
     public GameObject LaserPrefab;
+    public GameObject PlayerReticle;
 
     // Start is called before the first frame update
     protected override void Start()
@@ -28,6 +30,30 @@ public class DirectorBehavior : BusParticipant
         AddLifeTimeSubscription(Subscribe("npcCommand", OnNpcCommand));
         AddLifeTimeSubscription(Subscribe("playerClicked", OnPlayerClicked));
         AddLifeTimeSubscription(Subscribe("turretFired", OnTurretFired));
+        AddLifeTimeSubscription(Subscribe("keyPressed", OnKeyPressed));
+    }
+
+    private async Task OnKeyPressed(IReadOnlyDictionary<string, string> body)
+    {
+        if (!PlayerTargeted)
+        {
+            return;
+        }
+
+        if (!body.TryGetValue("key", out var key))
+        {
+            return;
+        }
+
+        FireWeaponGroup(key);
+    }
+
+    private void FireWeaponGroup(string group)
+    {
+        Publish("toggleWeaponGroup", new Dictionary<string, string>
+        {
+            {"group", group }
+        });
     }
 
     private async Task OnPlayerClicked(IReadOnlyDictionary<string, string> body)
@@ -40,16 +66,21 @@ public class DirectorBehavior : BusParticipant
         }
 
         var clicked = GetClickedObject(GetRayCastHitList(location));
-        var targets = clicked.GetComponentsInChildren<TargetableBehavior>();
+        if (!clicked)
+        {
+            PlayerTargeted = null;
+            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
+            ret.TargetedObject = null;
+            return;
+        }
+        var targets = clicked.GetComponentsInChildren<ITargetable>();
         var otherTarget = targets.FirstOrDefault(t => !t.IsPlayer);
-        if (otherTarget) // next: needs to only set target if turret is selected
+        if (otherTarget != null) // next: needs to only set target if turret is selected
         {
             PlayerTargeted = clicked;
-            //publish 
-            Publish("playerTargetSelected", new Dictionary<string, string>
-            {
-                { "hasTarget", "true" }
-            });
+            //add reticle , get component elsewhere
+            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
+            ret.TargetedObject = PlayerTargeted;
         }
         //else if (clicked == <one of the turrets>)
         //{
@@ -58,10 +89,8 @@ public class DirectorBehavior : BusParticipant
         else
         {
             PlayerTargeted = null;
-            Publish("playerTargetSelected", new Dictionary<string, string>
-            {
-                { "hasTarget", "false" }
-            });
+            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
+            ret.TargetedObject = null;
         }
     }
 
@@ -77,7 +106,7 @@ public class DirectorBehavior : BusParticipant
         var result = hitResults.FirstOrDefault(hr =>
             hr.collider &&
             hr.collider.gameObject &&
-            hr.collider.gameObject.GetComponent<TargetableBehavior>());
+            hr.collider.gameObject.TryGetComponent<ITargetable>(out _));
 
         if (!result)
         {
@@ -89,6 +118,10 @@ public class DirectorBehavior : BusParticipant
 
     private async Task OnTurretFired(IReadOnlyDictionary<string, string> body)
     {
+        if (!PlayerTargeted)
+        {
+            return;
+        }
         const string key = "source";
         if (!body.TryGetVector2(key, out var location))
         {
@@ -134,13 +167,11 @@ public class DirectorBehavior : BusParticipant
         Physics2D.Raycast(source, targetDirection, new ContactFilter2D(), hitResults);
         var raycastHit2D = hitResults.FirstOrDefault(hr =>
             hr.collider &&
-            hr.collider.gameObject &&
-            hr.collider.gameObject.GetComponent<TargetableBehavior>());
-        if (raycastHit2D)
+            hr.collider.gameObject);
+        if (raycastHit2D && raycastHit2D.collider.gameObject.TryGetComponent<ITargetable>(out var tgt))
         {
             RenderLazer(source, raycastHit2D.point);
-            var tgt = raycastHit2D.collider.gameObject.GetComponent<TargetableBehavior>();
-            tgt.ApplyDamage(strength);
+            tgt.OnDamaged(strength);
             _logger.Combat.LogDebug("Player hit target");
         }
         else
@@ -160,17 +191,14 @@ public class DirectorBehavior : BusParticipant
         }
 
         var go = Instantiate<GameObject>(DummyNpc, location, new Quaternion());
-        var follow = go.GetComponent<NpcFollowPlayerBehavior>();
-        follow.DirectorObject = DirectorObject;
-
-        var targetable = go.GetComponentsInChildren<TargetableBehavior>(includeInactive: false);
-        foreach (var targetableBehavior in targetable)
-        {
-            targetableBehavior.LogObject = LogObject;
-            targetableBehavior.BusObject = BusObject;
-            targetableBehavior.Module = targetableBehavior.gameObject;
-        }
         
+        var movables = go.GetComponentsInChildren<MovableBehavior>();
+        foreach (var movable in movables)
+        {
+            var npcFollower = movable.gameObject.AddComponent<NpcFollowPlayerBehavior>();
+            npcFollower.SetDirectorObject(gameObject);   
+        }
+
         //todo: remove them from the list when they get destroyed
         _npcs.Add(go);
     }
