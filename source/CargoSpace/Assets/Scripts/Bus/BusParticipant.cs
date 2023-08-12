@@ -15,37 +15,41 @@ namespace Bus
         private List<IDisposable> _subscriptions = new List<IDisposable>();
         private LogBehavior _busLogger;
 
-        /// Awake is called before Start
-        protected virtual void Awake()
+        /// Awake is called before Start. Awaking is called before the bus has been initialized
+        protected virtual void Awaking()
         {
+            //intentionally empty
+        }
+        
+        /// Awake is called before Start
+        private void Awake()
+        {
+            Awaking();
             _busLogger = LogManager.Initialize(LogObject);
             _bus = BusManager.Initialize(BusObject, _busLogger);
-            InitializeSubscriptions();
+            Awoke();
         }
-    
-        /// Start is called before the first frame update
-        protected virtual void Start()
+
+        /// Awake is called before Start. Awoke is called after the bus has been initialized
+        protected virtual void Awoke()
         {
-        
+            //intentionally empty
         }
 
         /// <summary>
-        /// Override this when subscribing in Start() is too late in the lifetime of a monobehavior. This will be
-        /// called immediately after Awake() on the base class
+        /// called when the object is being destroyed, but before the bus has been disposed
         /// </summary>
-        protected virtual void InitializeSubscriptions() { }
-
-        /// Update is called once per frame
-        protected virtual void Update()
+        protected virtual void OnDestroying()
         {
-        
+            //intentionally empty
         }
-
+        
         /// <summary>
         /// called when the object is being destroyed
         /// </summary>
-        protected virtual  void OnDestroy()
+        private void OnDestroy()
         {
+            OnDestroying();
             foreach (var subscription in _subscriptions ?? Enumerable.Empty<IDisposable>())
             {
                 try
@@ -57,6 +61,15 @@ namespace Bus
                     _busLogger.Bus.LogWarning($"Error disposing susbscription: {ex.ToString()}");
                 }
             }
+            OnDestroyed();
+        }
+        
+        /// <summary>
+        /// called when the object is being destroyed, but after the bus has been disposed
+        /// </summary>
+        protected virtual void OnDestroyed()
+        {
+            //intentionally empty
         }
 
         protected void Publish(string topic, Dictionary<string, string> body)

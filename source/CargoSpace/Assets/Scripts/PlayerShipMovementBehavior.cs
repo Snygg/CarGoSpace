@@ -18,9 +18,8 @@ public class PlayerShipMovementBehavior : BusParticipant
     private float ThrustFactor = 1;
 
     // Start is called before the first frame update
-    protected override void Start()
+    private void Start()
     {
-        base.Start();
         _logger = LogManager.Initialize(LogObject);
         if (!Module)
         {
@@ -41,9 +40,8 @@ public class PlayerShipMovementBehavior : BusParticipant
     private LogBehavior _logger;
 
     // Update is called once per frame
-    protected override void Update()
+    protected void Update()
     {
-        base.Update();
         var currentLocation = (Vector2)_moduleRigidBody.transform.position;
         var distance = Vector2.Distance(currentLocation, _lastLocation);
         if (distance > float.Epsilon)

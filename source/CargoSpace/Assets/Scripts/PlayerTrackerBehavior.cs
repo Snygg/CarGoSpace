@@ -8,14 +8,12 @@ using UnityEngine;
 
 public class PlayerTrackerBehavior : BusParticipant
 {
-    public GameObject PlayerShipObject;
     private LogBehavior _logger;
     public Vector3 PlayerPosition { get; private set; } = Vector3.zero;
 
     // Start is called before the first frame update
-    protected override void Start()
+    private void Start()
     {
-        base.Start();
         _logger = LogManager.Initialize(LogObject);
         AddLifeTimeSubscription(Subscribe("PlayerTransform", OnPlayerMoved));
     }

@@ -15,17 +15,14 @@ public class AutoHitBehavior : BusParticipant
     public string WeaponGroup = "3";
 
     // Start is called before the first frame update
-    protected override void Start()
+    private void Start()
     {
-        base.Start();
-        AddLifeTimeSubscription(Subscribe("playerTargetSelected", OnPlayerTargetSelected));
         AddLifeTimeSubscription(Subscribe("toggleWeaponGroup", OnToggleWeaponGroup));
     }
 
     // Update is called once per frame
-    protected override void Update()
+    protected void Update()
     {
-        base.Update();
         if (_nextShot == null)
         {
             return;

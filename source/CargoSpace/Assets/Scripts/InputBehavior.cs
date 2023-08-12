@@ -7,9 +7,8 @@ public class InputBehavior : BusParticipant
 {
     private bool isFiring;
     // Update is called once per frame
-    protected override void Update()
+    protected void Update()
     {
-        base.Update();
         var vert = Input.GetAxis("Vertical");
         var horz = Input.GetAxis("Horizontal");
         if (vert != 0.0 || horz != 0)

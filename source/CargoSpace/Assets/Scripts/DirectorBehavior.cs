@@ -1,13 +1,10 @@
 using System;
 using Bus;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Logging;
-using Module;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class DirectorBehavior : BusParticipant
 {
@@ -15,16 +12,14 @@ public class DirectorBehavior : BusParticipant
     private LogBehavior _logger;
 
     public GameObject DummyNpc;
-    public GameObject DirectorObject;
     public GameObject PlayerTargeted { get; private set; }
     public GameObject PlayerShipObject;
     public GameObject LaserPrefab;
     public GameObject PlayerReticle;
 
     // Start is called before the first frame update
-    protected override void Start()
+    private void Start()
     {
-        base.Start();
         _logger = LogManager.Initialize(LogObject);
         AddLifeTimeSubscription(Subscribe("npcCreate", OnCreateNpc));
         AddLifeTimeSubscription(Subscribe("npcCommand", OnNpcCommand));

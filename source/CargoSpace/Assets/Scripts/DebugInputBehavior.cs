@@ -6,9 +6,8 @@ using UnityEngine;
 public class DebugInputBehavior : BusParticipant
 {
     // Update is called once per frame
-    protected override void Update()
+    protected void Update()
     {
-        base.Update();
         if (Input.GetKeyUp(KeyCode.Alpha1))
         {
             if (Input.mousePosition.x < 0 || Input.mousePosition.x > Screen.width

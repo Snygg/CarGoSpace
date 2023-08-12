@@ -21,11 +21,9 @@ public class TargetableBehavior : ModuleBusParticipant, ITargetable
     
 
     // Start is called before the first frame update
-    protected override void Start()
+    void Start()
     {
-        base.Start();
         CurrentHealth = InitialHealth;
-        _logger = Logging.LogManager.Initialize(LogObject);
         
         _previousPercentHealth = GetPercent(CurrentHealth, InitialHealth);
     }
