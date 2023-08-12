@@ -1,15 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
-using Bus;
-using Logging;
 using Module;
 using UnityEngine;
 
-public class TargetableBehavior : ModuleBusParticipant, ITargetable
+public class TargetableModuleBehavior : ModuleBusParticipant, ITargetable
 {
     string id { get; }
     public bool Indestructable;
