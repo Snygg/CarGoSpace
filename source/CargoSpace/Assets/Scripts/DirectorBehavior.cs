@@ -73,10 +73,10 @@ public class DirectorBehavior : BusParticipant
             var ret = PlayerReticle.GetComponent<ReticleBehavior>();
             ret.TargetedObject = PlayerTargeted;
             //publish 
-            Publish("playerTargetSelected", new Dictionary<string, string>
-            {
-                { "hasTarget", "true" }
-            });
+            //Publish("playerTargetSelected", new Dictionary<string, string>
+            //{
+            //    { "hasTarget", "true" }
+            //});
         }
         //else if (clicked == <one of the turrets>)
         //{
@@ -87,10 +87,10 @@ public class DirectorBehavior : BusParticipant
             PlayerTargeted = null;
             var ret = PlayerReticle.GetComponent<ReticleBehavior>();
             ret.TargetedObject = null;
-            Publish("playerTargetSelected", new Dictionary<string, string>
-            {
-                { "hasTarget", "false" }
-            });
+            //Publish("playerTargetSelected", new Dictionary<string, string>
+            //{
+            //    { "hasTarget", "false" }
+            //});
         }
     }
 

@@ -17,7 +17,7 @@ public class AutoHitBehavior : BusParticipant
     // Start is called before the first frame update
     void Start()
     {
-        AddLifeTimeSubscription(Subscribe("toggleWeaponGroup", OnPlayerTargetSelected));
+        AddLifeTimeSubscription(Subscribe("toggleWeaponGroup", OnToggleWeaponGroup));
     }
 
     // Update is called once per frame
@@ -36,7 +36,7 @@ public class AutoHitBehavior : BusParticipant
 
     private void SetNextShot() => _nextShot = DateTime.Now.AddSeconds(Interval);
 
-    private async Task OnPlayerTargetSelected(IReadOnlyDictionary<string, string> body)
+    private async Task OnToggleWeaponGroup(IReadOnlyDictionary<string, string> body)
     {
         //check if has target
         if (!body.TryGetValue("group", out var group))
