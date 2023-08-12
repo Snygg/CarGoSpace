@@ -189,6 +189,7 @@ GameObject:
   - component: {fileID: 216617355}
   - component: {fileID: 216617354}
   - component: {fileID: 216617357}
+  - component: {fileID: 216617358}
   m_Layer: 0
   m_Name: Mod1
   m_TagString: Untagged
@@ -282,6 +283,18 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
+--- !u!114 &216617358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 216617352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b1608995d2c54843979670b6a326025, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &248894277
 GameObject:
   m_ObjectHideFlags: 0
@@ -823,6 +836,7 @@ GameObject:
   - component: {fileID: 782454247}
   - component: {fileID: 782454246}
   - component: {fileID: 782454248}
+  - component: {fileID: 782454249}
   m_Layer: 0
   m_Name: Mod3
   m_TagString: Untagged
@@ -899,6 +913,18 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
+--- !u!114 &782454249
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 782454244}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b1608995d2c54843979670b6a326025, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &812877880
 GameObject:
   m_ObjectHideFlags: 0
@@ -1263,8 +1289,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1374504329}
   - component: {fileID: 1374504332}
-  - component: {fileID: 1374504331}
   - component: {fileID: 1374504330}
+  - component: {fileID: 1374504331}
   m_Layer: 0
   m_Name: Square
   m_TagString: Untagged
@@ -1321,12 +1347,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1374504328}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eff37fae2e4871e4fa43d2de8ce3d6dc, type: 3}
+  m_Script: {fileID: 11500000, guid: 2082c9228be34b6abd656028cb9124c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Indestructable: 1
-  IsPlayer: 0
-  InitialHealth: 1
 --- !u!212 &1374504332
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1410,7 +1433,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   LogObject: {fileID: 864374682}
   BusObject: {fileID: 2014389450}
-  PlayerShipObject: {fileID: 326857465}
 --- !u!4 &1388786979
 Transform:
   m_ObjectHideFlags: 0
@@ -1440,7 +1462,6 @@ MonoBehaviour:
   LogObject: {fileID: 864374682}
   BusObject: {fileID: 2014389450}
   DummyNpc: {fileID: 5518216183435660030, guid: 677fa926f7228954ab161e939033effa, type: 3}
-  DirectorObject: {fileID: 1388786977}
   PlayerShipObject: {fileID: 326857465}
   LaserPrefab: {fileID: 4636465334105788736, guid: 4e3de7aa2bf2f4d449d16b713f3ae0f7, type: 3}
   PlayerReticle: {fileID: 1232305560}
@@ -1462,6 +1483,7 @@ GameObject:
   - component: {fileID: 2113600751}
   - component: {fileID: 2113600753}
   - component: {fileID: 2113600754}
+  - component: {fileID: 2113600755}
   m_Layer: 0
   m_Name: Mod2
   m_TagString: Untagged
@@ -1554,6 +1576,18 @@ MonoBehaviour:
   Indestructable: 0
   IsPlayer: 0
   InitialHealth: 1
+--- !u!114 &2113600755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2113600749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b1608995d2c54843979670b6a326025, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &5573722694658453934
 PrefabInstance:
   m_ObjectHideFlags: 0
