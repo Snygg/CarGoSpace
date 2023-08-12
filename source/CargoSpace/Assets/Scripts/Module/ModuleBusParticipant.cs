@@ -55,7 +55,7 @@ namespace Module
         /// </summary>
         protected virtual void Awaking()
         {
-            
+            //intentionally empty
         }
         
         /// <summary>
@@ -63,7 +63,7 @@ namespace Module
         /// </summary>
         protected virtual void Awoke()
         {
-            
+            //intentionally empty
         }
         
         private void OnDestroy()
@@ -75,6 +75,10 @@ namespace Module
             finally
             {
                 _disposables.Dispose();
+                if (_lazyBus.IsValueCreated)
+                {
+                    _lazyBus.Value.Dispose();
+                }
                 OnDestroyed();    
             }
         }
@@ -85,7 +89,7 @@ namespace Module
         /// </summary>
         protected virtual void OnDestroyed()
         {
-            
+            //intentionally empty
         }
 
         /// <summary>
@@ -94,7 +98,7 @@ namespace Module
         /// </summary>
         protected virtual void OnDestroying()
         {
-            
+            //intentionally empty
         }
 
         protected void Publish(

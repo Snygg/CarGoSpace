@@ -24,10 +24,16 @@ namespace Bus
         /// Awake is called before Start
         private void Awake()
         {
-            Awaking();
-            _busLogger = LogManager.Initialize(LogObject);
-            _bus = BusManager.Initialize(BusObject, _busLogger);
-            Awoke();
+            try
+            {
+                Awaking();
+            }
+            finally
+            {
+                _busLogger = LogManager.Initialize(LogObject);
+                _bus = BusManager.Initialize(BusObject, _busLogger);
+                Awoke();
+            }
         }
 
         /// Awake is called before Start. Awoke is called after the bus has been initialized
@@ -49,19 +55,25 @@ namespace Bus
         /// </summary>
         private void OnDestroy()
         {
-            OnDestroying();
-            foreach (var subscription in _subscriptions ?? Enumerable.Empty<IDisposable>())
+            try
             {
-                try
-                {
-                    subscription.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    _busLogger.Bus.LogWarning($"Error disposing susbscription: {ex.ToString()}");
-                }
+                OnDestroying();
             }
-            OnDestroyed();
+            finally
+            {
+                foreach (var subscription in _subscriptions ?? Enumerable.Empty<IDisposable>())
+                {
+                    try
+                    {
+                        subscription.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        _busLogger.Bus.LogWarning($"Error disposing susbscription: {ex.ToString()}");
+                    }
+                }
+                OnDestroyed();
+            }
         }
         
         /// <summary>
