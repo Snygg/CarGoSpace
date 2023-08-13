@@ -9,10 +9,14 @@ namespace Bus
         public readonly string Name;
         public readonly IReadOnlyDictionary<string, Type> RequiredFields;
 
-        public static readonly IReadOnlyDictionary<string, Type> EmptyFields;
+        public static readonly IReadOnlyDictionary<string, Type> EmptyFields = new Dictionary<string, Type>();
 
         public BusTopic(string name, IReadOnlyDictionary<string, Type> requiredFields = null)
         {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Name cannot be blank", nameof(name));
+            }
             Name = name;
             RequiredFields = requiredFields ?? EmptyFields;
         }

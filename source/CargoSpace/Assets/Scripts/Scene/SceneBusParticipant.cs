@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -6,9 +6,9 @@ using Bus;
 using UnityEngine;
 using Utils;
 
-namespace Module
+namespace Scene
 {
-    public abstract class ModuleBusParticipant : MonoBehaviour
+    public abstract class SceneBusParticipant : MonoBehaviour
     {
         private readonly CompositeDisposable _disposables = new CompositeDisposable(); 
         private Lazy<CgsBus> _lazyBus;
@@ -32,39 +32,29 @@ namespace Module
             }
             finally
             {
-                _lazyBus = GetModuleBusSource()?.LazyBus;
+                _lazyBus = GetSceneBus();
                 Awoke();    
             }
         }
-        
+
+        private Lazy<CgsBus> GetSceneBus()
+        {
+            var busBehavior = GameObject.FindObjectOfType<SceneBusRoot>();
+            if (busBehavior == null || busBehavior.LazyBus == null)
+            {
+                //todo: log this
+                return null;
+            }
+
+            return busBehavior.LazyBus;
+        }
+
         /// <summary>
         /// Similar to the <see cref="Awake"/> method, but called after the bus has been initialized
         /// </summary>
         protected virtual void Awoke()
         {
             //intentionally empty
-        }
-
-        private IModuleBusSource GetModuleBusSource()
-        {
-            var currentObject = gameObject;
-            const int maxAncestors = 3;
-            for (int i = 0; i < maxAncestors; i++)
-            {
-                if (currentObject.TryGetComponent<IModuleBusSource>(out var moduleBusSource))
-                {
-                    return moduleBusSource;
-                }
-
-                if (!currentObject.transform.parent)
-                {
-                    return null;
-                }
-
-                currentObject = currentObject.transform.parent.gameObject;
-            }
-
-            return null;
         }
         
         /// <summary>

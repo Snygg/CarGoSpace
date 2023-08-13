@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bus;
 using Logging;
+using Scene;
 using UnityEngine;
 
-public class PlayerTrackerBehavior : BusParticipant
+public class PlayerTrackerBehavior : SceneBusParticipant
 {
     private LogBehavior _logger;
     public Vector3 PlayerPosition { get; private set; } = Vector3.zero;
@@ -14,11 +15,11 @@ public class PlayerTrackerBehavior : BusParticipant
     // Start is called before the first frame update
     private void Start()
     {
-        _logger = LogManager.Initialize(LogObject);
-        AddLifeTimeSubscription(Subscribe("PlayerTransform", OnPlayerMoved));
+        _logger = LogManager.GetLogger();
+        AddLifeTimeSubscription(Subscribe(SceneEvents.PlayerTransform, OnPlayerMoved));
     }
 
-    private async Task OnPlayerMoved(IReadOnlyDictionary<string, string> body)
+    private void OnPlayerMoved(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {

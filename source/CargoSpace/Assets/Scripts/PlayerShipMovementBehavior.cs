@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bus;
 using Logging;
+using Scene;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class PlayerShipMovementBehavior : BusParticipant
+public class PlayerShipMovementBehavior : SceneBusParticipant
 {
     public GameObject Module;
     private Rigidbody2D _moduleRigidBody;
@@ -20,7 +21,7 @@ public class PlayerShipMovementBehavior : BusParticipant
     // Start is called before the first frame update
     private void Start()
     {
-        _logger = LogManager.Initialize(LogObject);
+        _logger = LogManager.GetLogger();
         if (!Module)
         {
             _logger.System.LogError("forgot to link player ship game object", context: this);
@@ -32,7 +33,7 @@ public class PlayerShipMovementBehavior : BusParticipant
             _logger.System.LogError("could not find playership physics", context: this);
             return;
         }
-        AddLifeTimeSubscription(Subscribe("Input", OnInput));
+        AddLifeTimeSubscription(Subscribe(SceneEvents.Input, OnInput));
     }
 
     private Vector2 _lastLocation;
@@ -50,7 +51,7 @@ public class PlayerShipMovementBehavior : BusParticipant
         }
     }
     
-    private async Task OnInput(IReadOnlyDictionary<string, string> body)
+    private void OnInput(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {
@@ -97,7 +98,7 @@ public class PlayerShipMovementBehavior : BusParticipant
         var body = new Dictionary<string, string>();
         body["position"] = position.ToString();
 
-        Publish("PlayerTransform", body);
+        Publish(SceneEvents.PlayerTransform, body);
     }
     
     

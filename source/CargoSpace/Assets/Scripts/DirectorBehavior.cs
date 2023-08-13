@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Logging;
+using Scene;
 using UnityEngine;
 
-public class DirectorBehavior : BusParticipant
+public class DirectorBehavior : SceneBusParticipant
 {
     private List<GameObject> _npcs = new List<GameObject>();
     private LogBehavior _logger;
@@ -20,15 +21,15 @@ public class DirectorBehavior : BusParticipant
     // Start is called before the first frame update
     private void Start()
     {
-        _logger = LogManager.Initialize(LogObject);
-        AddLifeTimeSubscription(Subscribe("npcCreate", OnCreateNpc));
-        AddLifeTimeSubscription(Subscribe("npcCommand", OnNpcCommand));
-        AddLifeTimeSubscription(Subscribe("playerClicked", OnPlayerClicked));
-        AddLifeTimeSubscription(Subscribe("turretFired", OnTurretFired));
-        AddLifeTimeSubscription(Subscribe("keyPressed", OnKeyPressed));
+        _logger = LogManager.GetLogger();
+        AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCreate, OnCreateNpc));
+        AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCommand, OnNpcCommand));
+        AddLifeTimeSubscription(Subscribe(SceneEvents.PlayerClicked, OnPlayerClicked));
+        AddLifeTimeSubscription(Subscribe(SceneEvents.TurretFired, OnTurretFired));
+        AddLifeTimeSubscription(Subscribe(SceneEvents.KeyPressed, OnKeyPressed));
     }
 
-    private async Task OnKeyPressed(IReadOnlyDictionary<string, string> body)
+    private void OnKeyPressed(IReadOnlyDictionary<string, string> body)
     {
         if (!PlayerTargeted)
         {
@@ -45,13 +46,13 @@ public class DirectorBehavior : BusParticipant
 
     private void FireWeaponGroup(string group)
     {
-        Publish("toggleWeaponGroup", new Dictionary<string, string>
+        Publish(SceneEvents.ToggleWeaponGroup, new Dictionary<string, string>
         {
             {"group", group }
         });
     }
 
-    private async Task OnPlayerClicked(IReadOnlyDictionary<string, string> body)
+    private void OnPlayerClicked(IReadOnlyDictionary<string, string> body)
     {
         const string key = "location";
         if (!body.TryGetVector2(key, out var location))
@@ -111,7 +112,7 @@ public class DirectorBehavior : BusParticipant
         return result.collider.gameObject;
     }
 
-    private async Task OnTurretFired(IReadOnlyDictionary<string, string> body)
+    private void OnTurretFired(IReadOnlyDictionary<string, string> body)
     {
         if (!PlayerTargeted)
         {
@@ -176,7 +177,7 @@ public class DirectorBehavior : BusParticipant
         }
     }
 
-    private async Task OnCreateNpc(IReadOnlyDictionary<string, string> body)
+    private void OnCreateNpc(IReadOnlyDictionary<string, string> body)
     {
         const string locationKey = "location";
         if (!body.TryGetVector3(locationKey, out var location))
@@ -198,7 +199,7 @@ public class DirectorBehavior : BusParticipant
         _npcs.Add(go);
     }
 
-    private async Task OnNpcCommand(IReadOnlyDictionary<string, string> body)
+    private void OnNpcCommand(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {

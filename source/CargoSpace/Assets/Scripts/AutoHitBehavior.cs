@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bus;
+using Scene;
 using UnityEngine;
 
-public class AutoHitBehavior : BusParticipant
+public class AutoHitBehavior : SceneBusParticipant
 {
     private DateTime? _nextShot;
 
@@ -17,7 +18,7 @@ public class AutoHitBehavior : BusParticipant
     // Start is called before the first frame update
     private void Start()
     {
-        AddLifeTimeSubscription(Subscribe("toggleWeaponGroup", OnToggleWeaponGroup));
+        AddLifeTimeSubscription(Subscribe(SceneEvents.ToggleWeaponGroup, OnToggleWeaponGroup));
     }
 
     // Update is called once per frame
@@ -36,7 +37,7 @@ public class AutoHitBehavior : BusParticipant
 
     private void SetNextShot() => _nextShot = DateTime.Now.AddSeconds(Interval);
 
-    private async Task OnToggleWeaponGroup(IReadOnlyDictionary<string, string> body)
+    private void OnToggleWeaponGroup(IReadOnlyDictionary<string, string> body)
     {
         //check if has target
         if (!body.TryGetValue("group", out var group))
@@ -60,7 +61,7 @@ public class AutoHitBehavior : BusParticipant
 
     private void Fire(Vector2 source, string type, float strength)
     {
-        Publish("turretFired", new Dictionary<string, string>
+        Publish(SceneEvents.TurretFired, new Dictionary<string, string>
         {
             { "source", source.ToString() },
             { "type", type },
