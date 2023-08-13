@@ -39,8 +39,7 @@ namespace Scene
         });
         public static readonly BusTopic Input = new BusTopic("Input", new Dictionary<string, Type>
         {
-            {"vert", typeof(float)},
-            {"horz", typeof(float)}
+            {"vect", typeof(Vector2)}
         });
         public static readonly BusTopic PlayerTransform = new BusTopic("PlayerTransform", new Dictionary<string, Type>
         {

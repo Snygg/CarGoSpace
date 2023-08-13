@@ -59,17 +59,14 @@ public class PlayerShipMovementBehavior : SceneBusParticipant
             return;
         }
 
-        const string vertKey = "vert";
-        const string horzKey = "horz";
-        if (!body.TryGetFloat(vertKey, out var vert) || !body.TryGetFloat(horzKey, out var horz))
+        const string vectKey = "vect";
+        if (!body.TryGetVector2(vectKey, out var vect))
         {
             _logger.System.LogError(new ArgumentException("could not parse body values", nameof(body)), context: this);
             return;
         }
 
-        Vector2 input = new Vector2(horz, vert);
-
-        Vector2 thrustVector = ThrustFactor * input;
+        Vector2 thrustVector = ThrustFactor * vect;
         if (thrustVector.magnitude <= float.Epsilon)
         {
             return;

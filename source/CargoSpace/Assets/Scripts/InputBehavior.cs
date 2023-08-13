@@ -16,8 +16,7 @@ public class InputBehavior : SceneBusParticipant
         {
             //todo: pass vector2 here
             var body = new Dictionary<string, string>();
-            body["vert"] = vert.ToString();
-            body["horz"] = horz.ToString();
+            body["vect"] = new Vector2(horz, vert).ToString();
             Publish(SceneEvents.Input, body);
         }
 
