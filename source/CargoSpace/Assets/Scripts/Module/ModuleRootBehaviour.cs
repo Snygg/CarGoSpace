@@ -1,6 +1,7 @@
 using System;
 using Bus;
 using Logging;
+using Module;
 using UnityEngine;
 
 public class ModuleRootBehaviour : MonoBehaviour, IModuleBusSource

@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bus;
 using Logging;
+using Scene;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class PlayerShipMovementBehavior : BusParticipant
+public class PlayerShipMovementBehavior : SceneBusParticipant
 {
     public GameObject Module;
     private Rigidbody2D _moduleRigidBody;
@@ -18,9 +19,9 @@ public class PlayerShipMovementBehavior : BusParticipant
     private float ThrustFactor = 1;
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        _logger = LogManager.Initialize(LogObject);
+        _logger = LogManager.GetLogger();
         if (!Module)
         {
             _logger.System.LogError("forgot to link player ship game object", context: this);
@@ -32,7 +33,7 @@ public class PlayerShipMovementBehavior : BusParticipant
             _logger.System.LogError("could not find playership physics", context: this);
             return;
         }
-        AddLifeTimeSubscription(Subscribe("Input", OnInput));
+        AddLifeTimeSubscription(Subscribe(SceneEvents.Input, OnInput));
     }
 
     private Vector2 _lastLocation;
@@ -40,7 +41,7 @@ public class PlayerShipMovementBehavior : BusParticipant
     private LogBehavior _logger;
 
     // Update is called once per frame
-    void Update()
+    protected void Update()
     {
         var currentLocation = (Vector2)_moduleRigidBody.transform.position;
         var distance = Vector2.Distance(currentLocation, _lastLocation);
@@ -50,7 +51,7 @@ public class PlayerShipMovementBehavior : BusParticipant
         }
     }
     
-    private async Task OnInput(IReadOnlyDictionary<string, string> body)
+    private void OnInput(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {
@@ -58,17 +59,14 @@ public class PlayerShipMovementBehavior : BusParticipant
             return;
         }
 
-        const string vertKey = "vert";
-        const string horzKey = "horz";
-        if (!body.TryGetFloat(vertKey, out var vert) || !body.TryGetFloat(horzKey, out var horz))
+        const string vectKey = "vect";
+        if (!body.TryGetVector2(vectKey, out var vect))
         {
             _logger.System.LogError(new ArgumentException("could not parse body values", nameof(body)), context: this);
             return;
         }
 
-        Vector2 input = new Vector2(horz, vert);
-
-        Vector2 thrustVector = ThrustFactor * input;
+        Vector2 thrustVector = ThrustFactor * vect;
         if (thrustVector.magnitude <= float.Epsilon)
         {
             return;
@@ -97,7 +95,7 @@ public class PlayerShipMovementBehavior : BusParticipant
         var body = new Dictionary<string, string>();
         body["position"] = position.ToString();
 
-        Publish("PlayerTransform", body);
+        Publish(SceneEvents.PlayerTransform, body);
     }
     
     

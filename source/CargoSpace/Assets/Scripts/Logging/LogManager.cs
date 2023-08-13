@@ -8,37 +8,7 @@ namespace Logging
     public static class LogManager
     {
         const string objectName = "LoggerObject";
-        public static LogBehavior Initialize(
-            GameObject linkedGameObject = null,
-            [CallerMemberName] string callerMemberName = "unknownCaller",
-            [CallerLineNumber] int callerLineNumber = -1,
-            [CallerFilePath] string callerFilePath = "unknownFile")
-        {
-            if (linkedGameObject)
-            {
-                var linkedBehavior = linkedGameObject.GetComponent<LogBehavior>();
-                return linkedBehavior;
-            }
-            
-            var existingLogger = GetOrAddLoggerToScene(out var hadToAddToScene);
-
-            var behavior = existingLogger.GetComponent<LogBehavior>();
-            behavior.System.LogWarning(
-                "This object does not link the log object", 
-                callerMemberName:callerMemberName, 
-                callerLineNumber: callerLineNumber,
-                callerFilePath: callerFilePath);
-            if (hadToAddToScene)
-            {
-                behavior.System.LogInformation(
-                    "Creating Log Object on scene", 
-                    callerMemberName:callerMemberName, 
-                    callerLineNumber: callerLineNumber,
-                    callerFilePath: callerFilePath);
-            }
-            return behavior;
-        }
-
+        
         private static GameObject GetOrAddLoggerToScene(out bool hadToAddToScene)
         {
             var existingLogger = SceneManager.GetActiveScene().GetRootGameObjects().FirstOrDefault(go => go.name == objectName);

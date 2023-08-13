@@ -1,7 +1,10 @@
 ﻿using System;
 using Bus;
 
-public interface IModuleBusSource
+namespace Module
 {
-    Lazy<CgsBus> LazyBus { get; }
+    public interface IModuleBusSource
+    {
+        Lazy<CgsBus> LazyBus { get; }
+    }
 }
