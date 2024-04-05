@@ -4,28 +4,22 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bus;
 using Logging;
+using Scene;
 using UnityEngine;
 
-public class PlayerTrackerBehavior : BusParticipant
+public class PlayerTrackerBehavior : SceneBusParticipant
 {
-    public GameObject PlayerShipObject;
     private LogBehavior _logger;
     public Vector3 PlayerPosition { get; private set; } = Vector3.zero;
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        _logger = LogManager.Initialize(LogObject);
-        AddLifeTimeSubscription(Subscribe("PlayerTransform", OnPlayerMoved));
+        _logger = LogManager.GetLogger();
+        AddLifeTimeSubscription(Subscribe(SceneEvents.PlayerTransform, OnPlayerMoved));
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
-    private async Task OnPlayerMoved(IReadOnlyDictionary<string, string> body)
+    private void OnPlayerMoved(IReadOnlyDictionary<string, string> body)
     {
         if (body == null)
         {

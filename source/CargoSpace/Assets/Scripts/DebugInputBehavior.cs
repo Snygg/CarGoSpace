@@ -1,17 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using Bus;
+using Scene;
 using UnityEngine;
 
-public class DebugInputBehavior : BusParticipant
+public class DebugInputBehavior : SceneBusParticipant
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
-
     // Update is called once per frame
-    void Update()
+    protected void Update()
     {
         if (Input.GetKeyUp(KeyCode.Alpha1))
         {
@@ -26,7 +22,7 @@ public class DebugInputBehavior : BusParticipant
             Dictionary<string, string> body = new Dictionary<string, string>();
             body.Add("location", worldPosition.ToString());
             //...
-            Publish("npcCreate", body);
+            Publish(SceneEvents.NpcCreate, body);
         }
 
         if (Input.GetKeyUp(KeyCode.Alpha2))
@@ -34,7 +30,7 @@ public class DebugInputBehavior : BusParticipant
             Dictionary<string, string> body = new Dictionary<string, string>();
             body.Add("command", "fire");
             //...
-            Publish("npcCommand", body);
+            Publish(SceneEvents.NpcCommand, body);
         }
     }
 }

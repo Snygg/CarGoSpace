@@ -146,7 +146,7 @@ namespace Bus
             sublist.Remove(sb);
         }
 
-        protected void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposing)
             {
