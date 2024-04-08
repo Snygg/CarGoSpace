@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Bus;
 using UnityEngine;
 using Utils;
@@ -130,11 +129,8 @@ namespace Module
             {
                 throw new ArgumentException("Handler cannot be null", nameof(handler));
             }
-            Task Callback(IReadOnlyDictionary<string, string> b)
-            {
-                handler(b);
-                return Task.CompletedTask;
-            }
+
+            void Callback(IReadOnlyDictionary<string, string> a) => handler(a);
 
             return ModuleBus.Subscribe(
                 topic,

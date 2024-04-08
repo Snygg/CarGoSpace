@@ -120,11 +120,7 @@ namespace Scene
             {
                 throw new ArgumentException("Handler cannot be null", nameof(handler));
             }
-            Task Callback(IReadOnlyDictionary<string, string> b)
-            {
-                handler(b);
-                return Task.CompletedTask;
-            }
+            void Callback(IReadOnlyDictionary<string, string> a) => handler(a);
 
             return ModuleBus.Subscribe(
                 topic,
