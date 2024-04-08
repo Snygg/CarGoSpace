@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Bus;
+using R3;
 using UnityEngine;
-using Utils;
 
 namespace Scene
 {
     public abstract class SceneBusParticipant : MonoBehaviour
     {
-        private readonly CompositeDisposable _disposables = new CompositeDisposable(); 
+        private readonly DisposableBag _disposables = new(); 
         private Lazy<CgsBus> _lazyBus;
         private CgsBus ModuleBus => _lazyBus.Value;
         
@@ -120,11 +119,7 @@ namespace Scene
             {
                 throw new ArgumentException("Handler cannot be null", nameof(handler));
             }
-            Task Callback(IReadOnlyDictionary<string, string> b)
-            {
-                handler(b);
-                return Task.CompletedTask;
-            }
+            void Callback(IReadOnlyDictionary<string, string> a) => handler(a);
 
             return ModuleBus.Subscribe(
                 topic,

@@ -27,8 +27,10 @@ public class DebugInputBehavior : SceneBusParticipant
 
         if (Input.GetKeyUp(KeyCode.Alpha2))
         {
-            Dictionary<string, string> body = new Dictionary<string, string>();
-            body.Add("command", "fire");
+            Dictionary<string, string> body = new Dictionary<string, string>
+            {
+                {"command", "fire"}
+            };
             //...
             Publish(SceneEvents.NpcCommand, body);
         }

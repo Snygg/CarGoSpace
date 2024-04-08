@@ -2,21 +2,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Logging;
+using R3;
 
 namespace Bus
 {
     public sealed class CgsBus : IDisposable
     {
-        private readonly Dictionary<string, HashSet<Subscription>> _subscriptions;
+        private readonly Dictionary<string, BusTopic<IReadOnlyDictionary<string,string>>> _topics;
         public static readonly IReadOnlyDictionary<string, string> EmptyDictionary = new Dictionary<string, string>();
         private readonly CgsLogger _logger;
 
         public CgsBus(CgsLogger logger)
         {
             _logger = logger;
-            _subscriptions = new Dictionary<string, HashSet<Subscription>>();
+            _topics = new Dictionary<string, BusTopic<IReadOnlyDictionary<string,string>>>();
         }
 
         private void Publish(
@@ -37,7 +37,7 @@ namespace Bus
                     callerFilePath: callerFilePath);
                 return;
             }
-            if (!_subscriptions.TryGetValue(topic, out var sublist))
+            if (!_topics.TryGetValue(topic, out var busObj))
             {
                 _logger.LogInformation(
                     $"topic has no subscribers: {topic}",
@@ -48,10 +48,7 @@ namespace Bus
                 return;
             }
 
-            foreach(var sub in sublist)
-            {
-                sub.Callback(body ?? EmptyDictionary).Wait();
-            }
+            busObj.Subject.OnNext(body ?? EmptyDictionary);
         }
 
         public void Publish(
@@ -73,7 +70,7 @@ namespace Bus
 
         private IDisposable Subscribe(
             string topic, 
-            Func<IReadOnlyDictionary<string,string>, Task> callback,
+            Action<IReadOnlyDictionary<string,string>> callback,
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "unknownCaller",
             [CallerLineNumber] int callerLineNumber = -1,
@@ -88,13 +85,15 @@ namespace Bus
             {
                 throw new ArgumentException("callback cannnot be null", nameof(callback));
             }
-            Subscription sub = null;
-            sub = new Subscription(callback, () => Unsubscribe(topic, sub));
-        
-            if (!_subscriptions.TryGetValue(topic, out var sublist))
+            if (!_topics.TryGetValue(topic, out var t))
             {
-                sublist = new HashSet<Subscription>();
-                _subscriptions.Add(topic, sublist);
+                var subject = new Subject<IReadOnlyDictionary<string, string>>();
+                t = new BusTopic<IReadOnlyDictionary<string, string>>
+                {
+                    Subject = subject,
+                    Observable = subject.AsObservable(),
+                };
+                _topics.Add(topic, t);
             }
 
             _logger.LogVerbose(
@@ -103,14 +102,15 @@ namespace Bus
                 callerMemberName: callerMemberName,
                 callerLineNumber: callerLineNumber,
                 callerFilePath: callerFilePath);
-            sublist.Add(sub);
-
-            return sub;
+            
+            return t.Observable
+                .SubscribeOnThreadPool()
+                .Subscribe(callback);
         }
 
         public IDisposable Subscribe(
             BusTopic topic,
-            Func<IReadOnlyDictionary<string, string>, Task> callback,
+            Action<IReadOnlyDictionary<string, string>> callback,
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "unknownCaller",
             [CallerLineNumber] int callerLineNumber = -1,
@@ -124,28 +124,6 @@ namespace Bus
                 callerFilePath: callerFilePath);
         }
 
-        private void Unsubscribe(
-            string topic, 
-            Subscription sb, 
-            UnityEngine.Object context = null,
-            [CallerMemberName] string callerMemberName = "unknownCaller",
-            [CallerLineNumber] int callerLineNumber = -1,
-            [CallerFilePath] string callerFilePath = "unknownFile")
-        {
-            if (!_subscriptions.TryGetValue(topic, out var sublist))
-            {
-                return;
-            }
-            _logger.LogVerbose(
-                $"UnSubscribe:{topic}",
-                context: context,
-                callerMemberName: callerMemberName,
-                callerLineNumber: callerLineNumber,
-                callerFilePath: callerFilePath);
-
-            sublist.Remove(sb);
-        }
-
         private void Dispose(bool disposing)
         {
             if (!disposing)
@@ -153,28 +131,18 @@ namespace Bus
                 return;
             }
 
-            if (_subscriptions == null)
+            if (_topics == null)
             {
                 return;
             }
 
-            foreach (var kvp in _subscriptions.ToArray())
+            foreach (var kvp in _topics.ToArray())
             {
                 if (kvp.Value == null)
                 {
                     continue;
                 }
-                foreach (var subscription in kvp.Value.ToArray())
-                {
-                    try
-                    {
-                        Unsubscribe(kvp.Key, subscription);
-                    }
-                    catch
-                    {
-                        //todo: log this, probably not critical
-                    }
-                }
+                kvp.Value.Subject.OnCompleted();
             }
         }
 
@@ -182,6 +150,12 @@ namespace Bus
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        private sealed class BusTopic<T>
+        {
+            public Observable<T> Observable { get; init; }
+            public Subject<T> Subject { get; init; } 
         }
     }
 }

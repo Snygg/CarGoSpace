@@ -212,11 +212,24 @@ public class DirectorBehavior : SceneBusParticipant
             return;
         }
         _logger.Combat.LogDebug("Got command {0}", values: body);
+        
+        //todo: get closest module?
+        var targetModule = PlayerShipObject.GetComponentsInChildren<ITargetable>().FirstOrDefault();
+        if (targetModule == null)
+        {
+            return;
+        }
+        var endPosition = ((MonoBehaviour)targetModule).transform.position;
         foreach (var npc in _npcs)
         {
-            var startPosition = npc.transform.position;
-            var endPosition = PlayerShipObject.transform.position;
-            
+            //todo: search for a (not written yet) weapon component
+            var sourceModule = npc.GetComponentsInChildren<Rigidbody2D>().FirstOrDefault();
+
+            if (sourceModule == null)
+            {
+                continue;
+            }
+            var startPosition = sourceModule.gameObject.transform.position;
             RenderLazer(startPosition, endPosition);
         }
         
@@ -224,7 +237,7 @@ public class DirectorBehavior : SceneBusParticipant
 
     private void RenderLazer(Vector3 startPosition, Vector3 endPosition)
     {
-        var go = Instantiate<GameObject>(LaserPrefab, Vector3.zero, new Quaternion());
+        var go = Instantiate<GameObject>(LaserPrefab, startPosition, new Quaternion());
         var lineRenderer = go.GetComponentInChildren<LineRenderer>();
         lineRenderer.positionCount = 2;
         lineRenderer.SetPositions(new[] {startPosition, endPosition});
