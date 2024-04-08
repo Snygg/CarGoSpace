@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Bus;
+using R3;
 using UnityEngine;
-using Utils;
 
 namespace Module
 {
     public abstract class ModuleBusParticipant : MonoBehaviour
     {
-        private readonly CompositeDisposable _disposables = new CompositeDisposable(); 
+        private readonly DisposableBag _disposables = new DisposableBag(); 
         private Lazy<CgsBus> _lazyBus;
         private CgsBus ModuleBus => _lazyBus.Value;
         

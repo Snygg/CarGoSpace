@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Bus;
+using R3;
 using UnityEngine;
-using Utils;
 
 namespace Scene
 {
     public abstract class SceneBusParticipant : MonoBehaviour
     {
-        private readonly CompositeDisposable _disposables = new CompositeDisposable(); 
+        private readonly DisposableBag _disposables = new(); 
         private Lazy<CgsBus> _lazyBus;
         private CgsBus ModuleBus => _lazyBus.Value;
         
