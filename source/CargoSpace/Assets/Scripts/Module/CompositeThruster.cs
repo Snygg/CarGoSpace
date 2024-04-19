@@ -7,10 +7,10 @@ namespace Module
     {
         public float SpeedFactor { get; }
         public float MaxSpeedFactor { get; }
-        private readonly List<IThrusterSource> _thrusters = new(5);
+        private readonly List<IThrusterSource> _thrusterSources = new(5);
         public void ThrustTowards(Vector2 target)
         {
-            foreach (var thrusterSource in _thrusters)
+            foreach (var thrusterSource in _thrusterSources)
             {
                 foreach (var thruster in thrusterSource.GetThrusters())
                 {
@@ -21,12 +21,12 @@ namespace Module
 
         public void Add(IThrusterSource thrusterSource)
         {
-            _thrusters.Add(thrusterSource);
+            _thrusterSources.Add(thrusterSource);
         }
 
         public bool Remove(IThrusterSource thruster)
         {
-            return _thrusters.Remove(thruster);
+            return _thrusterSources.Remove(thruster);
         }
     }
 }

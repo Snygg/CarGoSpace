@@ -214,14 +214,8 @@ public class DirectorBehavior : SceneBusParticipant
         var npcEmptyModule = empty.AddComponent<NpcModuleBehavior>();
         npcEmptyModule.Attach(emptyConnectionBehavior);
 
-        var movables = npcEngine.GetComponents<MovableBehavior>();
-        foreach (var movable in movables)
-        {
-            var npcFollower = npcEngine.AddComponent<NpcFollowPlayerBehavior>();
-            npcFollower.SetDirectorObject(gameObject);   
-        }
-
-        //note("need to wire up attachable behavior");
+        var npcFollower = npcRoot.AddComponent<NpcFollowBehavior>();
+        npcFollower.target = PlayerShipObject.transform;
     }
 
     private static TransformConnectionBehavior CreateConnection(long timeStamp, GameObject parent, GameObject child)

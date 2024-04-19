@@ -8,14 +8,14 @@ namespace Module
     /// <summary>
     /// The behavior for the game object which serves as the parent for zero to many modules
     /// </summary>
-    public class ModuleHostBehaviour : MonoBehaviour, IModuleHost
+    public class ModuleHostBehaviour : MonoBehaviour, IModuleHost, IThrusterSource
     {
         private CompositeThruster _thrusters = new();
         private Dictionary<IModuleRoot, DisposableBag> _moduleSubscriptions = new();
 
         public void AddModule(IModuleRoot module, IModuleConnection connection)
         {
-            if (module.gameobject.TryGetComponent<IThrusterSource>(out var thrusterSource))
+            if (module.gameObject.TryGetComponent<IThrusterSource>(out var thrusterSource))
             {
                 _thrusters.Add(thrusterSource);    
             }
@@ -34,6 +34,17 @@ namespace Module
             {
                 subscriptions.Dispose();
             }
+        }
+
+        private void Awake()
+        {
+            thrusters = new []{_thrusters};
+        }
+
+        private IThruster[] thrusters;
+        public IThruster[] GetThrusters()
+        {
+            return thrusters;
         }
     }
 }

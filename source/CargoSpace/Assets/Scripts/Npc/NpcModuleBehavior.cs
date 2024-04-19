@@ -1,15 +1,22 @@
-﻿using R3;
+﻿using Module;
+using R3;
 using UnityEngine;
 
 namespace Npc
 {
-    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot
+    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterSource
     {
         public SerializableReactiveProperty<bool> IsAttached { get; private set; } = new SerializableReactiveProperty<bool>(false);
         private IModuleConnection _connection;
         private readonly DisposableBag _attachSubscriptions = new();
+        private IThruster[] _thrusters;
 
-        GameObject IComponent.gameobject => gameObject;
+        GameObject IComponent.gameObject => gameObject;
+
+        private void Awake()
+        {
+            _thrusters = GetComponents<IThruster>();
+        }
 
         public void Attach(IModuleConnection connection)
         {
@@ -43,5 +50,9 @@ namespace Npc
         }
 
         public bool IsPlayer => false;
+        public IThruster[] GetThrusters()
+        {
+            return _thrusters;
+        }
     }
 }
