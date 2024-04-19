@@ -5,7 +5,6 @@ using Logging;
 using Npc;
 using Scene;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class DirectorBehavior : SceneBusParticipant
 {

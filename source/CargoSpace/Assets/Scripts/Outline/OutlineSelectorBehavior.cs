@@ -1,6 +1,5 @@
 using System.Linq;
 using UnityEngine;
-using Utils;
 
 public class OutlineSelectorBehavior : MonoBehaviour
 {
