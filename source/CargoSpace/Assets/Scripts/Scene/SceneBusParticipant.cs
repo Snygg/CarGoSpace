@@ -74,7 +74,7 @@ namespace Scene
             finally
             {
                 _disposables.Dispose();
-                if (_lazyBus.IsValueCreated)
+                if (_lazyBus?.IsValueCreated ?? false)
                 {
                     _lazyBus.Value.Dispose();
                 }
