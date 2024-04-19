@@ -1,8 +1,11 @@
-﻿public interface IThrusterSource
+﻿namespace Module
 {
-    /// <summary>
-    /// returns the thrusters contained by this object
-    /// </summary>
-    /// <returns></returns>
-    IThruster[] GetThrusters();
+    public interface IThrusterSource
+    {
+        /// <summary>
+        /// returns the thrusters contained by this object
+        /// </summary>
+        /// <returns></returns>
+        IThruster[] GetThrusters();
+    }
 }

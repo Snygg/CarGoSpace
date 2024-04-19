@@ -1,38 +1,41 @@
 using System.Linq;
 using UnityEngine;
 
-public class OutlineSelectorBehavior : MonoBehaviour
+namespace Outline
 {
-    private Transform _selection;
-    private ISelectorStrategy _selectorStrategy;
-
-    private void Awake()
+    public class OutlineSelectorBehavior : MonoBehaviour
     {
-        _selectorStrategy = GetComponent<ISelectorStrategy>();
-    }
+        private Transform _selection;
+        private ISelectorStrategy _selectorStrategy;
 
-    void Update()
-    {
-        if (_selection)
+        private void Awake()
         {
-            _selectorStrategy.Deselect(_selection);
+            _selectorStrategy = GetComponent<ISelectorStrategy>();
         }
 
-        var ray3d = Camera.main.ScreenPointToRay(Input.mousePosition);
-        
-        var hits = new RaycastHit2D[10];
-        
-        //we have trouble if returned size = buffer size (may not have gotten them all)
-        var size = Physics2D.RaycastNonAlloc(ray3d.origin,Vector2.zero, hits);
-        
-        _selection = hits
-            .Take(size)
-            .FirstOrDefault(hit => hit.transform?.gameObject.TryGetComponent<ITargetable>(out _) ?? false)
-            .transform;
-
-        if (_selection)
+        void Update()
         {
-            _selectorStrategy.Select(_selection);
+            if (_selection)
+            {
+                _selectorStrategy.Deselect(_selection);
+            }
+
+            var ray3d = Camera.main.ScreenPointToRay(Input.mousePosition);
+        
+            var hits = new RaycastHit2D[10];
+        
+            //we have trouble if returned size = buffer size (may not have gotten them all)
+            var size = Physics2D.RaycastNonAlloc(ray3d.origin,Vector2.zero, hits);
+        
+            _selection = hits
+                .Take(size)
+                .FirstOrDefault(hit => hit.transform?.gameObject.TryGetComponent<ITargetable>(out _) ?? false)
+                .transform;
+
+            if (_selection)
+            {
+                _selectorStrategy.Select(_selection);
+            }
         }
     }
 }

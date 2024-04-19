@@ -1,21 +1,24 @@
 ﻿using UnityEngine;
 
-internal class SetOutlineWidthSelectorStrategy : MonoBehaviour, ISelectorStrategy
+namespace Outline
 {
-    public float selectedOutlineWidth = 10;
-    public void Select(Transform target)
+    internal class SetOutlineWidthSelectorStrategy : MonoBehaviour, ISelectorStrategy
     {
-        if (target.gameObject.TryGetComponent<Outline>(out var outline))
+        public float selectedOutlineWidth = 10;
+        public void Select(Transform target)
         {
-            outline.OutlineWidth = selectedOutlineWidth;
+            if (target.gameObject.TryGetComponent<QuickOutline.Scripts.Outline>(out var outline))
+            {
+                outline.OutlineWidth = selectedOutlineWidth;
+            }
         }
-    }
 
-    public void Deselect(Transform target)
-    {
-        if (target.gameObject.TryGetComponent<Outline>(out var outline))
+        public void Deselect(Transform target)
         {
-            outline.OutlineWidth = 0;
+            if (target.gameObject.TryGetComponent<QuickOutline.Scripts.Outline>(out var outline))
+            {
+                outline.OutlineWidth = 0;
+            }
         }
     }
 }

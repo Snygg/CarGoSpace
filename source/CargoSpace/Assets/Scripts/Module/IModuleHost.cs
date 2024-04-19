@@ -1,3 +1,6 @@
-﻿public interface IModuleHost
+﻿namespace Module
 {
+    public interface IModuleHost
+    {
+    }
 }

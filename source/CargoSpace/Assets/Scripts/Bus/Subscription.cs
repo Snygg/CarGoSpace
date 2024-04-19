@@ -2,19 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-public class Subscription : IDisposable
+namespace Bus
 {
-    public Func<IReadOnlyDictionary<string, string>, Task> Callback { get; }
-    private Action OnDisposed { get; }
-
-    public Subscription(Func<IReadOnlyDictionary<string, string>, Task> callback, Action onDisposed)
+    public class Subscription : IDisposable
     {
-        Callback = callback;
-        OnDisposed = onDisposed;
-    }
+        public Func<IReadOnlyDictionary<string, string>, Task> Callback { get; }
+        private Action OnDisposed { get; }
 
-    public void Dispose()
-    {
-        OnDisposed?.Invoke();
+        public Subscription(Func<IReadOnlyDictionary<string, string>, Task> callback, Action onDisposed)
+        {
+            Callback = callback;
+            OnDisposed = onDisposed;
+        }
+
+        public void Dispose()
+        {
+            OnDisposed?.Invoke();
+        }
     }
 }

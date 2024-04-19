@@ -1,29 +1,32 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-internal class CompositeThruster : IThruster
+namespace Module
 {
-    public float SpeedFactor { get; }
-    public float MaxSpeedFactor { get; }
-    private readonly List<IThrusterSource> _thrusters = new(5);
-    public void ThrustTowards(Vector2 target)
+    internal class CompositeThruster : IThruster
     {
-        foreach (var thrusterSource in _thrusters)
+        public float SpeedFactor { get; }
+        public float MaxSpeedFactor { get; }
+        private readonly List<IThrusterSource> _thrusters = new(5);
+        public void ThrustTowards(Vector2 target)
         {
-            foreach (var thruster in thrusterSource.GetThrusters())
+            foreach (var thrusterSource in _thrusters)
             {
-                thruster.ThrustTowards(target);    
+                foreach (var thruster in thrusterSource.GetThrusters())
+                {
+                    thruster.ThrustTowards(target);    
+                }
             }
         }
-    }
 
-    public void Add(IThrusterSource thrusterSource)
-    {
-        _thrusters.Add(thrusterSource);
-    }
+        public void Add(IThrusterSource thrusterSource)
+        {
+            _thrusters.Add(thrusterSource);
+        }
 
-    public bool Remove(IThrusterSource thruster)
-    {
-        return _thrusters.Remove(thruster);
+        public bool Remove(IThrusterSource thruster)
+        {
+            return _thrusters.Remove(thruster);
+        }
     }
 }

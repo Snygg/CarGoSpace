@@ -1,28 +1,31 @@
 using UnityEngine;
 
-public class SelfDestructFrameCountBehavior : MonoBehaviour
+namespace Weapons
 {
-    public int FramesRemaining = 0;
-
-    public GameObject ToDestroy;
-    // Start is called before the first frame update
-    void Start()
+    public class SelfDestructFrameCountBehavior : MonoBehaviour
     {
-        
-    }
+        public int FramesRemaining = 0;
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (FramesRemaining > 0)
+        public GameObject ToDestroy;
+        // Start is called before the first frame update
+        void Start()
         {
-            FramesRemaining--;
-            return;
+        
         }
 
-        if (ToDestroy)
+        // Update is called once per frame
+        void Update()
         {
-            Destroy(ToDestroy);    
+            if (FramesRemaining > 0)
+            {
+                FramesRemaining--;
+                return;
+            }
+
+            if (ToDestroy)
+            {
+                Destroy(ToDestroy);    
+            }
         }
     }
 }
