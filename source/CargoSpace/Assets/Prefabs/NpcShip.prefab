@@ -122,7 +122,10 @@ PrefabInstance:
       propertyPath: ParentTransform
       value: 
       objectReference: {fileID: 5518216183435660025}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 393724362615131534, guid: 4e98b87f86c0d7140bc5377180ef5910, type: 3}
+    - {fileID: 8799193441679251881, guid: 4e98b87f86c0d7140bc5377180ef5910, type: 3}
+    - {fileID: 3976840437646815949, guid: 4e98b87f86c0d7140bc5377180ef5910, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -224,7 +227,11 @@ PrefabInstance:
       propertyPath: Hull
       value: 
       objectReference: {fileID: 5518216183435660030}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5345136652939504555, guid: 697dc6e1ee202604c9ed3c36764f5d50, type: 3}
+    - {fileID: 3838883959673700236, guid: 697dc6e1ee202604c9ed3c36764f5d50, type: 3}
+    - {fileID: 8677279801501701352, guid: 697dc6e1ee202604c9ed3c36764f5d50, type: 3}
+    - {fileID: 7338951280058175067, guid: 697dc6e1ee202604c9ed3c36764f5d50, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -290,7 +297,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hull
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4138242739511371219, guid: 574099aa8662d394c8fa89cee6846381, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
