@@ -1,18 +1,20 @@
 using System;
-using Bus;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Logging;
+using Npc;
 using Scene;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class DirectorBehavior : SceneBusParticipant
 {
-    private List<GameObject> _npcs = new List<GameObject>();
     private LogBehavior _logger;
 
-    public GameObject DummyNpc;
+    public GameObject ModuleRootPrefab;
+    public GameObject NpcEnginePrefab;
+    public GameObject EmptyModulePrefab;
+    public GameObject NpcList; 
     public GameObject PlayerTargeted { get; private set; }
     public GameObject PlayerShipObject;
     public GameObject LaserPrefab;
@@ -186,17 +188,48 @@ public class DirectorBehavior : SceneBusParticipant
             return;
         }
 
-        var go = Instantiate<GameObject>(DummyNpc, location, new Quaternion());
+        var npcRoot = Instantiate(ModuleRootPrefab, location, new Quaternion());
+        var timeStamp = DateTime.Now.Ticks % 900_000_000_000L;
+        npcRoot.name = $"npc {timeStamp}";
+
+        //todo: remove them from the list when they get destroyed
+        npcRoot.transform.parent = NpcList.transform;
         
-        var movables = go.GetComponentsInChildren<MovableBehavior>();
+        var moduleRoot = npcRoot.GetComponent<ModuleHostBehaviour>();
+        
+        var npcEngine = Instantiate(NpcEnginePrefab, npcRoot.transform);
+        var engineRoot = npcEngine.GetComponent<IModuleRoot>();
+        var engineConnectionBehavior = CreateConnection(timeStamp, npcRoot, npcEngine);;
+        
+        moduleRoot.AddModule(engineRoot, engineConnectionBehavior);
+        var npcEngineModule = npcEngine.AddComponent<NpcModuleBehavior>();
+        npcEngineModule.Attach(engineConnectionBehavior);
+        
+        var empty = Instantiate(EmptyModulePrefab, npcRoot.transform);
+        var emptyRoot = empty.GetComponent<IModuleRoot>();
+        var emptyConnectionBehavior = CreateConnection(timeStamp, npcRoot, empty);
+
+        moduleRoot.AddModule(emptyRoot, emptyConnectionBehavior);
+        var npcEmptyModule = empty.AddComponent<NpcModuleBehavior>();
+        npcEmptyModule.Attach(emptyConnectionBehavior);
+
+        var movables = npcEngine.GetComponents<MovableBehavior>();
         foreach (var movable in movables)
         {
-            var npcFollower = movable.gameObject.AddComponent<NpcFollowPlayerBehavior>();
+            var npcFollower = npcEngine.AddComponent<NpcFollowPlayerBehavior>();
             npcFollower.SetDirectorObject(gameObject);   
         }
 
-        //todo: remove them from the list when they get destroyed
-        _npcs.Add(go);
+        //note("need to wire up attachable behavior");
+    }
+
+    private static TransformConnectionBehavior CreateConnection(long timeStamp, GameObject parent, GameObject child)
+    {
+        var emptyConnection = new GameObject($"connection {timeStamp}");
+        var emptyTransformBehavior = emptyConnection.AddComponent<TransformConnectionBehavior>();
+        emptyTransformBehavior.Attach(parent, emptyConnection);
+        emptyTransformBehavior.Attach(parent, child);
+        return emptyTransformBehavior;
     }
 
     private void OnNpcCommand(IReadOnlyDictionary<string, string> body)
@@ -205,8 +238,8 @@ public class DirectorBehavior : SceneBusParticipant
         {
             _logger.Bus.LogError("body was null", context:this);
             return;
-        } 
- 
+        }
+
         if (!body.ContainsKey("command"))
         {
             return;
@@ -220,7 +253,7 @@ public class DirectorBehavior : SceneBusParticipant
             return;
         }
         var endPosition = ((MonoBehaviour)targetModule).transform.position;
-        foreach (var npc in _npcs)
+        foreach (var npc in NpcList.GetComponentsInChildren<ModuleHostBehaviour>().Select(b=>b.gameObject))
         {
             //todo: search for a (not written yet) weapon component
             var sourceModule = npc.GetComponentsInChildren<Rigidbody2D>().FirstOrDefault();
