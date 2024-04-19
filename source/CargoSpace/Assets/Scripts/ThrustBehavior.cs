@@ -20,6 +20,8 @@ public class ThrustBehavior : MonoBehaviour, IThruster
         var normalized = path.normalized;
         var factored = normalized * speedFactor;
         ApplyThrust(factored);
+        
+        Debug.DrawLine(transform.position,normalized *10,Color.magenta,0.1f);
     }
 
     private void ApplyThrust(Vector2 force)

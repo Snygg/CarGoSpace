@@ -8,9 +8,16 @@ using UnityEngine;
 /// </summary>
 internal class TransformConnectionBehavior: MonoBehaviour, IModuleConnection
 {
+    private DistanceJoint2D _joint2D;
     public void Detach()
     {
-        Destroy(this);
+        Destroy(gameObject);
+        Destroy(_joint2D);
+    }
+
+    private void OnDestroy()
+    {
+        Detach();
     }
 
     public void ApplyDamage(float strength)
@@ -24,5 +31,11 @@ internal class TransformConnectionBehavior: MonoBehaviour, IModuleConnection
     public void Attach(GameObject parent, GameObject child)
     {
         child.transform.parent = parent.transform;
+        _joint2D = child.gameObject.AddComponent<DistanceJoint2D>();
+        _joint2D.connectedBody = parent.gameObject.GetComponent<Rigidbody2D>();
+        _joint2D.distance = 0.1f;
+        //_joint2D.maxDistanceOnly = true;
+        // _joint2D.dampingRatio = 1;
+        // _joint2D.frequency = 0;
     }
 }
