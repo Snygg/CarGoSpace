@@ -33,7 +33,7 @@ internal class TransformConnectionBehavior: MonoBehaviour, IModuleConnection
         child.transform.parent = parent.transform;
         _joint2D = child.gameObject.AddComponent<DistanceJoint2D>();
         _joint2D.connectedBody = parent.gameObject.GetComponent<Rigidbody2D>();
-        _joint2D.distance = 0.1f;
+        _joint2D.distance = 5f;
         //_joint2D.maxDistanceOnly = true;
         // _joint2D.dampingRatio = 1;
         // _joint2D.frequency = 0;
