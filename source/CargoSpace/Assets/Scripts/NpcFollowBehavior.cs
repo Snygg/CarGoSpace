@@ -1,16 +1,17 @@
 using Module;
 using UnityEngine;
 
+[RequireComponent(typeof(IThrusterProvider))]
 public class NpcFollowBehavior : MonoBehaviour
 {
     public Transform target;
     public float minFollowDistance = 2;
 
-    private IThrusterSource _thrusterSource;
+    private IThrusterProvider _thrusterProvider;
 
     void Awake()
     {
-        _thrusterSource = GetComponent<IThrusterSource>();
+        _thrusterProvider = GetComponent<IThrusterProvider>();
     }
 
     void FixedUpdate()
@@ -25,9 +26,12 @@ public class NpcFollowBehavior : MonoBehaviour
             return;
         }
 
-        foreach (var thruster in _thrusterSource.GetThrusters())
+        var current = (Vector2)transform.position;
+        var path = new Vector2(target.position.x, target.position.y) - current;
+        var normalized = path.normalized;
+        foreach (var thruster in _thrusterProvider.GetThrusters())
         {
-            thruster.ThrustTowards(target.position);    
+            thruster.DirectThrust(normalized);    
         }
     }
 }

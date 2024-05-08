@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Npc
 {
-    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterSource, IRigidBodyProvider
+    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterProvider, IRigidBodyProvider
     {
         public bool IsAttachable => _connection == null;
         private IModuleConnection _connection;

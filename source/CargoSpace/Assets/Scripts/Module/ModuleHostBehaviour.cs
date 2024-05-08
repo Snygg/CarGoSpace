@@ -9,7 +9,7 @@ namespace Module
     /// The behavior for the game object which serves as the parent for zero to many modules
     /// </summary>
     [RequireComponent(typeof(Rigidbody2D))]
-    public class ModuleHostBehaviour : MonoBehaviour, IModuleHost, IThrusterSource
+    public class ModuleHostBehaviour : MonoBehaviour, IModuleHost, IThrusterProvider
     {
         private CompositeThruster _thrusters = new();
         private Dictionary<IModuleRoot, DisposableBag> _moduleSubscriptions = new();
@@ -38,7 +38,7 @@ namespace Module
         
         public bool Attach(IModuleConnection connection)
         {
-            if (connection.Module.gameObject.TryGetComponent<IThrusterSource>(out var thrusterSource))
+            if (connection.Module.gameObject.TryGetComponent<IThrusterProvider>(out var thrusterSource))
             {
                 _thrusters.Add(thrusterSource);    
             }

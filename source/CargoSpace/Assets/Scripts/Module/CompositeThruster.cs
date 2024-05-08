@@ -24,30 +24,30 @@ namespace Module
             }
         }
 
-        private readonly List<IThrusterSource> _thrusterSources = new(5);
+        private readonly List<IThrusterProvider> _thrusterSources = new(5);
         private IRigidBodyProvider _rigidBodyProvider;
 
-        public void ThrustTowards(Vector2 target)
+        public void DirectThrust(Vector2 normalizedDirection)
         {
             foreach (var thrusterSource in _thrusterSources)
             {
                 foreach (var thruster in thrusterSource.GetThrusters())
                 {
-                    thruster.ThrustTowards(target);    
+                    thruster.DirectThrust(normalizedDirection);    
                 }
             }
         }
 
-        public void Add(IThrusterSource thrusterSource)
+        public void Add(IThrusterProvider thrusterProvider)
         {
-            _thrusterSources.Add(thrusterSource);
-            foreach (var thruster in thrusterSource.GetThrusters())
+            _thrusterSources.Add(thrusterProvider);
+            foreach (var thruster in thrusterProvider.GetThrusters())
             {
                 thruster.RigidBodyProvider = _rigidBodyProvider;    
             }
         }
 
-        public bool Remove(IThrusterSource thruster)
+        public bool Remove(IThrusterProvider thruster)
         {
             return _thrusterSources.Remove(thruster);
         }

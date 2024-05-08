@@ -1,6 +1,6 @@
 ﻿namespace Module
 {
-    public interface IThrusterSource
+    public interface IThrusterProvider
     {
         /// <summary>
         /// returns the thrusters contained by this object

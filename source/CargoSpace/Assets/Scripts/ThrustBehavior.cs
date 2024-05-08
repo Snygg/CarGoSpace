@@ -7,6 +7,7 @@ public class ThrustBehavior : MonoBehaviour, IThruster
     float IThruster.SpeedFactor => speedFactor;
     public float maxSpeedFactor;
     public IRigidBodyProvider RigidBodyProvider;
+    public bool DrawDebugThrust = true;
 
     IRigidBodyProvider IThruster.RigidBodyProvider
     {
@@ -23,15 +24,15 @@ public class ThrustBehavior : MonoBehaviour, IThruster
         }
     }
 
-    public void ThrustTowards(Vector2 target)
+    public void DirectThrust(Vector2 normalizedDirection)
     {
-        var current = (Vector2)transform.position;
-        var path = new Vector2(target.x, target.y) - current;
-        var normalized = path.normalized;
-        var factored = normalized * speedFactor;
+        var factored = normalizedDirection * speedFactor;
         ApplyThrust(factored);
-        
-        Debug.DrawLine(transform.position,normalized *10,Color.magenta,0.1f);
+
+        if (DrawDebugThrust)
+        {
+            Debug.DrawLine(transform.position,transform.position+(Vector3)factored,Color.magenta,0.1f);    
+        }
     }
 
     private void ApplyThrust(Vector2 force)
