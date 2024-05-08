@@ -7,6 +7,6 @@ namespace Module
     /// </summary>
     public interface IModuleRoot: IComponent, IAttachable
     {
-        IRigidBodyProvider RigidBodyProvider { get; set; }
+        
     }
 }

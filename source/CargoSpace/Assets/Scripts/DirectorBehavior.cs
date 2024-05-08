@@ -190,7 +190,6 @@ public class DirectorBehavior : SceneBusParticipant
         }
 
         var npcGo = Instantiate(ModuleRootPrefab, location, new Quaternion());
-        var npcHost = npcGo.GetComponent<IModuleHost>();
         var timeStamp = DateTime.Now.Ticks % 900_000_000_000L;
         npcGo.name = $"npc {timeStamp}";
 
@@ -222,22 +221,11 @@ public class DirectorBehavior : SceneBusParticipant
             return;
         }
         
-        //var emptyConnection = new GameObject($"connection {timeStamp}");
         var connectionBehavior = child.AddComponent<JointConnectionBehavior>();
-        //emptyConnection.transform.parent = parent.transform;
-        //emptyTransformBehavior.Attach(parent, emptyConnection);
-        //child.transform.parent = parent.transform;
         connectionBehavior.Attach(moduleHost, module, relativeLocation);
 
         moduleHost.Attach(connectionBehavior);
         module.Attach(connectionBehavior);
-        
-        module.RigidBodyProvider = moduleHost;
-
-        if (child.TryGetComponent<IThruster>(out var thruster))
-        {
-            thruster.RigidBodyProvider = moduleHost; 
-        }
     }
 
     private void OnNpcCommand(IReadOnlyDictionary<string, string> body)

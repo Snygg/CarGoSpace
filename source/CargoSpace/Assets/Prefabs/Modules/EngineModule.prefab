@@ -95,6 +95,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 4968121344778803054}
   m_SourcePrefab: {fileID: 100100000, guid: 4e98b87f86c0d7140bc5377180ef5910, type: 3}
+--- !u!50 &5345136652939504533 stripped
+Rigidbody2D:
+  m_CorrespondingSourceObject: {fileID: 393724362615131568, guid: 4e98b87f86c0d7140bc5377180ef5910, type: 3}
+  m_PrefabInstance: {fileID: 5718295335604233765}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &5345136652939504553 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 393724362615131532, guid: 4e98b87f86c0d7140bc5377180ef5910, type: 3}
@@ -114,3 +119,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speedFactor: 3
   maxSpeedFactor: 15
+  DrawDebugThrust: 1
+  Rigidbody: {fileID: 5345136652939504533}

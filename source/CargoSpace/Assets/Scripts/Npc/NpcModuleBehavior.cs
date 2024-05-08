@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Npc
 {
-    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterProvider, IRigidBodyProvider
+    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterProvider
     {
         public bool IsAttachable => _connection == null;
         private IModuleConnection _connection;
@@ -13,22 +13,9 @@ namespace Npc
 
         GameObject IComponent.gameObject => gameObject;
 
-        Rigidbody2D IRigidBodyProvider.RigidBody => RigidBody ?? (SelfRigidBody ??= GetComponent<Rigidbody2D>());
-        public Rigidbody2D RigidBody => RigidBodyProvider.RigidBody;
-        public Rigidbody2D SelfRigidBody;
-        public IRigidBodyProvider RigidBodyProvider { get; set; }
-
         private void Awake()
         {
             _thrusters = GetComponents<IThruster>();
-            if (SelfRigidBody == null)
-            {
-                SelfRigidBody = GetComponent<Rigidbody2D>();
-            }
-            if (RigidBodyProvider == null)
-            {
-                RigidBodyProvider = this;    
-            }
         }
 
         public bool Attach(IModuleConnection connection)
@@ -38,7 +25,6 @@ namespace Npc
                 .Where(a=>!a)
                 .Take(1)
                 .Subscribe(_=>OnConnectionDetached()));
-            RigidBodyProvider = connection.Host;
             return true;
         }
 
@@ -59,7 +45,6 @@ namespace Npc
         {
             _attachSubscriptions.Clear();
             _connection = null;
-            RigidBodyProvider = this;
         }
 
         public bool IsPlayer => false;

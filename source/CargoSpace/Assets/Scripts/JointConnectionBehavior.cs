@@ -10,13 +10,14 @@ using UnityEngine;
 internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
 {
     private FixedJoint2D _joint2D;
-    public SerializableReactiveProperty<bool> Attached { get; } = new SerializableReactiveProperty<bool>(false);
+    public SerializableReactiveProperty<bool> Attached { get; } = new(false);
     public IModuleRoot Module { get; private set; }
     public IModuleHost Host { get; private set; }
     public void Detach()
     {
         Destroy(gameObject);
         Destroy(_joint2D);
+        Attached.Value = false;
     }
 
     private void OnDestroy()
@@ -48,10 +49,7 @@ internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
         var childGo = child.gameObject;
         _joint2D = childGo.AddComponent<FixedJoint2D>();
         _joint2D.connectedBody = parent.RigidBody;
-        //_joint2D.connectedAnchor = relativeLocation;
-        //_joint2D.distance = 5f;
-        //_joint2D.maxDistanceOnly = true;
-        // _joint2D.dampingRatio = 1;
-        // _joint2D.frequency = 0;
+
+        Attached.Value = true;
     }
 }

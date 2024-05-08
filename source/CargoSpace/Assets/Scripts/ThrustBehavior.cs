@@ -1,26 +1,19 @@
-﻿using Module;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class ThrustBehavior : MonoBehaviour, IThruster
 {
     public float speedFactor;
     float IThruster.SpeedFactor => speedFactor;
     public float maxSpeedFactor;
-    public IRigidBodyProvider RigidBodyProvider;
     public bool DrawDebugThrust = true;
-
-    IRigidBodyProvider IThruster.RigidBodyProvider
-    {
-        get => RigidBodyProvider;
-        set => RigidBodyProvider = value;
-    }
     float IThruster.MaxSpeedFactor => maxSpeedFactor;
+    public Rigidbody2D Rigidbody;
 
     private void Awake()
     {
-        if (RigidBodyProvider == null)
+        if (!Rigidbody)
         {
-            RigidBodyProvider = GetComponent<IRigidBodyProvider>();    
+            Rigidbody = GetComponent<Rigidbody2D>();
         }
     }
 
@@ -37,10 +30,10 @@ public class ThrustBehavior : MonoBehaviour, IThruster
 
     private void ApplyThrust(Vector2 force)
     {
-        if (RigidBodyProvider == null || !RigidBodyProvider.RigidBody)
+        if (!Rigidbody)
         {
             return;
         }
-        RigidBodyProvider.RigidBody.AddForce(force);
+        Rigidbody.AddForce(force);
     }
 }
