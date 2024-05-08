@@ -1,6 +1,8 @@
-﻿namespace Module
+﻿using Npc;
+
+namespace Module
 {
-    public interface IModuleHost
+    public interface IModuleHost: IComponent, IAttachable, IRigidBodyProvider
     {
     }
 }

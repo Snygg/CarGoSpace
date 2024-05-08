@@ -8,24 +8,50 @@ namespace Module
     /// <summary>
     /// The behavior for the game object which serves as the parent for zero to many modules
     /// </summary>
+    [RequireComponent(typeof(Rigidbody2D))]
     public class ModuleHostBehaviour : MonoBehaviour, IModuleHost, IThrusterSource
     {
         private CompositeThruster _thrusters = new();
         private Dictionary<IModuleRoot, DisposableBag> _moduleSubscriptions = new();
+        public bool IsAttachable => true;
+        public Rigidbody2D SelfRigidBody { get; private set; }
+        Rigidbody2D IRigidBodyProvider.RigidBody =>
+            RigidBodyProvider == null || this.Equals(RigidBodyProvider)
+                ? SelfRigidBody ??= GetComponent<Rigidbody2D>()
+                : RigidBodyProvider.RigidBody;
 
-        public void AddModule(IModuleRoot module, IModuleConnection connection)
+        public IRigidBodyProvider RigidBodyProvider { get; set; }
+
+        private void Awake()
         {
-            if (module.gameObject.TryGetComponent<IThrusterSource>(out var thrusterSource))
+            if (SelfRigidBody == null)
+            {
+                SelfRigidBody = GetComponent<Rigidbody2D>();    
+            }
+            if (RigidBodyProvider == null)
+            {
+                RigidBodyProvider = this;    
+            }
+            _thrusters.RigidBodyProvider = this;
+            thrusters = new []{_thrusters};
+        }
+        
+        public bool Attach(IModuleConnection connection)
+        {
+            if (connection.Module.gameObject.TryGetComponent<IThrusterSource>(out var thrusterSource))
             {
                 _thrusters.Add(thrusterSource);    
             }
 
-            var subscriptions = new DisposableBag();
-            subscriptions.Add(connection.Hp
-                .Where(hp=>hp<=0)
+            if (!_moduleSubscriptions.ContainsKey(connection.Module))
+            {
+                _moduleSubscriptions[connection.Module] = new DisposableBag();
+            }
+            _moduleSubscriptions[connection.Module].Add(connection.Attached
+                .Where(a=>!a)
                 .Take(1)
-                .Subscribe(_=>OnConnectionDestroyed(module, connection)));
-            _moduleSubscriptions.Add(module, subscriptions);
+                .Subscribe(_=>OnConnectionDestroyed(connection.Module, connection)));
+            return true;
         }
 
         private void OnConnectionDestroyed(IModuleRoot module, IModuleConnection connection)
@@ -34,11 +60,6 @@ namespace Module
             {
                 subscriptions.Dispose();
             }
-        }
-
-        private void Awake()
-        {
-            thrusters = new []{_thrusters};
         }
 
         private IThruster[] thrusters;

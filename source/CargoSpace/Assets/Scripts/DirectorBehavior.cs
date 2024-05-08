@@ -189,42 +189,55 @@ public class DirectorBehavior : SceneBusParticipant
             return;
         }
 
-        var npcRoot = Instantiate(ModuleRootPrefab, location, new Quaternion());
+        var npcGo = Instantiate(ModuleRootPrefab, location, new Quaternion());
+        var npcHost = npcGo.GetComponent<IModuleHost>();
         var timeStamp = DateTime.Now.Ticks % 900_000_000_000L;
-        npcRoot.name = $"npc {timeStamp}";
+        npcGo.name = $"npc {timeStamp}";
 
         //todo: remove them from the list when they get destroyed
-        npcRoot.transform.parent = NpcList.transform;
+        npcGo.transform.parent = NpcList.transform;
         
-        var moduleRoot = npcRoot.GetComponent<ModuleHostBehaviour>();
+        var npcEngine = Instantiate(NpcEnginePrefab, npcGo.transform);
+        npcEngine.transform.Translate(-1, 0,0);
+        CreateConnection(npcGo, npcEngine, new Vector2(7f,0));
         
-        var npcEngine = Instantiate(NpcEnginePrefab, npcRoot.transform);
-        var engineRoot = npcEngine.GetComponent<IModuleRoot>();
-        var engineConnectionBehavior = CreateConnection(timeStamp, npcRoot, npcEngine);;
+        var empty = Instantiate(EmptyModulePrefab,npcGo.transform);
+        CreateConnection(npcGo, empty, new Vector2(-7f,0));
         
-        moduleRoot.AddModule(engineRoot, engineConnectionBehavior);
-        var npcEngineModule = npcEngine.AddComponent<NpcModuleBehavior>();
-        npcEngineModule.Attach(engineConnectionBehavior);
-        
-        var empty = Instantiate(EmptyModulePrefab, npcRoot.transform);
-        var emptyRoot = empty.GetComponent<IModuleRoot>();
-        var emptyConnectionBehavior = CreateConnection(timeStamp, npcRoot, empty);
-
-        moduleRoot.AddModule(emptyRoot, emptyConnectionBehavior);
-        var npcEmptyModule = empty.AddComponent<NpcModuleBehavior>();
-        npcEmptyModule.Attach(emptyConnectionBehavior);
-
-        var npcFollower = npcRoot.AddComponent<NpcFollowBehavior>();
+        var npcFollower = npcGo.AddComponent<NpcFollowBehavior>();
         npcFollower.target = PlayerShipObject.transform;
+
+        npcGo.AddComponent<BoxCollider2D>();
     }
 
-    private static TransformConnectionBehavior CreateConnection(long timeStamp, GameObject parent, GameObject child)
+    private static void CreateConnection(GameObject parent, GameObject child, Vector2 relativeLocation)
     {
-        var emptyConnection = new GameObject($"connection {timeStamp}");
-        var emptyTransformBehavior = emptyConnection.AddComponent<TransformConnectionBehavior>();
-        emptyTransformBehavior.Attach(parent, emptyConnection);
-        emptyTransformBehavior.Attach(parent, child);
-        return emptyTransformBehavior;
+        if (!parent.TryGetComponent<IModuleHost>(out var moduleHost))
+        {
+            return;
+        }
+        
+        if (!child.TryGetComponent<IModuleRoot>(out var module))
+        {
+            return;
+        }
+        
+        //var emptyConnection = new GameObject($"connection {timeStamp}");
+        var connectionBehavior = child.AddComponent<JointConnectionBehavior>();
+        //emptyConnection.transform.parent = parent.transform;
+        //emptyTransformBehavior.Attach(parent, emptyConnection);
+        //child.transform.parent = parent.transform;
+        connectionBehavior.Attach(moduleHost, module, relativeLocation);
+
+        moduleHost.Attach(connectionBehavior);
+        module.Attach(connectionBehavior);
+        
+        module.RigidBodyProvider = moduleHost;
+
+        if (child.TryGetComponent<IThruster>(out var thruster))
+        {
+            thruster.RigidBodyProvider = moduleHost; 
+        }
     }
 
     private void OnNpcCommand(IReadOnlyDictionary<string, string> body)
