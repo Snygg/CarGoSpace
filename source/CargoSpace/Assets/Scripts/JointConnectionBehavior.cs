@@ -13,6 +13,9 @@ internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
     public SerializableReactiveProperty<bool> Attached { get; } = new(false);
     public IModuleRoot Module { get; private set; }
     public IModuleHost Host { get; private set; }
+    public SerializableReactiveProperty<float> hp = new(1);
+    SerializableReactiveProperty<float> IModuleConnection.Hp => hp;
+    
     public void Detach()
     {
         Destroy(_joint2D);
@@ -27,11 +30,11 @@ internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
     public void ApplyDamage(float strength)
     {
         hp.Value = Math.Max(0, hp.Value - strength);
-        Destroy(this);
+        if (hp.Value <= 0)
+        {
+            Destroy(this);    
+        }
     }
-
-    public SerializableReactiveProperty<float> hp = new(1);
-    SerializableReactiveProperty<float> IModuleConnection.Hp => hp;
 
     public void Attach(IModuleHost parent, IModuleRoot child)
     {
