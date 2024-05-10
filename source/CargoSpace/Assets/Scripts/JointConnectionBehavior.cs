@@ -15,7 +15,6 @@ internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
     public IModuleHost Host { get; private set; }
     public void Detach()
     {
-        Destroy(gameObject);
         Destroy(_joint2D);
         Attached.Value = false;
     }
@@ -28,6 +27,7 @@ internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
     public void ApplyDamage(float strength)
     {
         hp.Value = Math.Max(0, hp.Value - strength);
+        Destroy(this);
     }
 
     public SerializableReactiveProperty<float> hp = new(1);

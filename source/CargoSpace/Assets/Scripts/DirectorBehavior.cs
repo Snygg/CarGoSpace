@@ -261,7 +261,7 @@ public class DirectorBehavior : SceneBusParticipant
             var startPosition = sourceModule.gameObject.transform.position;
             RenderLazer(startPosition, endPosition);
         }
-        
+        targetModule.OnDamaged(5);
     }
 
     private void RenderLazer(Vector3 startPosition, Vector3 endPosition)
