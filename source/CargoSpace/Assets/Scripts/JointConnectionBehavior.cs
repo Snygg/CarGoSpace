@@ -33,7 +33,7 @@ internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
     public SerializableReactiveProperty<float> hp = new(1);
     SerializableReactiveProperty<float> IModuleConnection.Hp => hp;
 
-    public void Attach(IModuleHost parent, IModuleRoot child, Vector2 relativeLocation)
+    public void Attach(IModuleHost parent, IModuleRoot child)
     {
         if (child == null)
         {

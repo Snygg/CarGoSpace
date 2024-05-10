@@ -198,10 +198,10 @@ public class DirectorBehavior : SceneBusParticipant
         
         var npcEngine = Instantiate(NpcEnginePrefab, npcGo.transform);
         npcEngine.transform.Translate(-1, 0,0);
-        CreateConnection(npcGo, npcEngine, new Vector2(7f,0));
+        CreateConnection(npcGo, npcEngine);
         
         var empty = Instantiate(EmptyModulePrefab,npcGo.transform);
-        CreateConnection(npcGo, empty, new Vector2(-7f,0));
+        CreateConnection(npcGo, empty);
         
         var npcFollower = npcGo.AddComponent<NpcFollowBehavior>();
         npcFollower.target = PlayerShipObject.transform;
@@ -209,7 +209,7 @@ public class DirectorBehavior : SceneBusParticipant
         npcGo.AddComponent<BoxCollider2D>();
     }
 
-    private static void CreateConnection(GameObject parent, GameObject child, Vector2 relativeLocation)
+    public static void CreateConnection(GameObject parent, GameObject child)
     {
         if (!parent.TryGetComponent<IModuleHost>(out var moduleHost))
         {
@@ -222,7 +222,7 @@ public class DirectorBehavior : SceneBusParticipant
         }
         
         var connectionBehavior = child.AddComponent<JointConnectionBehavior>();
-        connectionBehavior.Attach(moduleHost, module, relativeLocation);
+        connectionBehavior.Attach(moduleHost, module);
 
         moduleHost.Attach(connectionBehavior);
         module.Attach(connectionBehavior);

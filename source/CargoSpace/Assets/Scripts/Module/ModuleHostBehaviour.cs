@@ -23,6 +23,18 @@ namespace Module
             {
                 Rigidbody = GetComponent<Rigidbody2D>();
             }
+
+            var modules = GetComponentsInChildren<IModuleRoot>();
+            var parent = gameObject;
+            foreach (var module in modules)
+            {
+                if (_moduleSubscriptions.ContainsKey(module))
+                {
+                    continue;
+                }
+                var child = module.gameObject;
+                DirectorBehavior.CreateConnection(parent, child);
+            }
         }
         
         public bool Attach(IModuleConnection connection)
