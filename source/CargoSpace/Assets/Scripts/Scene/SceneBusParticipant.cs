@@ -11,7 +11,7 @@ namespace Scene
     {
         private readonly DisposableBag _disposables = new(); 
         private Lazy<CgsBus> _lazyBus;
-        private CgsBus ModuleBus => _lazyBus.Value;
+        private CgsBus Bus => _lazyBus.Value;
         
         protected delegate void TopicHandler(IReadOnlyDictionary<string, string> body);
 
@@ -99,7 +99,7 @@ namespace Scene
             [CallerLineNumber] int callerLineNumber = -1,
             [CallerFilePath] string callerFilePath = "unknownFile")
         {
-            ModuleBus.Publish(topic, 
+            Bus.Publish(topic, 
                 body ?? CgsBus.EmptyDictionary,
                 context: context ?? this,
                 callerMemberName: callerMemberName,
@@ -121,7 +121,7 @@ namespace Scene
             }
             void Callback(IReadOnlyDictionary<string, string> a) => handler(a);
 
-            return ModuleBus.Subscribe(
+            return Bus.Subscribe(
                 topic,
                 Callback,
                 context:context ?? this,

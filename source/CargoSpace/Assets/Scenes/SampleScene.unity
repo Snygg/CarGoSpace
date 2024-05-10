@@ -383,7 +383,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Indestructable: 0
-  IsPlayer: 0
+  IsPlayer: 1
   InitialHealth: 1
 --- !u!114 &216617358
 MonoBehaviour:
@@ -1541,7 +1541,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Indestructable: 0
-  IsPlayer: 0
+  IsPlayer: 1
   InitialHealth: 1
 --- !u!114 &782454249
 MonoBehaviour:
@@ -2708,7 +2708,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Indestructable: 0
-  IsPlayer: 0
+  IsPlayer: 1
   InitialHealth: 1
 --- !u!114 &2113600755
 MonoBehaviour:

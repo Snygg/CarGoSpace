@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
-using Module;
 using UnityEngine;
 using Utils;
 
-public class TargetableModuleBehavior : ModuleBusParticipant, ITargetable
+public class TargetableModuleBehavior : MonoBehaviour, ITargetable
 {
     string id { get; }
     public bool Indestructable;
@@ -44,11 +42,6 @@ public class TargetableModuleBehavior : ModuleBusParticipant, ITargetable
         {
             return;
         }
-        Publish(ModuleEvents.HpPercentChanged, new Dictionary<string, string>
-        {
-            {"Previous", _previousPercentHealth.ToString()},
-            {"PercentHp", percentHealth.ToString()}
-        });
         _previousPercentHealth = percentHealth;
         
     }
