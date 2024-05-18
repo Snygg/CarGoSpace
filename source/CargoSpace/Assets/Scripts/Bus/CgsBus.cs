@@ -148,6 +148,7 @@ namespace Bus
 
         public void Dispose()
         {
+            _topics.Clear();
             Dispose(true);
             GC.SuppressFinalize(this);
         }

@@ -2,16 +2,20 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Bus;
+using Logging;
+using Player;
 using R3;
 using UnityEngine;
 
-namespace Scene
+namespace Ship
 {
-    public abstract class SceneBusParticipant : MonoBehaviour
+    [RequireComponent(typeof(IShipBusProvider))]
+    public abstract class ShipBusParticipant : MonoBehaviour
     {
-        private readonly DisposableBag _disposables = new(); 
-        private Lazy<CgsBus> _lazyBus;
-        private CgsBus Bus => _lazyBus.Value;
+        private readonly DisposableBag _disposables = new();
+        private IShipBusProvider _shipBusProvider;
+        private LogBehavior _logger;
+        private CgsBus Bus => _shipBusProvider.Bus;
         
         protected delegate void TopicHandler(IReadOnlyDictionary<string, string> body);
 
@@ -31,21 +35,14 @@ namespace Scene
             }
             finally
             {
-                _lazyBus = GetSceneBus();
+                _logger = LogManager.GetLogger();
+                _shipBusProvider = GetComponent<IShipBusProvider>();
+                if (_shipBusProvider == null)
+                {
+                    _logger.Bus.LogWarning("Cannot find ship bus", this);
+                }
                 Awoke();    
             }
-        }
-
-        private Lazy<CgsBus> GetSceneBus()
-        {
-            var busBehavior = GameObject.FindObjectOfType<SceneBusRoot>();
-            if (busBehavior == null || busBehavior.LazyBus == null)
-            {
-                //todo: log this
-                return null;
-            }
-
-            return busBehavior.LazyBus;
         }
 
         /// <summary>
@@ -113,7 +110,7 @@ namespace Scene
         {
             if (handler == null)
             {
-                throw new ArgumentException("Handler cannot be null", nameof(handler));
+                _logger.Bus.LogError("Handler cannot be null", this);
             }
             void Callback(IReadOnlyDictionary<string, string> a) => handler(a);
 
@@ -143,7 +140,7 @@ namespace Scene
                 callerFilePath: callerFilePath));
         }
 
-        protected void AddLifeTimeSubscription(
+        private void AddLifeTimeSubscription(
             IDisposable subscription,
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "unknownCaller",
