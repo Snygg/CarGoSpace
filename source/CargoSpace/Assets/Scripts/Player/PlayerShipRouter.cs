@@ -9,7 +9,7 @@ namespace Player
     /// ship events and publish as scene events. There should only be one of these components per ship.
     /// </summary>
     [RequireComponent(typeof(IShipBusProvider))]
-    public class PlayerShipBusRouter : MonoBehaviour
+    public class PlayerShipRouter : MonoBehaviour
     {
         private IShipBusProvider _shipBusProvider;
         private CgsBus _sceneBus;
