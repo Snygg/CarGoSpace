@@ -19,7 +19,7 @@ namespace Bus
             _topics = new Dictionary<string, BusTopic<IReadOnlyDictionary<string,string>>>();
         }
 
-        private void Publish(
+        public void Publish(
             string topic, 
             IReadOnlyDictionary<string, string> body = null,
             UnityEngine.Object context = null,
@@ -68,7 +68,7 @@ namespace Bus
                 callerFilePath: callerFilePath);
         }
 
-        private IDisposable Subscribe(
+        public IDisposable Subscribe(
             string topic, 
             Action<IReadOnlyDictionary<string,string>> callback,
             UnityEngine.Object context = null,
@@ -105,7 +105,34 @@ namespace Bus
             
             return t.Observable
                 .SubscribeOnThreadPool()
-                .Subscribe(callback);
+                .Subscribe(callback,
+                    ex=>OnError(ex,context, callerMemberName, callerLineNumber, callerFilePath), 
+                    r=>OnCompleted(r,context, callerMemberName, callerLineNumber, callerFilePath));
+        }
+
+        private void OnError(Exception ex,
+            UnityEngine.Object context = null,
+            [CallerMemberName] string callerMemberName = "unknownCaller",
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
+        {
+            try
+            {
+                _logger.LogError(ex, context, callerMemberName, callerLineNumber, callerFilePath);
+            }
+            catch
+            {
+                //if we error while logging we give up
+            }
+        }
+
+        private void OnCompleted(Result result,
+            UnityEngine.Object context = null,
+            [CallerMemberName] string callerMemberName = "unknownCaller",
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
+        {
+            //intentionally blank
         }
 
         public IDisposable Subscribe(
