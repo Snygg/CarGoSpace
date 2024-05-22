@@ -422,6 +422,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   WeaponGroup:
     value: 3
+  SecondsBetweenShots:
+    value: 1
+  TurretOffset:
+    value: {x: 0, y: 0.66}
 --- !u!1 &236171099
 GameObject:
   m_ObjectHideFlags: 0

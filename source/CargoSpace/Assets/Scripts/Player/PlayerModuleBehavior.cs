@@ -106,7 +106,7 @@ namespace Player
             }
 
             var first = group.First();
-            var currentState = first.AutoFiring;
+            var currentState = first.AutoFiring.CurrentValue;
             var newState = !currentState;
             foreach (var weapon in group)
             {

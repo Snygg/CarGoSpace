@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+﻿using R3;
+using UnityEngine;
 
 namespace Weapons
 {
     public interface IControllableWeapon
     {
-        bool AutoFiring { get; }
+        ReadOnlyReactiveProperty<bool> AutoFiring { get; }
         void SetAutoFire(bool doFire);
         GameObject gameObject { get ; } 
     }
