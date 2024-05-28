@@ -92,7 +92,7 @@ public class PlayerShipMovementBehavior : SceneBusParticipant
         var body = new Dictionary<string, string>();
         body["position"] = position.ToString();
 
-        Publish(SceneEvents.PlayerTransform, body);
+        Publish(SceneEvents.PlayerTransform, body, this);
     }
     
     

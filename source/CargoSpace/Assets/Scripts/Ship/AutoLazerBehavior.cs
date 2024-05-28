@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using Logging;
 using R3;
+using Scene;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Weapons;
 
 namespace Ship
 {
-    public class AutoLazerBehavior : MonoBehaviour, IControllableWeapon, IGroupableWeapon
+    public class AutoLazerBehavior : SceneBusParticipant, IControllableWeapon, IGroupableWeapon
     {
         public SerializableReactiveProperty<string> WeaponGroup = new(string.Empty);
         public SerializableReactiveProperty<float> SecondsBetweenShots = new(-1);
@@ -15,17 +17,17 @@ namespace Ship
         ReadOnlyReactiveProperty<string> IGroupableWeapon.GroupName => WeaponGroup;
         private LogBehavior _logger;
 
-        private void Awake()
+        protected override void Awoke()
         {
             _logger = LogManager.GetLogger();
 
             var disposables = Disposable.CreateBuilder();
 
             AutoFiring
-                .CombineLatest(SecondsBetweenShots, (b,f)=>new Tuple<bool, float>(b,f))
-                .Where(tuple => tuple.Item1 && tuple.Item2 >=0)
-                .Select(_ => Observable
-                    .Interval(TimeSpan.FromSeconds(SecondsBetweenShots.CurrentValue), destroyCancellationToken)
+                .Where(autoFiring => autoFiring)
+                .CombineLatest(SecondsBetweenShots.Where(s=> s>=0), (b,f)=>f)
+                .Select(intervalSeconds => Observable
+                    .Interval(TimeSpan.FromSeconds(intervalSeconds), destroyCancellationToken)
                     .TakeUntil(AutoFiring.Where(d => !d)))
                 .Switch()
                 .Subscribe(_=>OnFire())
@@ -37,6 +39,13 @@ namespace Ship
         private void OnFire()
         {
             _logger.Player.LogWarning("Weapon Group:{0}",this ,values: new System.Object[]{WeaponGroup});
+            
+            Publish(SceneEvents.TurretFired, new Dictionary<string, string>
+            {
+                { "source", TurretOffset.CurrentValue.ToString() },
+                { "type", "laser" },
+                { "strength", 9000.1f.ToString(CultureInfo.InvariantCulture) }
+            });
         }
 
         public SerializableReactiveProperty<bool> AutoFiring { get; } = new(false);

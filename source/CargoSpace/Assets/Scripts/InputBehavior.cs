@@ -26,10 +26,7 @@ public class InputBehavior : SceneBusParticipant
         {
             var worldLocation = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-            Publish(SceneEvents.PlayerClicked, new Dictionary<string, string>
-            {
-                {"location",  ((Vector2) worldLocation).ToString()}
-            });
+            OnPlayerClicked(worldLocation);
         }
 
         var key3 = Input.GetKeyDown(KeyCode.Alpha3);
@@ -52,5 +49,43 @@ public class InputBehavior : SceneBusParticipant
                     { "key", "333" }
                 });
         }
+    }
+    
+    private void OnPlayerClicked(Vector2 location)
+    {
+        var rayCastHitList = GetRayCastHitList(location);
+        if (rayCastHitList == null)
+        {
+            return;
+        }
+        var clicked = GetClickedTargetable(rayCastHitList);
+        
+        Publish(SceneEvents.PlayerTargetChanged, 
+            new Dictionary<string, string>{{"targetId",clicked?.TargetId}},
+            context:this);
+    }
+    
+    private List<RaycastHit2D> GetRayCastHitList(Vector2 clickLocation)
+    {
+        List<RaycastHit2D> hitResults = new List<RaycastHit2D>();
+        Physics2D.Raycast(clickLocation, Vector2.up * .00001f, new ContactFilter2D(), hitResults);
+        return hitResults;
+    }
+
+    private ITargetable GetClickedTargetable (List<RaycastHit2D> hitResults)
+    {
+        ITargetable targetable = null;
+        foreach (var hitResult in hitResults)
+        {
+            if (!hitResult.collider ||
+                !hitResult.collider.gameObject ||
+                !hitResult.collider.gameObject.TryGetComponent(out targetable))
+            {
+                continue;
+            }
+            break;
+        }
+
+        return targetable;
     }
 }

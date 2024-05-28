@@ -1,22 +1,48 @@
+using System.Collections.Generic;
+using Scene;
 using UnityEngine;
 
-public class ReticleBehavior : MonoBehaviour
+public class ReticleBehavior : SceneBusParticipant
 {
-    public bool IsActive;
-    public GameObject TargetedObject;
-    // Start is called before the first frame update
-    void Start()
+    public ITransformProvider TargetTransformProvider;
+    private ILookupService _lookupService;
+
+    protected override void Awoke()
     {
-       
+        _lookupService = LookupServiceManager.GetService();
+        AddLifeTimeSubscription(SceneEvents.PlayerTargetChanged, OnPlayerTargetChanged,context:this);      
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnPlayerTargetChanged(IReadOnlyDictionary<string, string> body)
     {
-        if (TargetedObject)
+        
+        if (!body.TryGetValue("targetId", out var targetId))
         {
-            transform.position = TargetedObject.transform.position;
+            return;
         }
         
+        if (string.IsNullOrWhiteSpace(targetId))
+        {
+            TargetTransformProvider = null;
+            return;
+        }
+        var targetable = _lookupService.GetTargetableById(targetId);
+        
+        if (targetable == null && TargetTransformProvider != null)
+        {
+            TargetTransformProvider = null;
+            return;
+        }
+        TargetTransformProvider = targetable.TransformProvider;
+    }
+
+    void Update()
+    {
+        if (TargetTransformProvider == null)
+        {
+            return;
+        }
+
+        transform.position = TargetTransformProvider.Transform.position;
     }
 }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Logging;
 using Module;
-using Npc;
 using Scene;
 using UnityEngine;
 using Utils;
@@ -19,7 +18,6 @@ public class DirectorBehavior : SceneBusParticipant
     public GameObject PlayerTargeted { get; private set; }
     public GameObject PlayerShipObject;
     public GameObject LaserPrefab;
-    public GameObject PlayerReticle;
 
     // Start is called before the first frame update
     private void Start()
@@ -27,7 +25,6 @@ public class DirectorBehavior : SceneBusParticipant
         _logger = LogManager.GetLogger();
         AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCreate, OnCreateNpc));
         AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCommand, OnNpcCommand));
-        AddLifeTimeSubscription(Subscribe(SceneEvents.PlayerClicked, OnPlayerClicked));
         AddLifeTimeSubscription(Subscribe(SceneEvents.TurretFired, OnTurretFired));
         AddLifeTimeSubscription(Subscribe(SceneEvents.KeyPressed, OnKeyPressed));
     }
@@ -44,75 +41,15 @@ public class DirectorBehavior : SceneBusParticipant
             return;
         }
 
-        FireWeaponGroup(key);
+        ToggleWeaponGroup(key);
     }
 
-    private void FireWeaponGroup(string group)
+    private void ToggleWeaponGroup(string group)
     {
         Publish(SceneEvents.ToggleWeaponGroup, new Dictionary<string, string>
         {
             {"group", group }
         });
-    }
-
-    private void OnPlayerClicked(IReadOnlyDictionary<string, string> body)
-    {
-        const string key = "location";
-        if (!body.TryGetVector2(key, out var location))
-        {
-            _logger.Bus.LogError(new ArgumentException($"{key} not a valid vector", nameof(body)));
-            return;
-        }
-
-        var clicked = GetClickedObject(GetRayCastHitList(location));
-        if (!clicked)
-        {
-            PlayerTargeted = null;
-            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
-            ret.TargetedObject = null;
-            return;
-        }
-        var targets = clicked.GetComponentsInChildren<ITargetable>();
-        var otherTarget = targets.FirstOrDefault(t => !t.IsPlayer);
-        if (otherTarget != null) // next: needs to only set target if turret is selected
-        {
-            PlayerTargeted = clicked;
-            //add reticle , get component elsewhere
-            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
-            ret.TargetedObject = PlayerTargeted;
-        }
-        //else if (clicked == <one of the turrets>)
-        //{
-        //embellish to add turrets, check if turret is selected, then go into targeting mode
-        //}
-        else
-        {
-            PlayerTargeted = null;
-            var ret = PlayerReticle.GetComponent<ReticleBehavior>();
-            ret.TargetedObject = null;
-        }
-    }
-
-    private List<RaycastHit2D> GetRayCastHitList(Vector2 clickLocation)
-    {
-        List<RaycastHit2D> hitResults = new List<RaycastHit2D>();
-        Physics2D.Raycast(clickLocation, Vector2.up * .00001f, new ContactFilter2D(), hitResults);
-        return hitResults;
-    }
-
-    private GameObject GetClickedObject (List<RaycastHit2D> hitResults)
-    {
-        var result = hitResults.FirstOrDefault(hr =>
-            hr.collider &&
-            hr.collider.gameObject &&
-            hr.collider.gameObject.TryGetComponent<ITargetable>(out _));
-
-        if (!result)
-        {
-            return null;
-        }
-
-        return result.collider.gameObject;
     }
 
     private void OnTurretFired(IReadOnlyDictionary<string, string> body)
@@ -124,7 +61,7 @@ public class DirectorBehavior : SceneBusParticipant
         const string key = "source";
         if (!body.TryGetVector2(key, out var location))
         {
-            _logger.Bus.LogError(new ArgumentException($"{key} not a valid vector", nameof(body)));
+            _logger.Bus.LogError(new ArgumentException($"{key} not a valid vector", nameof(body)), context: this);
             return;
         }
 
@@ -137,12 +74,6 @@ public class DirectorBehavior : SceneBusParticipant
         if (body.TryGetValue("type", out string hitType))
         {
             if (!body.TryGetFloat("strength", out float strength))
-            {
-                //log
-                return;
-            }
-
-            if (!body.TryGetValue("source", out string source))
             {
                 //log
                 return;
@@ -197,16 +128,21 @@ public class DirectorBehavior : SceneBusParticipant
         npcGo.transform.parent = NpcList.transform;
         
         var npcEngine = Instantiate(NpcEnginePrefab, npcGo.transform);
+        npcEngine.name = $"mod {timeStamp}.1";
         npcEngine.transform.Translate(-1, 0,0);
         CreateConnection(npcGo, npcEngine);
         
         var empty = Instantiate(EmptyModulePrefab,npcGo.transform);
+        empty.name = $"mod {timeStamp}.2";
         CreateConnection(npcGo, empty);
         
         var npcFollower = npcGo.AddComponent<NpcFollowBehavior>();
         npcFollower.target = PlayerShipObject.transform;
 
         npcGo.AddComponent<BoxCollider2D>();
+        
+        //todo: publish npc created event
+        //Publish(SceneEvents.NpcCreated, new Dictionary<string, string>{{"targetId",npcGo.name}}, context:this);
     }
 
     public static void CreateConnection(GameObject parent, GameObject child)

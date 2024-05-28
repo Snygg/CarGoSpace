@@ -280,7 +280,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 216617353}
-  - component: {fileID: 216617356}
   - component: {fileID: 216617355}
   - component: {fileID: 216617359}
   - component: {fileID: 216617360}
@@ -336,21 +335,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!114 &216617356
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 216617352}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fcff1260b79d4834db5140b7a106b6e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Interval: 1
-  Turret: {fileID: 852262152}
-  WeaponGroup: 3
 --- !u!61 &216617359
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1828,8 +1812,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bf850b5e5194c149b943ec5802fffbc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  IsActive: 0
-  TargetedObject: {fileID: 0}
 --- !u!1 &1249913161
 GameObject:
   m_ObjectHideFlags: 0
@@ -2498,7 +2480,6 @@ MonoBehaviour:
   NpcList: {fileID: 236171099}
   PlayerShipObject: {fileID: 326857465}
   LaserPrefab: {fileID: 4636465334105788736, guid: 4e3de7aa2bf2f4d449d16b713f3ae0f7, type: 3}
-  PlayerReticle: {fileID: 1232305560}
 --- !u!1 &1638199610
 GameObject:
   m_ObjectHideFlags: 0

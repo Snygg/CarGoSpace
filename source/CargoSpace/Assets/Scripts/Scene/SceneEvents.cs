@@ -29,10 +29,11 @@ namespace Scene
         {
             {"command", typeof(string)}
         });
-        public static readonly BusTopic PlayerClicked = new BusTopic("playerClicked", new Dictionary<string, Type>
+        public static readonly BusTopic PlayerTargetChanged = new BusTopic("playerTargetChanged", new Dictionary<string, Type>
         {
-            {"location", typeof(Vector2)}
+            {"targetId", typeof(Guid)}
         });
+        [Obsolete("This will be remove in future versions")]
         public static readonly BusTopic KeyPressed = new BusTopic("keyPressed", new Dictionary<string, Type>
         {
             {"key", typeof(string)}

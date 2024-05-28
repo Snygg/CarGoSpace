@@ -9,7 +9,8 @@ using Weapons;
 
 namespace Player
 {
-    public class PlayerModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterProvider, IWeaponModule
+    public class PlayerModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterProvider, IWeaponModule,
+        ITransformProvider
     {
         public bool IsAttachable => _connection == null;
         private IModuleConnection _connection;
@@ -20,6 +21,9 @@ namespace Player
         public ReactiveProperty<IReadOnlyCollection<IControllableWeapon>> WeaponGroup3 { get; } = new(Array.Empty<IControllableWeapon>());
 
         GameObject IComponent.gameObject => gameObject;
+        string ITargetable.TargetId => name;
+        public ITransformProvider TransformProvider => this;
+        Transform ITransformProvider.Transform => transform;
 
         private void Awake()
         {

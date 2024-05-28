@@ -11,7 +11,7 @@ namespace Player
     /// <summary>
     /// The place to subscribe to scene bus events and turn them in to ship-wide behavior. There should only be one of these components per ship.
     /// </summary>
-    public class PlayerShipRouter : MonoBehaviour
+    public class PlayerShipRouter : MonoBehaviour, ILazerRenderer
     {
         private CgsBus _sceneBus;
         private LogBehavior _logger;
@@ -48,5 +48,10 @@ namespace Player
                 module.ToggleWeaponGroup(groupName);   
             }   
         }
+    }
+
+    public interface ILazerRenderer
+    {
+        
     }
 }
