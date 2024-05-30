@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Logging;
 using Module;
 using Npc;
 using R3;
@@ -16,6 +17,7 @@ namespace Player
         private IModuleConnection _connection;
         private readonly DisposableBag _attachSubscriptions = new();
         private IThruster[] _thrusters;
+        private LogBehavior _logger;
         public ReactiveProperty<IReadOnlyCollection<IControllableWeapon>> WeaponGroup1 { get; } = new(Array.Empty<IControllableWeapon>());
         public ReactiveProperty<IReadOnlyCollection<IControllableWeapon>> WeaponGroup2 { get; } = new(Array.Empty<IControllableWeapon>());
         public ReactiveProperty<IReadOnlyCollection<IControllableWeapon>> WeaponGroup3 { get; } = new(Array.Empty<IControllableWeapon>());
@@ -27,6 +29,7 @@ namespace Player
 
         private void Awake()
         {
+            _logger = LogManager.GetLogger();
             _thrusters = GetComponents<IThruster>();
             var weaponComponents = GetComponents<IControllableWeapon>();
             var x = weaponComponents.Aggregate(new Dictionary<string, List<IControllableWeapon>>(), (d,w) =>

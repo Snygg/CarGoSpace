@@ -23,12 +23,29 @@ namespace Ship
 
             var disposables = Disposable.CreateBuilder();
 
-            AutoFiring
-                .Where(autoFiring => autoFiring)
-                .CombineLatest(SecondsBetweenShots.Where(s=> s>=0), (b,f)=>f)
-                .Select(intervalSeconds => Observable
-                    .Interval(TimeSpan.FromSeconds(intervalSeconds), destroyCancellationToken)
-                    .TakeUntil(AutoFiring.Where(d => !d)))
+            var playerTargetChanged = Subscribe(SceneEvents.PlayerTargetChanged, this);
+            var hasTarget = playerTargetChanged
+                .Select(d => d.TryGetValue("targetId", out var targetId) && !string.IsNullOrWhiteSpace(targetId))
+                .DistinctUntilChanged();
+
+            var hasValidInterval = SecondsBetweenShots.Where(s=> s>=0);
+            var hasTargetTrue = hasTarget.Where(h=>h);
+            var autoFiringTrue = AutoFiring
+                .Where(autoFiring => autoFiring);
+            autoFiringTrue
+                .CombineLatest(hasValidInterval, (_,f)=>f)
+                .CombineLatest(hasTargetTrue,(f,_)=>f)
+                .Select(intervalSeconds =>
+                {
+                    var autoFiringFalse = AutoFiring.Where(d => !d);
+                    var hasTargetFalse = hasTarget.Where(h => !h);
+                    var stopInterval = Observable.Amb(
+                        autoFiringFalse,
+                        hasTargetFalse);
+                    return Observable
+                        .Interval(TimeSpan.FromSeconds(intervalSeconds), destroyCancellationToken)
+                        .TakeUntil(stopInterval);
+                })
                 .Switch()
                 .Subscribe(_=>OnFire())
                 .AddTo(ref disposables);

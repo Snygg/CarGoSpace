@@ -31,11 +31,6 @@ public class DirectorBehavior : SceneBusParticipant
 
     private void OnKeyPressed(IReadOnlyDictionary<string, string> body)
     {
-        if (!PlayerTargeted)
-        {
-            return;
-        }
-
         if (!body.TryGetValue("key", out var key))
         {
             return;

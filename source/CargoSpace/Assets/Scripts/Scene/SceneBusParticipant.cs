@@ -103,6 +103,21 @@ namespace Scene
                 callerFilePath:callerFilePath);
         }
 
+        protected Observable<IReadOnlyDictionary<string, string>> Subscribe(
+            BusTopic topic,
+            UnityEngine.Object context = null,
+            [CallerMemberName] string callerMemberName = "unknownCaller",
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
+        {
+            return Bus.Subscribe(
+                topic, 
+                context:context ?? this, 
+                callerMemberName: 
+                callerMemberName, 
+                callerLineNumber: callerLineNumber, 
+                callerFilePath: callerFilePath);
+        }
         protected IDisposable Subscribe(
             BusTopic topic, 
             TopicHandler handler,

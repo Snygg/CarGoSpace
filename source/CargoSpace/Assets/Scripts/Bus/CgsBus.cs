@@ -68,9 +68,17 @@ namespace Bus
                 callerFilePath: callerFilePath);
         }
 
-        public IDisposable Subscribe(
-            string topic, 
-            Action<IReadOnlyDictionary<string,string>> callback,
+        public Observable<IReadOnlyDictionary<string,string>> Subscribe(
+            BusTopic topic,
+            UnityEngine.Object context = null,
+            [CallerMemberName] string callerMemberName = "unknownCaller",
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
+        {
+            return Subscribe(topic.Name, context, callerMemberName, callerLineNumber, callerFilePath);
+        }
+        public Observable<IReadOnlyDictionary<string, string>> Subscribe(
+            string topic,
             UnityEngine.Object context = null,
             [CallerMemberName] string callerMemberName = "unknownCaller",
             [CallerLineNumber] int callerLineNumber = -1,
@@ -79,11 +87,6 @@ namespace Bus
             if (string.IsNullOrWhiteSpace(topic))
             {
                 throw new ArgumentException("topic cannot be blank", nameof(topic));
-            }
-
-            if (callback == null)
-            {
-                throw new ArgumentException("callback cannnot be null", nameof(callback));
             }
             if (!_topics.TryGetValue(topic, out var t))
             {
@@ -95,16 +98,27 @@ namespace Bus
                 };
                 _topics.Add(topic, t);
             }
-
             _logger.LogVerbose(
                 $"Subscribe:{topic}",
                 context: context,
                 callerMemberName: callerMemberName,
                 callerLineNumber: callerLineNumber,
                 callerFilePath: callerFilePath);
-            
             return t.Observable
-                .SubscribeOnThreadPool()
+                .SubscribeOnThreadPool();
+        }
+        
+        public IDisposable Subscribe(
+            string topic, 
+            Action<IReadOnlyDictionary<string,string>> callback,
+            UnityEngine.Object context = null,
+            [CallerMemberName] string callerMemberName = "unknownCaller",
+            [CallerLineNumber] int callerLineNumber = -1,
+            [CallerFilePath] string callerFilePath = "unknownFile")
+        {
+            var t = Subscribe(topic, context, callerMemberName, callerLineNumber, callerFilePath);
+            
+            return t
                 .Subscribe(callback,
                     ex=>OnError(ex,context, callerMemberName, callerLineNumber, callerFilePath), 
                     r=>OnCompleted(r,context, callerMemberName, callerLineNumber, callerFilePath));
