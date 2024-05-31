@@ -25,7 +25,7 @@ public class DirectorBehavior : SceneBusParticipant
         _logger = LogManager.GetLogger();
         AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCreate, OnCreateNpc));
         AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCommand, OnNpcCommand));
-        AddLifeTimeSubscription(Subscribe(SceneEvents.TurretFired, OnTurretFired));
+        AddLifeTimeSubscription(SceneEvents.TurretFired, OnTurretFired);
         AddLifeTimeSubscription(Subscribe(SceneEvents.KeyPressed, OnKeyPressed));
     }
 
@@ -49,20 +49,15 @@ public class DirectorBehavior : SceneBusParticipant
 
     private void OnTurretFired(IReadOnlyDictionary<string, string> body)
     {
-        if (!PlayerTargeted)
+        if (!body.TryGetVector2("source", out var source))
         {
-            return;
-        }
-        const string key = "source";
-        if (!body.TryGetVector2(key, out var location))
-        {
-            _logger.Bus.LogError(new ArgumentException($"{key} not a valid vector", nameof(body)), context: this);
+            _logger.Bus.LogError(new ArgumentException($"{nameof(source)} not a valid vector", nameof(body)), context: this);
             return;
         }
 
-        if (body == null)
+        if (!body.TryGetVector2("destination", out var destination))
         {
-            _logger.Combat.LogError(new ArgumentException("body cannot be null", nameof(body)), context: this);
+            _logger.Bus.LogError(new ArgumentException($"{nameof(destination)} not a valid vector", nameof(body)), context: this);
             return;
         }
 
@@ -77,7 +72,7 @@ public class DirectorBehavior : SceneBusParticipant
             switch (hitType)
             {
                 case "laser":
-                    FireLaser(location, (Vector2)PlayerTargeted.transform.position - location, strength);
+                    FireLaser(source, destination, strength);
                     break;
                 case "tractor":
                     //FireTractorBeam(source, strength);
@@ -92,12 +87,13 @@ public class DirectorBehavior : SceneBusParticipant
         Physics2D.Raycast(source, targetDirection, new ContactFilter2D(), hitResults);
         var raycastHit2D = hitResults.FirstOrDefault(hr =>
             hr.collider &&
-            hr.collider.gameObject);
+            hr.collider.gameObject &&
+            Vector2.Distance(hr.collider.gameObject.transform.position, source)> 1 );
         if (raycastHit2D && raycastHit2D.collider.gameObject.TryGetComponent<ITargetable>(out var tgt))
         {
             RenderLazer(source, raycastHit2D.point);
             tgt.OnDamaged(strength);
-            _logger.Combat.LogDebug("Player hit target");
+            _logger.Combat.LogDebug("Player hit target:{0}", context:this, values: new object[]{tgt});
         }
         else
         {

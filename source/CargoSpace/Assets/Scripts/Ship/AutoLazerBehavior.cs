@@ -24,42 +24,55 @@ namespace Ship
             var disposables = Disposable.CreateBuilder();
 
             var playerTargetChanged = Subscribe(SceneEvents.PlayerTargetChanged, this);
-            var hasTarget = playerTargetChanged
-                .Select(d => d.TryGetValue("targetId", out var targetId) && !string.IsNullOrWhiteSpace(targetId))
+            var playerTargetId = playerTargetChanged
+                .Select(d => d.TryGetValue("targetId", out var targetId) && !string.IsNullOrWhiteSpace(targetId)
+                    ? targetId
+                    : null)
                 .DistinctUntilChanged();
+            var playerTargetable = playerTargetId
+                .DistinctUntilChanged()
+                .Select(id => LookupServiceManager.GetService().GetTargetableById(id))
+                .ToReadOnlyReactiveProperty();
+            //var hasTarget = playerTargetable.Select(t=>t!=null)
+             //   .DistinctUntilChanged();
 
             var hasValidInterval = SecondsBetweenShots.Where(s=> s>=0);
-            var hasTargetTrue = hasTarget.Where(h=>h);
+            var hasTargetTrue = playerTargetable.Where(h=>h!=null);
             var autoFiringTrue = AutoFiring
                 .Where(autoFiring => autoFiring);
             autoFiringTrue
                 .CombineLatest(hasValidInterval, (_,f)=>f)
-                .CombineLatest(hasTargetTrue,(f,_)=>f)
-                .Select(intervalSeconds =>
+                .CombineLatest(hasTargetTrue,(f,t)=>new Tuple<float, ITargetable>(f,t))
+                .Select(tuple =>
                 {
-                    var autoFiringFalse = AutoFiring.Where(d => !d);
-                    var hasTargetFalse = hasTarget.Where(h => !h);
+                    var autoFiringFalse = AutoFiring
+                        .Where(d => !d)
+                        .Select(_=>Unit.Default);
+                    var hasTargetFalse = playerTargetable
+                        .Where(h => h == null)
+                        .Select(_=>Unit.Default);
                     var stopInterval = Observable.Amb(
                         autoFiringFalse,
                         hasTargetFalse);
                     return Observable
-                        .Interval(TimeSpan.FromSeconds(intervalSeconds), destroyCancellationToken)
-                        .TakeUntil(stopInterval);
+                        .Interval(TimeSpan.FromSeconds(tuple.Item1), destroyCancellationToken)
+                        .TakeUntil(stopInterval)
+                        .Select(_=>tuple.Item2);
                 })
                 .Switch()
-                .Subscribe(_=>OnFire())
+                .Subscribe(t=>OnFire(t.TransformProvider.Transform.position))
                 .AddTo(ref disposables);
 
             disposables.RegisterTo(destroyCancellationToken);
         }
 
-        private void OnFire()
+        private void OnFire(Vector2 targetLocation)
         {
-            _logger.Player.LogWarning("Weapon Group:{0}",this ,values: new System.Object[]{WeaponGroup});
-            
+            var source = (Vector2)gameObject.transform.position + TurretOffset.CurrentValue;
             Publish(SceneEvents.TurretFired, new Dictionary<string, string>
             {
-                { "source", TurretOffset.CurrentValue.ToString() },
+                { "source", source.ToString() },
+                {"destination", targetLocation.ToString() }, 
                 { "type", "laser" },
                 { "strength", 9000.1f.ToString(CultureInfo.InvariantCulture) }
             });
