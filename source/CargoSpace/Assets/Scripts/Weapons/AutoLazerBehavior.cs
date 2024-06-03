@@ -7,9 +7,8 @@ using R3;
 using Scene;
 using Unity.Mathematics;
 using UnityEngine;
-using Weapons;
 
-namespace Ship
+namespace Weapons
 {
     public class AutoLazerBehavior : SceneBusParticipant, IControllableWeapon, IGroupableWeapon
     {
@@ -75,14 +74,6 @@ namespace Ship
             
             var strength = 9000.1f;
             FireLaser(source, (targetLocation-source), strength);
-            
-            Publish(SceneEvents.TurretFired, new Dictionary<string, string>
-            {
-                { "source", source.ToString() },
-                {"destination", targetLocation.ToString() }, 
-                { "type", "laser" },
-                { "strength", strength.ToString(CultureInfo.InvariantCulture) }
-            });
         }
 
         public SerializableReactiveProperty<bool> AutoFiring { get; } = new(false);

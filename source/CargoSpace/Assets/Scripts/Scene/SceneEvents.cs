@@ -13,14 +13,6 @@ namespace Scene
                 {"group", typeof(string)}
             });
 
-        public static readonly BusTopic TurretFired = new BusTopic("turretFired",
-            new Dictionary<string, Type>
-            {
-                {"source", typeof(Vector2)},
-                {"type", typeof(string)},
-                {"strength", typeof(float)}
-            });
-
         public static readonly BusTopic NpcCreate = new BusTopic("npcCreate", new Dictionary<string, Type>
         {
             {"location", typeof(Vector3)}
