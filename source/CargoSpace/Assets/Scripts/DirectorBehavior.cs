@@ -15,7 +15,6 @@ public class DirectorBehavior : SceneBusParticipant
     public GameObject NpcEnginePrefab;
     public GameObject EmptyModulePrefab;
     public GameObject NpcList; 
-    public GameObject PlayerTargeted { get; private set; }
     public GameObject PlayerShipObject;
     public GameObject LaserPrefab;
 
@@ -25,7 +24,6 @@ public class DirectorBehavior : SceneBusParticipant
         _logger = LogManager.GetLogger();
         AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCreate, OnCreateNpc));
         AddLifeTimeSubscription(Subscribe(SceneEvents.NpcCommand, OnNpcCommand));
-        AddLifeTimeSubscription(SceneEvents.TurretFired, OnTurretFired);
         AddLifeTimeSubscription(Subscribe(SceneEvents.KeyPressed, OnKeyPressed));
     }
 
@@ -45,61 +43,6 @@ public class DirectorBehavior : SceneBusParticipant
         {
             {"group", group }
         });
-    }
-
-    private void OnTurretFired(IReadOnlyDictionary<string, string> body)
-    {
-        if (!body.TryGetVector2("source", out var source))
-        {
-            _logger.Bus.LogError(new ArgumentException($"{nameof(source)} not a valid vector", nameof(body)), context: this);
-            return;
-        }
-
-        if (!body.TryGetVector2("destination", out var destination))
-        {
-            _logger.Bus.LogError(new ArgumentException($"{nameof(destination)} not a valid vector", nameof(body)), context: this);
-            return;
-        }
-
-        if (body.TryGetValue("type", out string hitType))
-        {
-            if (!body.TryGetFloat("strength", out float strength))
-            {
-                //log
-                return;
-            }
-
-            switch (hitType)
-            {
-                case "laser":
-                    FireLaser(source, destination, strength);
-                    break;
-                case "tractor":
-                    //FireTractorBeam(source, strength);
-                    break;
-            }
-        }
-    }
-
-    private void FireLaser(Vector2 source, Vector2 targetDirection, float strength)
-    {
-        List<RaycastHit2D> hitResults = new List<RaycastHit2D>();
-        Physics2D.Raycast(source, targetDirection, new ContactFilter2D(), hitResults);
-        var raycastHit2D = hitResults.FirstOrDefault(hr =>
-            hr.collider &&
-            hr.collider.gameObject &&
-            Vector2.Distance(hr.collider.gameObject.transform.position, source)> 1 );
-        if (raycastHit2D && raycastHit2D.collider.gameObject.TryGetComponent<ITargetable>(out var tgt))
-        {
-            RenderLazer(source, raycastHit2D.point);
-            tgt.OnDamaged(strength);
-            _logger.Combat.LogDebug("Player hit target:{0}", context:this, values: new object[]{tgt});
-        }
-        else
-        {
-            RenderLazer(source, targetDirection * 100);
-            _logger.Combat.LogVerbose("Player fired and missed");
-        }
     }
 
     private void OnCreateNpc(IReadOnlyDictionary<string, string> body)

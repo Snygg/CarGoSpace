@@ -404,6 +404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d041a4c7b5bd334db048ee13ed52fea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  LaserPrefab: {fileID: 4636465334105788736, guid: 4e3de7aa2bf2f4d449d16b713f3ae0f7, type: 3}
   WeaponGroup:
     value: 3
   SecondsBetweenShots:

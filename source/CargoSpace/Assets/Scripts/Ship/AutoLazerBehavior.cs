@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Logging;
 using R3;
 using Scene;
@@ -11,6 +12,7 @@ namespace Ship
 {
     public class AutoLazerBehavior : SceneBusParticipant, IControllableWeapon, IGroupableWeapon
     {
+        public GameObject LaserPrefab;
         public SerializableReactiveProperty<string> WeaponGroup = new(string.Empty);
         public SerializableReactiveProperty<float> SecondsBetweenShots = new(-1);
         public SerializableReactiveProperty<Vector2> TurretOffset = new();
@@ -69,12 +71,16 @@ namespace Ship
         private void OnFire(Vector2 targetLocation)
         {
             var source = (Vector2)gameObject.transform.position + TurretOffset.CurrentValue;
+            
+            var strength = 9000.1f;
+            FireLaser(source, targetLocation, strength);
+            
             Publish(SceneEvents.TurretFired, new Dictionary<string, string>
             {
                 { "source", source.ToString() },
                 {"destination", targetLocation.ToString() }, 
                 { "type", "laser" },
-                { "strength", 9000.1f.ToString(CultureInfo.InvariantCulture) }
+                { "strength", strength.ToString(CultureInfo.InvariantCulture) }
             });
         }
 
@@ -84,6 +90,62 @@ namespace Ship
         public void SetAutoFire(bool doFire)
         {
             AutoFiring.Value = doFire;
+        }
+        
+        private void FireLaser(Vector2 source, Vector2 targetDirection, float strength)
+        {
+            var ignoredGameobject = GetAllParentGameObjects();
+            List<RaycastHit2D> hitResults = new List<RaycastHit2D>();
+            Physics2D.Raycast(source, targetDirection, new ContactFilter2D(), hitResults);
+            var raycastHit2D = hitResults.FirstOrDefault(hr =>
+                hr.collider &&
+                hr.collider.gameObject &&
+                !ignoredGameobject.Contains(hr.collider.gameObject) );
+            if (raycastHit2D && raycastHit2D.collider.gameObject.TryGetComponent<ITargetable>(out var tgt))
+            {
+                RenderLazer(source, raycastHit2D.point);
+                tgt.OnDamaged(strength);
+                _logger.Combat.LogDebug("Player hit target:{0}", context:this, values: new object[]{tgt});
+            }
+            else
+            {
+                RenderLazer(source, targetDirection * 100);
+                _logger.Combat.LogVerbose("Player fired and missed");
+            }
+        }
+
+        private GameObject[] GetAllParentGameObjects()
+        {
+            var result = new HashSet<GameObject>();
+            var currentTransform = transform;
+            const int numberOfAncestorsToCheck = 4;
+            for (int i = 0; i < numberOfAncestorsToCheck; i++)
+            {
+                var children = currentTransform.GetComponentsInChildren<ITargetable>();
+                foreach (var child in children)
+                {
+                    result.Add(((MonoBehaviour) child).gameObject);
+                }
+                result.Add(currentTransform.gameObject);
+                currentTransform = currentTransform.parent;
+                if (currentTransform == null ||
+                    currentTransform.gameObject == null || 
+                    currentTransform.gameObject == currentTransform.parent?.gameObject)
+                {
+                    break;
+                }
+            }
+            return result
+                .Where(go=>go!= null)
+                .ToArray();
+        }
+
+        private void RenderLazer(Vector3 startPosition, Vector3 endPosition)
+        {
+            var go = Instantiate<GameObject>(LaserPrefab, startPosition, new Quaternion());
+            var lineRenderer = go.GetComponentInChildren<LineRenderer>();
+            lineRenderer.positionCount = 2;
+            lineRenderer.SetPositions(new[] {startPosition, endPosition});
         }
     }
 }
