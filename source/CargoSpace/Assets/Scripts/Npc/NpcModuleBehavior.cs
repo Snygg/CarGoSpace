@@ -56,7 +56,6 @@ namespace Npc
             _connection = null;
         }
 
-        public bool IsPlayer => false;
         public IThruster[] GetThrusters()
         {
             return _thrusters;
