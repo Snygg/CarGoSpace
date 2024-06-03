@@ -365,7 +365,7 @@ MonoBehaviour:
   SecondsBetweenShots:
     value: 1
   TurretOffset:
-    value: {x: -2.17, y: 1.36}
+    value: {x: 0, y: 1.36}
 --- !u!61 &216617362
 BoxCollider2D:
   m_ObjectHideFlags: 0
