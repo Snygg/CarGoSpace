@@ -74,7 +74,7 @@ namespace Ship
             var source = (Vector2)gameObject.transform.position + TurretOffset.CurrentValue;
             
             var strength = 9000.1f;
-            FireLaser(source, targetLocation, strength);
+            FireLaser(source, (targetLocation-source), strength);
             
             Publish(SceneEvents.TurretFired, new Dictionary<string, string>
             {
