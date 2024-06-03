@@ -5,6 +5,7 @@ using System.Linq;
 using Logging;
 using R3;
 using Scene;
+using Unity.Mathematics;
 using UnityEngine;
 using Weapons;
 
@@ -140,12 +141,12 @@ namespace Ship
                 .ToArray();
         }
 
-        private void RenderLazer(Vector3 startPosition, Vector3 endPosition)
+        private void RenderLazer(Vector2 startPosition, Vector2 endPosition)
         {
-            var go = Instantiate<GameObject>(LaserPrefab, startPosition, new Quaternion());
+            var go = Instantiate(LaserPrefab, startPosition, quaternion.identity);
             var lineRenderer = go.GetComponentInChildren<LineRenderer>();
             lineRenderer.positionCount = 2;
-            lineRenderer.SetPositions(new[] {startPosition, endPosition});
+            lineRenderer.SetPositions(new Vector3[] {startPosition, endPosition});
         }
     }
 }
