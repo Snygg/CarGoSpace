@@ -58,7 +58,7 @@ public class InputBehavior : SceneBusParticipant
         {
             return;
         }
-        var clicked = GetClickedTargetable(rayCastHitList);
+        var clicked = GetClickable(rayCastHitList);
         
         Publish(SceneEvents.PlayerTargetChanged, 
             new Dictionary<string, string>{{"targetId",clicked?.TargetId}},
@@ -72,9 +72,9 @@ public class InputBehavior : SceneBusParticipant
         return hitResults;
     }
 
-    private ITargetable GetClickedTargetable (List<RaycastHit2D> hitResults)
+    private IClickable GetClickable (List<RaycastHit2D> hitResults)
     {
-        ITargetable targetable = null;
+        IClickable targetable = null;
         foreach (var hitResult in hitResults)
         {
             if (!hitResult.collider ||

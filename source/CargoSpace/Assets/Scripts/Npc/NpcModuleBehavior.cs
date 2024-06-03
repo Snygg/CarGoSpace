@@ -4,14 +4,15 @@ using UnityEngine;
 
 namespace Npc
 {
-    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterProvider, ITransformProvider
+    public class NpcModuleBehavior: MonoBehaviour, ITargetable, IModuleRoot, IThrusterProvider, ITransformProvider, IClickable
     {
         public bool IsAttachable => _connection == null;
         private IModuleConnection _connection;
         private readonly DisposableBag _attachSubscriptions = new();
         private IThruster[] _thrusters;
         
-        string ITargetable.TargetId => name;
+        public string targetId;
+        public string TargetId => targetId;
 
         GameObject IComponent.gameObject => gameObject;
         public ITransformProvider TransformProvider => this;
@@ -19,6 +20,10 @@ namespace Npc
 
         private void Awake()
         {
+            if (string.IsNullOrEmpty(targetId))
+            {
+                targetId = name;
+            }
             _thrusters = GetComponents<IThruster>();
         }
 
