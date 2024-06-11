@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Logging;
 using Module;
+using Npc;
 using Scene;
 using UnityEngine;
 using Utils;
@@ -73,8 +74,6 @@ public class DirectorBehavior : SceneBusParticipant
         var npcFollower = npcGo.AddComponent<NpcFollowBehavior>();
         npcFollower.target = PlayerShipObject.transform;
 
-        npcGo.AddComponent<BoxCollider2D>();
-        
         //todo: publish npc created event
         //Publish(SceneEvents.NpcCreated, new Dictionary<string, string>{{"targetId",npcGo.name}}, context:this);
     }

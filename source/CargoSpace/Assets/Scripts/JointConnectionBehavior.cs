@@ -20,6 +20,7 @@ internal class JointConnectionBehavior: MonoBehaviour, IModuleConnection
     {
         Destroy(_joint2D);
         Attached.Value = false;
+        Module.Transform.parent = null;
     }
 
     private void OnDestroy()

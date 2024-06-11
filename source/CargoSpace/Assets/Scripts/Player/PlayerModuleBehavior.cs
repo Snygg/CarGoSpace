@@ -15,7 +15,7 @@ namespace Player
     {
         public bool IsAttachable => _connection == null;
         private IModuleConnection _connection;
-        private readonly DisposableBag _attachSubscriptions = new();
+        private readonly DisposableBag _attachSubscriptions = new(); 
         private IThruster[] _thrusters;
         private LogBehavior _logger;
         public ReactiveProperty<IReadOnlyCollection<IControllableWeapon>> WeaponGroup1 { get; } = new(Array.Empty<IControllableWeapon>());
@@ -25,7 +25,8 @@ namespace Player
         GameObject IComponent.gameObject => gameObject;
         public string TargetId => null;
         public ITransformProvider TransformProvider => this;
-        Transform ITransformProvider.Transform => transform;
+        public Transform Transform => transform;
+        public IThrusterProvider ThrusterProvider => this;
 
         private void Awake()
         {

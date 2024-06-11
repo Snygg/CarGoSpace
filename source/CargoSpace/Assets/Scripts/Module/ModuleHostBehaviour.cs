@@ -39,9 +39,9 @@ namespace Module
         
         public bool Attach(IModuleConnection connection)
         {
-            if (connection.Module.gameObject.TryGetComponent<IThrusterProvider>(out var thrusterSource))
+            if (connection.Module.ThrusterProvider != null) 
             {
-                _thrusters.Add(thrusterSource);    
+                _thrusters.Add(connection.Module.ThrusterProvider);
             }
 
             if (!_moduleSubscriptions.ContainsKey(connection.Module))
@@ -51,16 +51,22 @@ namespace Module
             _moduleSubscriptions[connection.Module].Add(connection.Attached
                 .Where(a=>!a)
                 .Take(1)
-                .Subscribe(_=>OnConnectionDestroyed(connection.Module, connection)));
+                .Subscribe(_=>OnConnectionDestroyed(connection)));
             return true;
         }
-
-        private void OnConnectionDestroyed(IModuleRoot module, IModuleConnection connection)
+        
+        private void Detach(IModuleConnection connection)
         {
-            if (_moduleSubscriptions.Remove(module, out var subscriptions))
+            if (_moduleSubscriptions.Remove(connection.Module, out var subscriptions))
             {
                 subscriptions.Dispose();
+                _thrusters.Remove(connection.Module.ThrusterProvider);
             }
+        }
+
+        private void OnConnectionDestroyed(IModuleConnection connection)
+        {
+            Detach(connection);
         }
 
         private IThruster[] thrusters;

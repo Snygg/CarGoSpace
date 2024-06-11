@@ -17,6 +17,7 @@ namespace Npc
         GameObject IComponent.gameObject => gameObject;
         public ITransformProvider TransformProvider => this;
         public Transform Transform => transform;
+        public IThrusterProvider ThrusterProvider => this;
 
         private void Awake()
         {
