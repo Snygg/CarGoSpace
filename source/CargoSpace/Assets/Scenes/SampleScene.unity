@@ -610,6 +610,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Rigidbody: {fileID: 326857469}
+  destroyWhenAllModulesDestroyed:
+    value: 0
 --- !u!114 &326857471
 MonoBehaviour:
   m_ObjectHideFlags: 0

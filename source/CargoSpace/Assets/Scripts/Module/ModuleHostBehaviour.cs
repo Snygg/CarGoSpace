@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Npc;
 using R3;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace Module
         public bool IsAttachable => true;
         public Rigidbody2D Rigidbody;
         Rigidbody2D IRigidBodyProvider.RigidBody => Rigidbody ??= GetComponent<Rigidbody2D>();
+        public SerializableReactiveProperty<bool> destroyWhenAllModulesDestroyed = new(true);
 
         private void Awake()
         {
@@ -61,6 +63,12 @@ namespace Module
             {
                 subscriptions.Dispose();
                 _thrusters.Remove(connection.Module.ThrusterProvider);
+            }
+
+            if (destroyWhenAllModulesDestroyed.Value &&
+                !_moduleSubscriptions.Any())
+            {
+                Destroy(gameObject);
             }
         }
 
