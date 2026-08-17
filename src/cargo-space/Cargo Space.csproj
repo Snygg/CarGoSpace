@@ -5,4 +5,9 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>CargoSpace</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Client\" />
+    <Folder Include="Core\" />
+    <Folder Include="Server\" />
+  </ItemGroup>
 </Project>
