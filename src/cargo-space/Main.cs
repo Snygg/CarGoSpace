@@ -1,6 +1,8 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using CargoSpace.Server;
+using CargoSpace.Client;
 
 public partial class Main : Node
 {
@@ -23,11 +25,13 @@ public partial class Main : Node
 
 	private void StartServer()
 	{
-		// Load your server-side grid logic, open ports, wait for connections
+		ServerManager serverManager = new ServerManager();
+		AddChild(serverManager);
 	}
 
 	private void StartClient()
 	{
-		// Load the Main Menu UI, connect to IP
+		ClientManager clientManager = new ClientManager();
+		AddChild(clientManager);
 	}
 }
