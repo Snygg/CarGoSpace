@@ -10,8 +10,8 @@ namespace CargoSpace.Client
 
         public override void _Process(double delta)
         {
-            // Get input from built-in UI actions (arrow keys, D-pad)
-            Vector2 inputDir = Input.GetVector("ui_left", "ui_right", "ui_up", "ui_down");
+            // Get input from custom camera actions (defined in Godot Input Map)
+            Vector2 inputDir = Input.GetVector("camera_pan_left", "camera_pan_right", "camera_pan_up", "camera_pan_down");
             
             // Pan camera based on input
             if (inputDir != Vector2.Zero)
