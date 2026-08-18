@@ -67,6 +67,8 @@ namespace CargoSpace.Client
 
         public override void _Draw()
         {
+            DrawRect(_fieldBounds, new Color(0, 0, 0, 1), true);
+
             Vector2 center = _fieldBounds.GetCenter();
 
             for (int i = 0; i < _stars.Count; i++)

@@ -3,7 +3,7 @@
     "TypeId": 0,
     "Name": "Space",
     "Tags": ["Vacuum"],
-    "HexColor": "#000000"
+    "HexColor": "#00000000"
   },
   "deck": {
     "TypeId": 1,
