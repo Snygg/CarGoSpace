@@ -10,17 +10,22 @@ namespace CargoSpace.Client
 
         public void RenderGrid(Dictionary<Vector2I, GridTileData> grid)
         {
+            GD.Print($"[VisualGrid] RenderGrid called with {grid.Count} tiles");
+            
             // Clear existing visuals
             foreach (var tileVisual in _tileVisuals.Values)
             {
                 tileVisual.QueueFree();
             }
             _tileVisuals.Clear();
+            GD.Print("[VisualGrid] Cleared existing tile visuals");
 
             // Get viewport center for positioning
             Vector2 viewportCenter = GetViewport().GetVisibleRect().Size / 2;
+            GD.Print($"[VisualGrid] Viewport center: {viewportCenter}");
 
             // Create visuals for each tile
+            int tileIndex = 0;
             foreach (var kvp in grid)
             {
                 Vector2I gridCoord = kvp.Key;
@@ -41,9 +46,15 @@ namespace CargoSpace.Client
 
                 AddChild(tileRect);
                 _tileVisuals[gridCoord] = tileRect;
+                
+                tileIndex++;
+                if (tileIndex <= 3) // Log first 3 tiles for debugging
+                {
+                    GD.Print($"[VisualGrid] Created tile {tileIndex}: coord={gridCoord}, type={tileData.Type}, pos={screenPosition}, color={tileRect.Color}");
+                }
             }
 
-            GD.Print($"Rendered {_tileVisuals.Count} tiles");
+            GD.Print($"[VisualGrid] Rendered {_tileVisuals.Count} tiles total");
         }
     }
 }

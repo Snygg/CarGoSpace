@@ -10,31 +10,43 @@ namespace CargoSpace.Client
         private ENetMultiplayerPeer _peer;
         private VisualGrid _visualGrid;
         private ColorRect _pawn;
+        private Camera2D _camera;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
         private int _expectedTileCount = 0;
 
         public override void _Ready()
         {
+            GD.Print("[Client] ClientManager._Ready() called");
+            
+            // Add camera first so everything else is visible
+            _camera = new Camera2D();
+            _camera.Position = new Vector2(0, 0);
+            AddChild(_camera);
+            GD.Print("[Client] Camera2D added at position (0,0)");
+            
             _visualGrid = new VisualGrid();
             AddChild(_visualGrid);
+            GD.Print("[Client] VisualGrid added to scene tree");
             
             _pawn = new ColorRect();
             _pawn.Color = Colors.Red;
             _pawn.Size = new Vector2(Constants.TileSize, Constants.TileSize);
             _pawn.ZIndex = 10;
             AddChild(_pawn);
+            GD.Print("[Client] Pawn added to scene tree");
             
             StartClient();
         }
 
         private void StartClient()
         {
+            GD.Print("[Client] Starting client connection...");
             _peer = new ENetMultiplayerPeer();
             var error = _peer.CreateClient(Constants.ServerAddress, Constants.ServerPort);
             
             if (error != Error.Ok)
             {
-                GD.PrintErr($"Failed to start client: {error}");
+                GD.PrintErr($"[Client] Failed to start client: {error}");
                 return;
             }
 
@@ -43,22 +55,22 @@ namespace CargoSpace.Client
             Multiplayer.ConnectionFailed += OnConnectionFailed;
             Multiplayer.ServerDisconnected += OnServerDisconnected;
             
-            GD.Print($"Client connecting to {Constants.ServerAddress}:{Constants.ServerPort}");
+            GD.Print($"[Client] Connecting to {Constants.ServerAddress}:{Constants.ServerPort}");
         }
 
         private void OnConnectedToServer()
         {
-            GD.Print("Connected to server");
+            GD.Print("[Client] Successfully connected to server!");
         }
 
         private void OnConnectionFailed()
         {
-            GD.PrintErr("Failed to connect to server");
+            GD.PrintErr("[Client] Failed to connect to server");
         }
 
         private void OnServerDisconnected()
         {
-            GD.Print("Disconnected from server");
+            GD.Print("[Client] Disconnected from server");
         }
 
         public override void _Input(InputEvent @event)
@@ -91,31 +103,32 @@ namespace CargoSpace.Client
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        private void ReceiveGridSize(int size)
+        public void ReceiveGridSize(int size)
         {
-            GD.Print($"Expecting {size} tiles");
+            GD.Print($"[Client] ReceiveGridSize: Expecting {size} tiles");
             _expectedTileCount = size;
             _pendingGrid.Clear();
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        private void ReceiveTile(int x, int y, byte tileType)
+        public void ReceiveTile(int x, int y, byte tileType)
         {
             Vector2I coord = new Vector2I(x, y);
             _pendingGrid[coord] = new GridTileData((TileType)tileType);
+            GD.Print($"[Client] ReceiveTile: Received tile at ({x}, {y}) type: {tileType}, total tiles: {_pendingGrid.Count}");
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        private void ReceiveGridComplete()
+        public void ReceiveGridComplete()
         {
-            GD.Print($"Received complete grid with {_pendingGrid.Count} tiles");
+            GD.Print($"[Client] ReceiveGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
             _visualGrid.RenderGrid(_pendingGrid);
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        private void ReceivePawnPosition(Vector2I position)
+        public void ReceivePawnPosition(Vector2I position)
         {
-            GD.Print($"Received pawn position: {position}");
+            GD.Print($"[Client] ReceivePawnPosition: {position}");
             UpdatePawnVisual(position);
         }
 

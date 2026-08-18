@@ -1,6 +1,7 @@
 using Godot;
 using CargoSpace.Core;
 using System.Collections.Generic;
+using CargoSpace.Client;
 
 namespace CargoSpace.Server
 {
@@ -11,18 +12,20 @@ namespace CargoSpace.Server
 
         public override void _Ready()
         {
+            GD.Print("[Server] ServerManager._Ready() called");
             _gridSimulation = new GridSimulation();
             StartServer();
         }
 
         private void StartServer()
         {
+            GD.Print("[Server] Starting server...");
             _peer = new ENetMultiplayerPeer();
             var error = _peer.CreateServer(Constants.ServerPort, 32);
             
             if (error != Error.Ok)
             {
-                GD.PrintErr($"Failed to start server: {error}");
+                GD.PrintErr($"[Server] Failed to start server: {error}");
                 return;
             }
 
@@ -30,42 +33,49 @@ namespace CargoSpace.Server
             Multiplayer.PeerConnected += OnPeerConnected;
             Multiplayer.PeerDisconnected += OnPeerDisconnected;
             
-            GD.Print($"Server started on port {Constants.ServerPort}");
+            GD.Print($"[Server] Server started successfully on port {Constants.ServerPort}");
         }
 
         private void OnPeerConnected(long id)
         {
-            GD.Print($"Client connected: {id}");
+            GD.Print($"[Server] Client connected: {id}");
             SendGridToClient(id);
             SendPawnPositionToClient(id);
         }
 
         private void OnPeerDisconnected(long id)
         {
-            GD.Print($"Client disconnected: {id}");
+            GD.Print($"[Server] Client disconnected: {id}");
         }
 
         private void SendGridToClient(long clientId)
         {
             var grid = _gridSimulation.GetGrid();
+            GD.Print($"[Server] SendGridToClient: Sending {grid.Count} tiles to client {clientId}");
             
             // Send grid size first
-            RpcId(clientId, nameof(ReceiveGridSize), grid.Count);
+            RpcId(clientId, nameof(ClientManager.ReceiveGridSize), grid.Count);
+            GD.Print($"[Server] Sent grid size: {grid.Count}");
             
             // Send each tile individually
+            int tileCount = 0;
             foreach (var kvp in grid)
             {
-                RpcId(clientId, nameof(ReceiveTile), kvp.Key.X, kvp.Key.Y, (byte)kvp.Value.Type);
+                RpcId(clientId, nameof(ClientManager.ReceiveTile), kvp.Key.X, kvp.Key.Y, (byte)kvp.Value.Type);
+                tileCount++;
             }
+            GD.Print($"[Server] Sent {tileCount} individual tile RPCs");
             
             // Signal that grid transfer is complete
-            RpcId(clientId, nameof(ReceiveGridComplete));
+            RpcId(clientId, nameof(ClientManager.ReceiveGridComplete));
+            GD.Print($"[Server] Sent grid complete signal");
         }
 
         private void SendPawnPositionToClient(long clientId)
         {
             var pawnPos = _gridSimulation.GetPawnPosition();
-            RpcId(clientId, nameof(ReceivePawnPosition), pawnPos);
+            GD.Print($"[Server] SendPawnPositionToClient: Sending pawn position {pawnPos} to client {clientId}");
+            RpcId(clientId, nameof(ClientManager.ReceivePawnPosition), pawnPos);
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -88,7 +98,8 @@ namespace CargoSpace.Server
         private void BroadcastPawnPosition()
         {
             var pawnPos = _gridSimulation.GetPawnPosition();
-            Rpc(nameof(ReceivePawnPosition), pawnPos);
+            GD.Print($"[Server] BroadcastPawnPosition: Broadcasting pawn position {pawnPos} to all clients");
+            Rpc(nameof(ClientManager.ReceivePawnPosition), pawnPos);
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
