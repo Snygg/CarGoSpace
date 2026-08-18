@@ -9,5 +9,8 @@ namespace CargoSpace.Server
         void SetTileState(Vector2I target, int state);
         void SetTileHazard(Vector2I target, byte hazardState);
         void BroadcastTileUpdate(Vector2I target, GridTileData data);
+
+        void AddItemToGrid(Vector2I coord, string itemStringId);
+        bool RemoveItemFromGrid(Vector2I coord, string itemStringId);
     }
 }

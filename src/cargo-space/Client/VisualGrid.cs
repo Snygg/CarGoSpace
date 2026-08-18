@@ -8,6 +8,7 @@ namespace CargoSpace.Client
     {
         private TileMapLayer _tileMapLayer;
         private TileMapLayer _hazardLayer;
+        private TileMapLayer _zoneLayer;
         private ItemOverlayLayer _itemLayer;
         private Dictionary<Vector2I, List<string>> _groundItems = new();
 
@@ -23,6 +24,12 @@ namespace CargoSpace.Client
             _hazardLayer.TileSet = CreateHazardTileSet();
             AddChild(_hazardLayer);
 
+            // Create the zone overlay layer between hazards and items
+            _zoneLayer = new TileMapLayer();
+            _zoneLayer.TileSet = CreateZoneTileSet();
+            _zoneLayer.ZIndex = 1;
+            AddChild(_zoneLayer);
+
             // Create the item overlay layer on top of everything
             _itemLayer = new ItemOverlayLayer();
             _itemLayer.GroundItemsRef = _groundItems;
@@ -34,6 +41,21 @@ namespace CargoSpace.Client
         {
             _groundItems[coord] = items;
             _itemLayer?.QueueRedraw();
+        }
+
+        public void UpdateZones(HashSet<Vector2I> zoneTiles)
+        {
+            _zoneLayer?.Clear();
+
+            if (zoneTiles == null)
+            {
+                return;
+            }
+
+            foreach (Vector2I tile in zoneTiles)
+            {
+                _zoneLayer?.SetCell(tile, 1, new Vector2I(0, 0));
+            }
         }
 
         public void RenderGrid(Dictionary<Vector2I, GridTileData> grid)
@@ -173,6 +195,25 @@ namespace CargoSpace.Client
             
             ImageTexture texture = ImageTexture.CreateFromImage(image);
             return texture;
+        }
+
+        private TileSet CreateZoneTileSet()
+        {
+            TileSet tileSet = new TileSet();
+            tileSet.TileSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+
+            Color zoneColor = new Color(0.2f, 0.5f, 1.0f, 0.35f); // Translucent blue
+            Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            image.Fill(zoneColor);
+
+            ImageTexture texture = ImageTexture.CreateFromImage(image);
+            TileSetAtlasSource atlasSource = new TileSetAtlasSource();
+            atlasSource.Texture = texture;
+            atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+            atlasSource.CreateTile(new Vector2I(0, 0));
+            tileSet.AddSource(atlasSource, 1);
+
+            return tileSet;
         }
     }
 }

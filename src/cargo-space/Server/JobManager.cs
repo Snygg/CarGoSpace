@@ -23,6 +23,7 @@ namespace CargoSpace.Server
             _behaviors[JobType.StartFire] = new StartFireJobBehavior();
             _behaviors[JobType.FightFire] = new FightFireJobBehavior();
             _behaviors[JobType.Operate] = new OperateJobBehavior();
+            _behaviors[JobType.Haul] = new HaulJobBehavior();
         }
 
         public bool IsReserved(Vector2I target) => _reservedTiles.Contains(target);

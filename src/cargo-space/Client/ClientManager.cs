@@ -21,6 +21,10 @@ namespace CargoSpace.Client
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
         private Dictionary<Vector2I, List<string>> _clientGroundItems = new();
+        private HashSet<Vector2I> _storageZoneTiles = new();
+
+        private bool _isPaintingZone;
+        private Vector2I _paintStart;
 
         public ClientManager(NetworkBridge networkBridge)
         {
@@ -128,9 +132,27 @@ namespace CargoSpace.Client
 
         public override void _UnhandledInput(InputEvent @event)
         {
-            if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
+            if (@event is InputEventMouseButton mouseEvent)
             {
-                HandleTileClick(mouseEvent.Position);
+                if (mouseEvent.ButtonIndex == MouseButton.Left && mouseEvent.Pressed)
+                {
+                    HandleTileClick(mouseEvent.Position);
+                }
+                else if (mouseEvent.ButtonIndex == MouseButton.Right)
+                {
+                    if (mouseEvent.Pressed)
+                    {
+                        _isPaintingZone = true;
+                        _paintStart = ScreenToGrid(mouseEvent.Position);
+                    }
+                    else if (_isPaintingZone)
+                    {
+                        _isPaintingZone = false;
+                        Vector2I paintEnd = ScreenToGrid(mouseEvent.Position);
+                        List<Vector2I> tilesToUpdate = GetTilesInRect(_paintStart, paintEnd);
+                        _networkBridge?.SendToggleZoneTiles(tilesToUpdate.ToArray(), true);
+                    }
+                }
             }
         }
 
@@ -281,6 +303,32 @@ namespace CargoSpace.Client
             GameLogger.Debug($"HandleGroundItemsUpdate: {items?.Length ?? 0} items at {coord}");
             _clientGroundItems[coord] = new List<string>(items ?? new string[0]);
             _visualGrid?.UpdateGroundItems(coord, _clientGroundItems[coord]);
+        }
+
+        public void HandleZoneUpdate(Vector2I[] tiles)
+        {
+            GameLogger.Debug($"HandleZoneUpdate: {tiles?.Length ?? 0} zone tiles");
+            _storageZoneTiles = new HashSet<Vector2I>(tiles ?? new Vector2I[0]);
+            _visualGrid?.UpdateZones(_storageZoneTiles);
+        }
+
+        private List<Vector2I> GetTilesInRect(Vector2I start, Vector2I end)
+        {
+            List<Vector2I> tiles = new List<Vector2I>();
+            int minX = Mathf.Min(start.X, end.X);
+            int maxX = Mathf.Max(start.X, end.X);
+            int minY = Mathf.Min(start.Y, end.Y);
+            int maxY = Mathf.Max(start.Y, end.Y);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                for (int y = minY; y <= maxY; y++)
+                {
+                    tiles.Add(new Vector2I(x, y));
+                }
+            }
+
+            return tiles;
         }
 
         private Job? FindActiveJob(JobId id)

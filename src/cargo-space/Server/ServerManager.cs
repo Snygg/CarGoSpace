@@ -9,6 +9,7 @@ namespace CargoSpace.Server
     {
         private ENetMultiplayerPeer _peer;
         private GridSimulation _gridSimulation;
+        private ZoneManager _zoneManager;
         private NetworkBridge _networkBridge;
         private Timer _tickTimer;
 
@@ -21,6 +22,7 @@ namespace CargoSpace.Server
         {
             GameLogger.Debug("ServerManager._Ready() called");
             _gridSimulation = new GridSimulation(_networkBridge);
+            _zoneManager = new ZoneManager(_networkBridge);
             StartServer();
             StartTickLoop();
         }
@@ -102,6 +104,12 @@ namespace CargoSpace.Server
         {
             GameLogger.Debug($"HandleCancelOperationAt: Stopping operation at {target}");
             _gridSimulation.CancelOperationAt(target);
+        }
+
+        public void HandleToggleZoneTiles(Vector2I[] tiles, bool isAdding)
+        {
+            GameLogger.Debug($"HandleToggleZoneTiles: {tiles.Length} tiles (adding={isAdding})");
+            _zoneManager?.ToggleZoneTiles(tiles, isAdding);
         }
 
         public async void SendGridToClient(long clientId)

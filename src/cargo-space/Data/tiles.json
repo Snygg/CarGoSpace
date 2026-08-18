@@ -8,7 +8,7 @@
   "deck": {
     "TypeId": 1,
     "Name": "Deck",
-    "Tags": ["Walkable"],
+    "Tags": ["Walkable", "StoresUnidentified"],
     "HexColor": "#808080"
   },
   "console": {

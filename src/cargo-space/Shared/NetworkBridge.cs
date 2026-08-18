@@ -52,6 +52,26 @@ namespace CargoSpace.Shared
             _serverManager?.HandleCancelOperationAt(target);
         }
 
+        [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void ToggleZoneTiles_RPC(Godot.Collections.Array<Vector2I> tiles, bool isAdding)
+        {
+            GameLogger.Debug($"ToggleZoneTiles_RPC from {Multiplayer.GetRemoteSenderId()}: {tiles?.Count ?? 0} tiles, adding={isAdding}");
+
+            if (tiles == null)
+            {
+                _serverManager?.HandleToggleZoneTiles(new Vector2I[0], isAdding);
+                return;
+            }
+
+            Vector2I[] tileArray = new Vector2I[tiles.Count];
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                tileArray[i] = tiles[i];
+            }
+
+            _serverManager?.HandleToggleZoneTiles(tileArray, isAdding);
+        }
+
         // Client-bound RPCs (called by server)
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ReceiveGridSize_RPC(int size)
@@ -118,6 +138,26 @@ namespace CargoSpace.Shared
             _clientManager?.HandleGroundItemsUpdate(new Vector2I(x, y), items);
         }
 
+        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void ReceiveZoneUpdate_RPC(Godot.Collections.Array<Vector2I> tiles)
+        {
+            GameLogger.Debug($"ReceiveZoneUpdate_RPC: {tiles?.Count ?? 0} zone tiles");
+
+            if (tiles == null)
+            {
+                _clientManager?.HandleZoneUpdate(new Vector2I[0]);
+                return;
+            }
+
+            Vector2I[] tileArray = new Vector2I[tiles.Count];
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                tileArray[i] = tiles[i];
+            }
+
+            _clientManager?.HandleZoneUpdate(tileArray);
+        }
+
         // Methods for managers to call RPCs
         public void SendGridSize(long clientId, int size)
         {
@@ -174,6 +214,16 @@ namespace CargoSpace.Shared
         public void BroadcastGroundItemsUpdate(Vector2I coord, List<string> items)
         {
             Rpc(nameof(ReceiveGroundItemsUpdate_RPC), coord.X, coord.Y, items.ToArray());
+        }
+
+        public void BroadcastZoneUpdate(Vector2I[] tiles)
+        {
+            Rpc(nameof(ReceiveZoneUpdate_RPC), new Godot.Collections.Array<Vector2I>(tiles));
+        }
+
+        public void SendToggleZoneTiles(Vector2I[] tiles, bool isAdding)
+        {
+            RpcId(1, nameof(ToggleZoneTiles_RPC), new Godot.Collections.Array<Vector2I>(tiles), isAdding);
         }
 
         public void SendJobRejected(JobId id, long peerId)

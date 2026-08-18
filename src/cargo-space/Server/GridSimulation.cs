@@ -130,15 +130,113 @@ namespace CargoSpace.Server
         {
             if (!_grid.ContainsKey(coord)) return; // Don't spawn in the void
 
+            ItemDefinition def = ItemRegistry.Get(itemStringId);
+            if (def == null)
+            {
+                GameLogger.Warning($"SpawnItemOnGrid: unknown item {itemStringId}");
+                return;
+            }
+
+            Vector2I dropCoord = FindDropTile(coord, itemStringId, def.MaxStack) ?? coord;
+            AddItemToGrid(dropCoord, itemStringId);
+        }
+
+        public void AddItemToGrid(Vector2I coord, string itemStringId)
+        {
+            if (!_grid.ContainsKey(coord)) return;
+
             if (!_groundItems.ContainsKey(coord))
             {
                 _groundItems[coord] = new List<string>();
             }
             _groundItems[coord].Add(itemStringId);
 
-            GameLogger.Debug($"Spawned {itemStringId} at {coord}. Tile now has {_groundItems[coord].Count} items.");
+            GameLogger.Debug($"Added {itemStringId} to {coord}. Tile now has {_groundItems[coord].Count} items.");
 
             _networkBridge?.BroadcastGroundItemsUpdate(coord, _groundItems[coord]);
+        }
+
+        public bool RemoveItemFromGrid(Vector2I coord, string itemStringId)
+        {
+            if (!_groundItems.TryGetValue(coord, out List<string> items))
+            {
+                GameLogger.Warning($"RemoveItemFromGrid: no items at {coord}");
+                return false;
+            }
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] == itemStringId)
+                {
+                    items.RemoveAt(i);
+                    if (items.Count == 0)
+                    {
+                        _groundItems.Remove(coord);
+                    }
+
+                    GameLogger.Debug($"Removed {itemStringId} from {coord}. Tile now has {items.Count} items.");
+                    _networkBridge?.BroadcastGroundItemsUpdate(coord, _groundItems.TryGetValue(coord, out List<string> remaining) ? remaining : new List<string>());
+                    return true;
+                }
+            }
+
+            GameLogger.Warning($"RemoveItemFromGrid: {itemStringId} not found at {coord}");
+            return false;
+        }
+
+        private Vector2I? FindDropTile(Vector2I start, string itemStringId, int maxStack)
+        {
+            Queue<Vector2I> queue = new();
+            HashSet<Vector2I> visited = new();
+            queue.Enqueue(start);
+            visited.Add(start);
+
+            while (queue.Count > 0)
+            {
+                Vector2I current = queue.Dequeue();
+
+                if (_grid.TryGetValue(current, out GridTileData tile))
+                {
+                    TileDefinition tileDef = TileRegistry.Get(tile.TypeId);
+                    if (tileDef != null && tileDef.HasTag("StoresUnidentified") &&
+                        !IsItemStackFull(current, itemStringId, maxStack))
+                    {
+                        return current;
+                    }
+                }
+
+                foreach (Vector2I dir in new[] { Vector2I.Left, Vector2I.Right, Vector2I.Up, Vector2I.Down })
+                {
+                    Vector2I next = current + dir;
+                    if (!visited.Contains(next) && _grid.ContainsKey(next))
+                    {
+                        visited.Add(next);
+                        queue.Enqueue(next);
+                    }
+                }
+            }
+
+            GameLogger.Warning($"FindDropTile: no non-full walkable tile found near {start} for {itemStringId}");
+            return null;
+        }
+
+        private bool IsItemStackFull(Vector2I coord, string itemStringId, int maxStack)
+        {
+            if (!_groundItems.TryGetValue(coord, out List<string> items))
+                return false;
+
+            int count = 0;
+            foreach (string item in items)
+            {
+                if (item == itemStringId)
+                {
+                    count++;
+                    if (count >= maxStack)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         public void AddJob(Job job)
