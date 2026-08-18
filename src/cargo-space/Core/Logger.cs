@@ -13,10 +13,12 @@ namespace CargoSpace.Core
 
     public static class GameLogger
     {
-        public static void Log(LogLevel level, string message, [CallerFilePath] string filePath = "")
+        public static void Log(LogLevel level, string message, [CallerFilePath] string filePath = "", [CallerMemberName] string memberName = "")
         {
             string className = ExtractClassName(filePath);
-            string fullMessage = string.IsNullOrEmpty(className) ? message : $"[{className}] {message}";
+            string contextPrefix = GetContextPrefix();
+            string methodPrefix = string.IsNullOrEmpty(memberName) ? className : $"{className}::{memberName}";
+            string fullMessage = $"[{contextPrefix}] [{methodPrefix}] {message}";
             
             switch (level)
             {
@@ -28,32 +30,32 @@ namespace CargoSpace.Core
                     GD.Print(fullMessage);
                     break;
                 case LogLevel.Warning:
-                    GD.Print(fullMessage);
+                    GD.PushWarning(fullMessage);
                     break;
                 case LogLevel.Error:
-                    GD.PrintErr(fullMessage);
+                    GD.PushError(fullMessage);
                     break;
             }
         }
 
-        public static void Debug(string message, [CallerFilePath] string filePath = "")
+        public static void Debug(string message, [CallerFilePath] string filePath = "", [CallerMemberName] string memberName = "")
         {
-            Log(LogLevel.Debug, message, filePath);
+            Log(LogLevel.Debug, message, filePath, memberName);
         }
 
-        public static void Info(string message, [CallerFilePath] string filePath = "")
+        public static void Info(string message, [CallerFilePath] string filePath = "", [CallerMemberName] string memberName = "")
         {
-            Log(LogLevel.Info, message, filePath);
+            Log(LogLevel.Info, message, filePath, memberName);
         }
 
-        public static void Warning(string message, [CallerFilePath] string filePath = "")
+        public static void Warning(string message, [CallerFilePath] string filePath = "", [CallerMemberName] string memberName = "")
         {
-            Log(LogLevel.Warning, message, filePath);
+            Log(LogLevel.Warning, message, filePath, memberName);
         }
 
-        public static void Error(string message, [CallerFilePath] string filePath = "")
+        public static void Error(string message, [CallerFilePath] string filePath = "", [CallerMemberName] string memberName = "")
         {
-            Log(LogLevel.Error, message, filePath);
+            Log(LogLevel.Error, message, filePath, memberName);
         }
 
         private static string ExtractClassName(string filePath)
@@ -64,6 +66,20 @@ namespace CargoSpace.Core
             // Get the file name without extension
             string fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
             return fileName;
+        }
+
+        private static string GetContextPrefix()
+        {
+            // Check if running as dedicated server
+            if (OS.HasFeature("dedicated_server"))
+                return "SERVER";
+            
+            // Check command line args for --server flag
+            string[] args = OS.GetCmdlineArgs();
+            if (((System.Collections.Generic.ICollection<string>)args).Contains("--server"))
+                return "SERVER";
+            
+            return "CLIENT";
         }
     }
 }
