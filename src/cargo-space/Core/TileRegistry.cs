@@ -88,6 +88,18 @@ namespace CargoSpace.Core
             return false;
         }
 
+        public static void Register(TileDefinition definition)
+        {
+            if (_tiles == null)
+            {
+                _tiles = new Dictionary<TileType, TileDefinition>();
+            }
+
+            _tiles[definition.Type] = definition;
+            _isLoaded = true;
+            GameLogger.Debug($"Tile registered: {definition.Type} - {definition.Name}");
+        }
+
         public static IEnumerable<TileDefinition> AllTiles
         {
             get

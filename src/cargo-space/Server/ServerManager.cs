@@ -98,6 +98,12 @@ namespace CargoSpace.Server
             _gridSimulation.CancelJob(id);
         }
 
+        public void HandleCancelOperationAt(Vector2I target)
+        {
+            GameLogger.Debug($"HandleCancelOperationAt: Stopping operation at {target}");
+            _gridSimulation.CancelOperationAt(target);
+        }
+
         public async void SendGridToClient(long clientId)
         {
             var grid = _gridSimulation.GetGrid();

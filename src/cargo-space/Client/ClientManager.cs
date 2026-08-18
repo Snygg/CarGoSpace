@@ -12,6 +12,8 @@ namespace CargoSpace.Client
         private VisualGrid _visualGrid;
         private CameraController _camera;
         private UIManager _uiManager;
+        private Starfield _starfield;
+        private HarpoonLayer _harpoonLayer;
         private NetworkBridge _networkBridge;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
         private List<Job> _activeJobs = new List<Job>();
@@ -28,12 +30,22 @@ namespace CargoSpace.Client
         {
             GameLogger.Debug("ClientManager._Ready() called");
             
+            // Starfield first so it renders behind everything
+            _starfield = new Starfield();
+            _starfield.ZIndex = -10;
+            AddChild(_starfield);
+            
             // Add camera first so everything else is visible
             _camera = new CameraController();
             AddChild(_camera);
             
             _visualGrid = new VisualGrid();
             AddChild(_visualGrid);
+            
+            _harpoonLayer = new HarpoonLayer();
+            _harpoonLayer.GridRef = _pendingGrid;
+            _harpoonLayer.ZIndex = 1;
+            AddChild(_harpoonLayer);
             
             _uiManager = new UIManager();
             _uiManager.Initialize(this, _networkBridge);
@@ -181,6 +193,7 @@ namespace CargoSpace.Client
             if (_gridRendered)
             {
                 _visualGrid.RenderGrid(_pendingGrid);
+                _harpoonLayer.QueueRedraw();
             }
         }
 
@@ -188,6 +201,7 @@ namespace CargoSpace.Client
         {
             GameLogger.Debug($"HandleGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
             _visualGrid.RenderGrid(_pendingGrid);
+            _harpoonLayer.QueueRedraw();
             _gridRendered = true;
             
             // Center camera on the grid

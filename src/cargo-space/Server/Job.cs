@@ -7,7 +7,8 @@ namespace CargoSpace.Server
     {
         SetState = 0,
         StartFire = 1,
-        FightFire = 2
+        FightFire = 2,
+        Operate = 3
     }
 
     public struct Job

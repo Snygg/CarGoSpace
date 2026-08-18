@@ -171,6 +171,34 @@ namespace CargoSpace.Client
                 vbox.AddChild(setStateButton);
             }
 
+            if (tileDef.Type == TileType.Harpoon)
+            {
+                if (currentState == 0)
+                {
+                    Button operateButton = new Button();
+                    operateButton.Text = "Operate";
+                    operateButton.Pressed += () =>
+                    {
+                        JobId jobId = JobId.Create();
+                        AddJobUI(jobId, JobType.Operate, gridCoord);
+                        _networkBridge?.SendJobCommand(jobId, gridCoord, JobType.Operate, 1);
+                        ClearContextMenu();
+                    };
+                    vbox.AddChild(operateButton);
+                }
+                else
+                {
+                    Button stopButton = new Button();
+                    stopButton.Text = "Stop Operating";
+                    stopButton.Pressed += () =>
+                    {
+                        _networkBridge?.SendCancelOperationAt(gridCoord);
+                        ClearContextMenu();
+                    };
+                    vbox.AddChild(stopButton);
+                }
+            }
+
             Button startFireButton = new Button();
             startFireButton.Text = "Debug: Start Fire";
             startFireButton.Pressed += () =>
@@ -238,6 +266,7 @@ namespace CargoSpace.Client
                 JobType.SetState => "Set Console",
                 JobType.StartFire => "Start Fire",
                 JobType.FightFire => "Fight Fire",
+                JobType.Operate => "Operate Harpoon",
                 _ => type.ToString()
             };
         }

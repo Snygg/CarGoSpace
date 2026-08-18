@@ -6,13 +6,6 @@ using System.Linq;
 
 namespace CargoSpace.Server
 {
-    public enum PawnState
-    {
-        Idle,
-        Walking,
-        Working
-    }
-
     public class GridSimulation : IJobExecutionContext
     {
         private Dictionary<Vector2I, GridTileData> _grid;
@@ -68,6 +61,8 @@ namespace CargoSpace.Server
             _grid[new Vector2I(2, 2)] = new GridTileData(TileType.Console);
             _grid[new Vector2I(-2, -2)] = new GridTileData(TileType.Console);
             _grid[new Vector2I(2, -2)] = new GridTileData(TileType.Console);
+            
+            _grid[new Vector2I(-3, -2)] = new GridTileData(TileType.Harpoon);
         }
 
         private void InitializePathfinding()
@@ -105,6 +100,10 @@ namespace CargoSpace.Server
             if (job.Type == JobType.SetState)
             {
                 isValidTile = IsInteractableTile(job.Target);
+            }
+            else if (job.Type == JobType.Operate)
+            {
+                isValidTile = _grid.ContainsKey(job.Target) && _grid[job.Target].Type == TileType.Harpoon;
             }
 
             bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
@@ -184,6 +183,10 @@ namespace CargoSpace.Server
                 {
                     WorkOnJob(pawn);
                 }
+                else if (pawn.State == PawnState.Operating)
+                {
+                    // Continuous operation: pawn remains locked on the tile.
+                }
             }
         }
 
@@ -239,9 +242,19 @@ namespace CargoSpace.Server
             if (pawn.WorkTicksRemaining <= 0)
             {
                 _jobManager.ExecuteJob(pawn.CurrentJob, this);
-                _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
-                pawn.CurrentJob = default;
-                pawn.State = PawnState.Idle;
+
+                if (pawn.CurrentJob.Type == JobType.Operate)
+                {
+                    // Continuous Lock-in. Do NOT clear the job or release the reservation.
+                    pawn.State = PawnState.Operating;
+                    GameLogger.Debug($"Pawn {pawn.Id} locked into Operating state at {pawn.CurrentJob.Target}.");
+                }
+                else
+                {
+                    _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
+                    pawn.CurrentJob = default;
+                    pawn.State = PawnState.Idle;
+                }
             }
         }
 
@@ -259,6 +272,23 @@ namespace CargoSpace.Server
             }
 
             _jobManager.CancelJob(id, _pawns.Values);
+        }
+
+        public void CancelOperationAt(Vector2I target)
+        {
+            foreach (Pawn pawn in _pawns.Values)
+            {
+                if (pawn.CurrentJob.Target == target && pawn.CurrentJob.Type == JobType.Operate)
+                {
+                    _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
+                    ResetPawnState(pawn);
+                    SetTileState(target, 0);
+                    GameLogger.Debug($"Pawn {pawn.Id}: operation cancelled at {target}");
+                    return;
+                }
+            }
+
+            GameLogger.Debug($"CancelOperationAt: no operating pawn found at {target}");
         }
 
         public bool TryMovePawn(Vector2I target)

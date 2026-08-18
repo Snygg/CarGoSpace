@@ -16,5 +16,11 @@
     "Name": "Console",
     "Tags": ["Walkable", "Interactable"],
     "HexColor": "#FFA500"
+  },
+  "Harpoon": {
+    "Type": 3,
+    "Name": "Harpoon",
+    "Tags": ["Walkable", "Interactable"],
+    "HexColor": "#808080"
   }
 }

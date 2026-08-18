@@ -22,6 +22,7 @@ namespace CargoSpace.Server
             _behaviors[JobType.SetState] = new SetStateJobBehavior();
             _behaviors[JobType.StartFire] = new StartFireJobBehavior();
             _behaviors[JobType.FightFire] = new FightFireJobBehavior();
+            _behaviors[JobType.Operate] = new OperateJobBehavior();
         }
 
         public bool IsReserved(Vector2I target) => _reservedTiles.Contains(target);
@@ -79,7 +80,11 @@ namespace CargoSpace.Server
             }
             finally
             {
-                Release(job.Target);
+                // Operating jobs are continuous; the pawn holds the tile until explicitly released.
+                if (job.Type != JobType.Operate)
+                {
+                    Release(job.Target);
+                }
             }
         }
 

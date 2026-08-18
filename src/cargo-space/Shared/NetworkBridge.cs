@@ -44,6 +44,13 @@ namespace CargoSpace.Shared
             _serverManager?.HandleCancelJobRequest(id);
         }
 
+        [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void CancelOperationAt_RPC(Vector2I target)
+        {
+            GameLogger.Debug($"CancelOperationAt_RPC from {Multiplayer.GetRemoteSenderId()} for {target}");
+            _serverManager?.HandleCancelOperationAt(target);
+        }
+
         // Client-bound RPCs (called by server)
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ReceiveGridSize_RPC(int size)
@@ -162,6 +169,11 @@ namespace CargoSpace.Shared
         public void SendCancelJobRequest(JobId jobId)
         {
             RpcId(1, nameof(ReceiveCancelJobRequest_RPC), jobId.ToNetworkBytes());
+        }
+
+        public void SendCancelOperationAt(Vector2I target)
+        {
+            RpcId(1, nameof(CancelOperationAt_RPC), target);
         }
     }
 }

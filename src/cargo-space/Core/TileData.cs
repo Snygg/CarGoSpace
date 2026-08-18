@@ -6,7 +6,8 @@ namespace CargoSpace.Core
     {
         Space = 0,
         Deck = 1,
-        Console = 2
+        Console = 2,
+        Harpoon = 3
     }
 
     public struct GridTileData
