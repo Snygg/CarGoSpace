@@ -14,6 +14,9 @@ public partial class Main : Node
 
 	public override void _Ready()
 	{
+		// Load tile data registry first - this is data required by both server and client
+		TileRegistry.LoadFromFile("res://Data/tiles.json");
+		
 		string[] args = OS.GetCmdlineArgs();
 		
 		// Create NetworkBridge first - this ensures consistent NodePath for RPCs

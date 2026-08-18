@@ -22,39 +22,23 @@ namespace CargoSpace.Core
     public static class TileRegistry
     {
         private static Dictionary<TileType, TileDefinition> _tiles;
+        private static bool _isLoaded = false;
 
-        static TileRegistry()
+        public static void LoadFromFile(string filePath)
         {
-            Initialize();
+            if (!FileAccess.FileExists(filePath))
+            {
+                GameLogger.Error($"Tile registry file not found: {filePath}");
+                return;
+            }
+
+            using FileAccess file = FileAccess.Open(filePath, FileAccess.ModeFlags.Read);
+            string json = file.GetAsText();
+            LoadFromJson(json);
         }
 
-        private static void Initialize()
+        public static void LoadFromJson(string json)
         {
-            string json = @"
-            {
-                ""Space"": {
-                    ""Type"": 0,
-                    ""Name"": ""Space"",
-                    ""IsWalkable"": false,
-                    ""IsInteractable"": false,
-                    ""HexColor"": ""#000000""
-                },
-                ""Deck"": {
-                    ""Type"": 1,
-                    ""Name"": ""Deck"",
-                    ""IsWalkable"": true,
-                    ""IsInteractable"": false,
-                    ""HexColor"": ""#808080""
-                },
-                ""Console"": {
-                    ""Type"": 2,
-                    ""Name"": ""Console"",
-                    ""IsWalkable"": true,
-                    ""IsInteractable"": true,
-                    ""HexColor"": ""#FFA500""
-                }
-            }";
-
             var parsed = JsonSerializer.Deserialize<Dictionary<string, TileDefinition>>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -65,11 +49,23 @@ namespace CargoSpace.Core
             {
                 _tiles[kvp.Value.Type] = kvp.Value;
             }
+
+            _isLoaded = true;
+            GameLogger.Debug($"TileRegistry loaded {_tiles.Count} tile definitions");
+        }
+
+        private static void EnsureLoaded()
+        {
+            if (!_isLoaded)
+            {
+                GameLogger.Warning("TileRegistry accessed before loading. Call LoadFromFile() during game startup.");
+            }
         }
 
         public static TileDefinition Get(TileType type)
         {
-            if (_tiles.TryGetValue(type, out TileDefinition definition))
+            EnsureLoaded();
+            if (_tiles != null && _tiles.TryGetValue(type, out TileDefinition definition))
                 return definition;
             
             return null;
@@ -77,9 +73,24 @@ namespace CargoSpace.Core
 
         public static bool TryGet(TileType type, out TileDefinition definition)
         {
-            return _tiles.TryGetValue(type, out definition);
+            EnsureLoaded();
+            if (_tiles != null)
+                return _tiles.TryGetValue(type, out definition);
+            
+            definition = null;
+            return false;
         }
 
-        public static IEnumerable<TileDefinition> AllTiles => _tiles.Values;
+        public static IEnumerable<TileDefinition> AllTiles
+        {
+            get
+            {
+                EnsureLoaded();
+                if (_tiles != null)
+                    return _tiles.Values;
+                
+                return new List<TileDefinition>();
+            }
+        }
     }
 }
