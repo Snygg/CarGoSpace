@@ -10,4 +10,7 @@
     <Folder Include="Core\" />
     <Folder Include="Server\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Data\tiles.json" />
+  </ItemGroup>
 </Project>
