@@ -24,7 +24,7 @@ namespace CargoSpace.Client
         private Dictionary<JobId, Control> _jobRows = new Dictionary<JobId, Control>();
 
         // Triage / unconfirmed hazard alerts
-        private VBoxContainer _triageContainer;
+        private VBoxContainer _triageListContainer;
         private HashSet<Vector2I> _knownHazards = new HashSet<Vector2I>();
         private Dictionary<Vector2I, Control> _triageAlerts = new Dictionary<Vector2I, Control>();
 
@@ -56,9 +56,6 @@ namespace CargoSpace.Client
 
             // Create persistent left-aligned HUD toolbar
             CreateHudToolbar();
-
-            // Create triage queue for unconfirmed hazards
-            CreateTriageContainer();
         }
 
         private void CreateJobBoard()
@@ -86,7 +83,7 @@ namespace CargoSpace.Client
             closeButton.Pressed += () => _jobBoardPanel.Hide();
             header.AddChild(closeButton);
 
-            // Scroll container for job list
+            // Scroll container for board content
             _jobScrollContainer = new ScrollContainer();
             _jobScrollContainer.AnchorLeft = 0;
             _jobScrollContainer.AnchorTop = 0;
@@ -98,11 +95,36 @@ namespace CargoSpace.Client
             _jobScrollContainer.OffsetBottom = -10;
             _jobBoardPanel.AddChild(_jobScrollContainer);
 
-            // VBox container for job rows
+            // Master content container
+            VBoxContainer boardContent = new VBoxContainer();
+            boardContent.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            boardContent.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+            _jobScrollContainer.AddChild(boardContent);
+
+            // Collapsible Triage section
+            Button triageToggle = new Button();
+            triageToggle.Text = "Unconfirmed Hazards";
+            triageToggle.Pressed += () => _triageListContainer.Visible = !_triageListContainer.Visible;
+            boardContent.AddChild(triageToggle);
+
+            _triageListContainer = new VBoxContainer();
+            _triageListContainer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            _triageListContainer.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+            boardContent.AddChild(_triageListContainer);
+
+            // Separator
+            HSeparator separator = new HSeparator();
+            boardContent.AddChild(separator);
+
+            // Active Jobs section
+            Label jobsHeader = new Label();
+            jobsHeader.Text = "Active Jobs";
+            boardContent.AddChild(jobsHeader);
+
             _jobListContainer = new VBoxContainer();
             _jobListContainer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             _jobListContainer.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
-            _jobScrollContainer.AddChild(_jobListContainer);
+            boardContent.AddChild(_jobListContainer);
         }
 
         public void ClearContextMenu()
@@ -203,22 +225,6 @@ namespace CargoSpace.Client
             };
         }
 
-        private void CreateTriageContainer()
-        {
-            _triageContainer = new VBoxContainer();
-            _triageContainer.AnchorLeft = 1;
-            _triageContainer.AnchorTop = 0;
-            _triageContainer.AnchorRight = 1;
-            _triageContainer.AnchorBottom = 0;
-            _triageContainer.OffsetLeft = -220;
-            _triageContainer.OffsetTop = 10;
-            _triageContainer.OffsetRight = -10;
-            _triageContainer.OffsetBottom = 10;
-            _triageContainer.GrowHorizontal = Control.GrowDirection.Begin;
-            _triageContainer.GrowVertical = Control.GrowDirection.End;
-            AddChild(_triageContainer);
-        }
-
         public void TryDiscoverHazard(Vector2I target)
         {
             if (_knownHazards.Contains(target))
@@ -228,8 +234,16 @@ namespace CargoSpace.Client
 
             _knownHazards.Add(target);
 
+            PanelContainer alertPanel = new PanelContainer();
+            alertPanel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            alertPanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+            {
+                BgColor = new Color(0.4f, 0.12f, 0.05f, 0.9f)
+            });
+
             HBoxContainer alert = new HBoxContainer();
             alert.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            alertPanel.AddChild(alert);
 
             Label alertLabel = new Label();
             alertLabel.Text = $"Fire at {target.X},{target.Y}";
@@ -246,12 +260,12 @@ namespace CargoSpace.Client
 
                 _knownHazards.Remove(target);
                 _triageAlerts.Remove(target);
-                alert.QueueFree();
+                alertPanel.QueueFree();
             };
             alert.AddChild(confirmButton);
 
-            _triageContainer.AddChild(alert);
-            _triageAlerts[target] = alert;
+            _triageListContainer.AddChild(alertPanel);
+            _triageAlerts[target] = alertPanel;
         }
 
         private void OnCancelJobPressed(JobId id)
