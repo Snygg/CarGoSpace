@@ -94,7 +94,7 @@ namespace CargoSpace.Client
 
         private int GetSourceId(byte typeId, int state)
         {
-            return typeId * 2 + state;
+            return typeId * 10 + state;
         }
 
         private TileSet CreateHazardTileSet()

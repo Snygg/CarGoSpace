@@ -10,7 +10,7 @@ namespace CargoSpace.Core
         public byte TypeId { get; set; }
         public string StringId { get; set; }
         public string Name { get; set; }
-        public List<string> Tags { get; set; } = new List<string>();
+        public HashSet<string> Tags { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public string HexColor { get; set; }
 
         public bool IsWalkable => Tags != null && Tags.Contains("Walkable");
@@ -30,6 +30,7 @@ namespace CargoSpace.Core
     public static class TileRegistry
     {
         private static Dictionary<byte, TileDefinition> _tiles = new();
+        private static Dictionary<string, byte> _stringToId = new();
         private static bool _isLoaded = false;
 
         public static void LoadFromFile(string filePath)
@@ -53,11 +54,14 @@ namespace CargoSpace.Core
             });
 
             _tiles = new Dictionary<byte, TileDefinition>();
+            _stringToId = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
             foreach (var kvp in parsed)
             {
                 TileDefinition tileDef = kvp.Value;
                 tileDef.StringId = kvp.Key;
+                tileDef.Tags = new HashSet<string>(tileDef.Tags ?? new HashSet<string>(), StringComparer.OrdinalIgnoreCase);
                 _tiles[tileDef.TypeId] = tileDef;
+                _stringToId[tileDef.StringId] = tileDef.TypeId;
             }
 
             _isLoaded = true;
@@ -94,17 +98,12 @@ namespace CargoSpace.Core
         public static byte GetId(string stringId)
         {
             EnsureLoaded();
-            if (_tiles != null)
+            if (_stringToId != null && _stringToId.TryGetValue(stringId, out byte id))
             {
-                foreach (var kvp in _tiles)
-                {
-                    if (kvp.Value.StringId == stringId)
-                    {
-                        return kvp.Key;
-                    }
-                }
+                return id;
             }
 
+            GameLogger.Warning($"TileRegistry: Could not find ID for {stringId}");
             return byte.MaxValue;
         }
 
@@ -115,7 +114,14 @@ namespace CargoSpace.Core
                 _tiles = new Dictionary<byte, TileDefinition>();
             }
 
+            if (_stringToId == null)
+            {
+                _stringToId = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            definition.Tags = new HashSet<string>(definition.Tags ?? new HashSet<string>(), StringComparer.OrdinalIgnoreCase);
             _tiles[definition.TypeId] = definition;
+            _stringToId[definition.StringId] = definition.TypeId;
             _isLoaded = true;
             GameLogger.Debug($"Tile registered: {definition.TypeId} - {definition.Name}");
         }
