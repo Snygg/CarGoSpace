@@ -127,16 +127,20 @@ namespace CargoSpace.Server
 
         public void SendPawnPositionToClient(long clientId)
         {
-            var pawnPos = _gridSimulation.GetPawnPosition();
-            GameLogger.Debug($"SendPawnPositionToClient: Sending pawn position {pawnPos} to client {clientId}");
-            _networkBridge.SendPawnPosition(clientId, pawnPos);
+            foreach (Pawn pawn in _gridSimulation.GetPawns())
+            {
+                GameLogger.Debug($"SendPawnPositionToClient: Sending pawn position {pawn.Position} to client {clientId}");
+                _networkBridge.SendPawnPosition(clientId, pawn.Id, pawn.Position);
+            }
         }
 
         private void BroadcastPawnPosition()
         {
-            var pawnPos = _gridSimulation.GetPawnPosition();
-            GameLogger.Debug($"BroadcastPawnPosition: Broadcasting pawn position {pawnPos} to all clients");
-            _networkBridge.BroadcastPawnPosition(pawnPos);
+            foreach (Pawn pawn in _gridSimulation.GetPawns())
+            {
+                GameLogger.Debug($"BroadcastPawnPosition: Broadcasting pawn position {pawn.Position} to all clients");
+                _networkBridge.BroadcastPawnPosition(pawn.Id, pawn.Position);
+            }
         }
 
         public override void _ExitTree()

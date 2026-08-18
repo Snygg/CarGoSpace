@@ -10,12 +10,12 @@ namespace CargoSpace.Client
     {
         private ENetMultiplayerPeer _peer;
         private VisualGrid _visualGrid;
-        private ColorRect _pawn;
         private CameraController _camera;
         private UIManager _uiManager;
         private NetworkBridge _networkBridge;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
         private List<Job> _activeJobs = new List<Job>();
+        private Dictionary<PawnId, PawnVisual> _pawnVisuals = new Dictionary<PawnId, PawnVisual>();
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
 
@@ -34,12 +34,6 @@ namespace CargoSpace.Client
             
             _visualGrid = new VisualGrid();
             AddChild(_visualGrid);
-            
-            _pawn = new ColorRect();
-            _pawn.Color = Colors.Red;
-            _pawn.Size = new Vector2(Constants.TileSize, Constants.TileSize);
-            _pawn.ZIndex = 10;
-            AddChild(_pawn);
             
             _uiManager = new UIManager();
             _uiManager.Initialize(this, _networkBridge);
@@ -182,10 +176,10 @@ namespace CargoSpace.Client
             _camera.CenterOnGrid(gridWidth, gridHeight);
         }
 
-        public void HandlePawnPosition(Vector2I position)
+        public void HandlePawnPosition(PawnId id, Vector2I position)
         {
-            GameLogger.Debug($"HandlePawnPosition: {position}");
-            UpdatePawnVisual(position);
+            GameLogger.Debug($"HandlePawnPosition: {id} at {position}");
+            UpdatePawnVisual(id, position);
         }
 
         public void HandleJobAdded(JobId id, Vector2I target, JobType jobType)
@@ -255,15 +249,25 @@ namespace CargoSpace.Client
             }
         }
 
-        private void UpdatePawnVisual(Vector2I gridPosition)
+        private void UpdatePawnVisual(PawnId id, Vector2I gridPosition)
         {
+            if (!_pawnVisuals.ContainsKey(id))
+            {
+                PawnVisual pawnVisual = new PawnVisual();
+                pawnVisual.ZIndex = 10;
+                AddChild(pawnVisual);
+                _pawnVisuals[id] = pawnVisual;
+            }
+
+            PawnVisual visual = _pawnVisuals[id];
+
             // Position pawn at world coordinates (same as VisualGrid)
             Vector2 worldPosition = new Vector2(
                 gridPosition.X * Constants.TileSize,
                 gridPosition.Y * Constants.TileSize
             );
             
-            _pawn.Position = worldPosition;
+            visual.Position = worldPosition;
         }
 
         public override void _ExitTree()

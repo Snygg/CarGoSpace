@@ -17,24 +17,19 @@ namespace CargoSpace.Server
         private Dictionary<Vector2I, GridTileData> _grid;
         private AStarGrid2D _pathfinding;
         private List<Job> _jobBoard;
-        
-        // Pawn state
-        private Vector2I _pawnPosition;
-        private List<Vector2I> _currentPath;
-        private PawnState _pawnState;
-        private Job _currentJob;
-        private int _workTicksRemaining;
         private NetworkBridge _networkBridge;
+        
+        // Entity-based pawn state
+        private Dictionary<PawnId, Pawn> _pawns = new();
 
         public GridSimulation(NetworkBridge networkBridge = null)
         {
             _networkBridge = networkBridge;
             _grid = new Dictionary<Vector2I, GridTileData>();
             _jobBoard = new List<Job>();
-            _pawnPosition = new Vector2I(0, 0);
-            _currentPath = new List<Vector2I>();
-            _pawnState = PawnState.Idle;
-            _workTicksRemaining = 0;
+            
+            PawnId startingId = PawnId.Create();
+            _pawns[startingId] = new Pawn(startingId, new Vector2I(0, 0));
             
             InitializeGrid();
             InitializePathfinding();
@@ -93,10 +88,7 @@ namespace CargoSpace.Server
             return new Dictionary<Vector2I, GridTileData>(_grid);
         }
 
-        public Vector2I GetPawnPosition()
-        {
-            return _pawnPosition;
-        }
+        public IEnumerable<Pawn> GetPawns() => _pawns.Values;
 
         public void AddJob(Job job)
         {
@@ -124,69 +116,74 @@ namespace CargoSpace.Server
 
         public void Tick()
         {
-            if (_pawnState == PawnState.Idle && _jobBoard.Count > 0)
+            foreach (Pawn pawn in _pawns.Values)
             {
-                _currentJob = _jobBoard[0];
-                _jobBoard.RemoveAt(0);
-                CalculatePath(_currentJob.Target);
-            }
-            
-            if (_pawnState == PawnState.Walking && _currentPath.Count > 0)
-            {
-                MoveAlongPath();
-            }
-            else if (_pawnState == PawnState.Working)
-            {
-                WorkOnJob();
-            }
-        }
-
-        private void CalculatePath(Vector2I target)
-        {
-            var godotPath = _pathfinding.GetIdPath(_pawnPosition, target);
-            _currentPath = new List<Vector2I>(godotPath);
-            if (_currentPath.Count > 0)
-            {
-                _pawnState = PawnState.Walking;
-                GameLogger.Debug($"Path calculated to {target}, {_currentPath.Count} steps");
-            }
-        }
-
-        private void MoveAlongPath()
-        {
-            if (_currentPath.Count > 0)
-            {
-                Vector2I nextStep = _currentPath[0];
-                _currentPath.RemoveAt(0);
-                _pawnPosition = nextStep;
-                
-                GameLogger.Debug($"Pawn moved to {nextStep}");
-                
-                // If path is complete, transition to Working
-                if (_currentPath.Count == 0)
+                if (pawn.State == PawnState.Idle && _jobBoard.Count > 0)
                 {
-                    _pawnState = PawnState.Working;
-                    _workTicksRemaining = 3;
-                    GameLogger.Debug("Pawn reached target, starting work");
+                    pawn.CurrentJob = _jobBoard[0];
+                    _jobBoard.RemoveAt(0);
+                    CalculatePath(pawn, pawn.CurrentJob.Target);
+                }
+                
+                if (pawn.State == PawnState.Walking && pawn.CurrentPath.Count > 0)
+                {
+                    MoveAlongPath(pawn);
+                }
+                else if (pawn.State == PawnState.Working)
+                {
+                    WorkOnJob(pawn);
                 }
             }
         }
 
-        private void WorkOnJob()
+        private void CalculatePath(Pawn pawn, Vector2I target)
         {
-            _workTicksRemaining--;
-            GameLogger.Debug($"Working... {_workTicksRemaining} ticks remaining");
-            
-            if (_workTicksRemaining <= 0)
+            var godotPath = _pathfinding.GetIdPath(pawn.Position, target);
+            pawn.CurrentPath = new List<Vector2I>(godotPath);
+            if (pawn.CurrentPath.Count > 0)
             {
-                ExecuteJob(_currentJob);
-                _networkBridge?.BroadcastJobRemoved(_currentJob.Id);
-                _pawnState = PawnState.Idle;
+                pawn.State = PawnState.Walking;
+                GameLogger.Debug($"Pawn {pawn.Id}: path calculated to {target}, {pawn.CurrentPath.Count} steps");
             }
         }
 
-        private void ExecuteJob(Job job)
+        private void MoveAlongPath(Pawn pawn)
         {
+            if (pawn.CurrentPath.Count > 0)
+            {
+                Vector2I nextStep = pawn.CurrentPath[0];
+                pawn.CurrentPath.RemoveAt(0);
+                pawn.Position = nextStep;
+                
+                GameLogger.Debug($"Pawn {pawn.Id}: moved to {nextStep}");
+                
+                // If path is complete, transition to Working
+                if (pawn.CurrentPath.Count == 0)
+                {
+                    pawn.State = PawnState.Working;
+                    pawn.WorkTicksRemaining = 3;
+                    GameLogger.Debug($"Pawn {pawn.Id}: reached target, starting work");
+                }
+            }
+        }
+
+        private void WorkOnJob(Pawn pawn)
+        {
+            pawn.WorkTicksRemaining--;
+            GameLogger.Debug($"Pawn {pawn.Id}: working... {pawn.WorkTicksRemaining} ticks remaining");
+            
+            if (pawn.WorkTicksRemaining <= 0)
+            {
+                ExecuteJob(pawn);
+                _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
+                pawn.CurrentJob = default;
+                pawn.State = PawnState.Idle;
+            }
+        }
+
+        private void ExecuteJob(Pawn pawn)
+        {
+            Job job = pawn.CurrentJob;
             if (_grid.ContainsKey(job.Target))
             {
                 GridTileData tileData = _grid[job.Target];
@@ -196,7 +193,7 @@ namespace CargoSpace.Server
                     tileData.State = 1 - tileData.State;
                     _grid[job.Target] = tileData;
                     
-                    GameLogger.Debug($"Console at {job.Target} toggled to state {tileData.State}");
+                    GameLogger.Debug($"Pawn {pawn.Id}: console at {job.Target} toggled to state {tileData.State}");
                     
                     // Broadcast tile state change to all clients
                     _networkBridge?.BroadcastTileUpdate(job.Target, tileData);
@@ -206,15 +203,18 @@ namespace CargoSpace.Server
 
         public void CancelJob(JobId id)
         {
-            if (_currentJob.Id == id)
+            foreach (Pawn pawn in _pawns.Values)
             {
-                _currentPath.Clear();
-                _workTicksRemaining = 0;
-                _pawnState = PawnState.Idle;
-                _currentJob = default;
-                _networkBridge?.BroadcastJobRemoved(id);
-                GameLogger.Debug($"Active job cancelled and Pawn interrupted: {id}");
-                return;
+                if (pawn.CurrentJob.Id == id)
+                {
+                    pawn.CurrentPath.Clear();
+                    pawn.WorkTicksRemaining = 0;
+                    pawn.State = PawnState.Idle;
+                    pawn.CurrentJob = default;
+                    _networkBridge?.BroadcastJobRemoved(id);
+                    GameLogger.Debug($"Pawn {pawn.Id}: active job cancelled and interrupted: {id}");
+                    return;
+                }
             }
 
             for (int i = 0; i < _jobBoard.Count; i++)
