@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using CargoSpace.Server;
 using CargoSpace.Client;
+using CargoSpace.Core;
 using CargoSpace.Shared;
 
 public partial class Main : Node
@@ -19,7 +20,7 @@ public partial class Main : Node
 		_networkBridge = new NetworkBridge();
 		_networkBridge.Name = "NetworkBridge";
 		AddChild(_networkBridge);
-		GD.Print("[Main] NetworkBridge created and added to scene tree");
+		GameLogger.Debug("NetworkBridge created and added to scene tree");
 		
 		// "dedicated_server" is a built-in feature tag when exporting a headless server
 		if (OS.HasFeature("dedicated_server")|| ((ICollection<string>)args).Contains("--server"))
@@ -39,7 +40,7 @@ public partial class Main : Node
 		_serverManager = new ServerManager(_networkBridge);
 		AddChild(_serverManager);
 		_networkBridge.SetServerManager(_serverManager);
-		GD.Print("[Main] Server mode - ServerManager created and linked to NetworkBridge");
+		GameLogger.Debug("Server mode - ServerManager created and linked to NetworkBridge");
 	}
 
 	private void StartClient()
@@ -47,6 +48,6 @@ public partial class Main : Node
 		_clientManager = new ClientManager(_networkBridge);
 		AddChild(_clientManager);
 		_networkBridge.SetClientManager(_clientManager);
-		GD.Print("[Main] Client mode - ClientManager created and linked to NetworkBridge");
+		GameLogger.Debug("Client mode - ClientManager created and linked to NetworkBridge");
 	}
 }

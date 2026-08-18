@@ -18,20 +18,20 @@ namespace CargoSpace.Server
 
         public override void _Ready()
         {
-            GD.Print("[Server] ServerManager._Ready() called");
+            GameLogger.Debug("ServerManager._Ready() called");
             _gridSimulation = new GridSimulation();
             StartServer();
         }
 
         private void StartServer()
         {
-            GD.Print("[Server] Starting server...");
+            GameLogger.Debug("Starting server...");
             _peer = new ENetMultiplayerPeer();
             var error = _peer.CreateServer(Constants.ServerPort, 32);
             
             if (error != Error.Ok)
             {
-                GD.PrintErr($"[Server] Failed to start server: {error}");
+                GameLogger.Error($"Failed to start server: {error}");
                 return;
             }
 
@@ -39,50 +39,49 @@ namespace CargoSpace.Server
             Multiplayer.PeerConnected += OnPeerConnected;
             Multiplayer.PeerDisconnected += OnPeerDisconnected;
             
-            GD.Print($"[Server] Server started successfully on port {Constants.ServerPort}");
+            GameLogger.Debug($"Server started successfully on port {Constants.ServerPort}");
         }
 
         private void OnPeerConnected(long id)
         {
-            GD.Print($"[Server] Client connected: {id}");
+            GameLogger.Debug($"Client connected: {id}");
         }
 
         private void OnPeerDisconnected(long id)
         {
-            GD.Print($"[Server] Client disconnected: {id}");
+            GameLogger.Debug($"Client disconnected: {id}");
         }
 
         // Handler methods called by NetworkBridge
         public void HandleGridRequest(long requesterId)
         {
-            GD.Print($"[Server] HandleGridRequest: Sending grid to client {requesterId}");
+            GameLogger.Debug($"HandleGridRequest: Sending grid to client {requesterId}");
             SendGridToClient(requesterId);
             SendPawnPositionToClient(requesterId);
         }
 
         public void HandleMoveCommand(Vector2I target, long senderId)
         {
-            GD.Print($"[Server] HandleMoveCommand: Move from {senderId} to {target}");
+            GameLogger.Debug($"HandleMoveCommand: Move from {senderId} to {target}");
             
             if (_gridSimulation.TryMovePawn(target))
             {
-                GD.Print($"[Server] Pawn moved to {target}");
+                GameLogger.Debug($"Pawn moved to {target}");
                 BroadcastPawnPosition();
             }
             else
             {
-                GD.Print($"[Server] Invalid move to {target}");
+                GameLogger.Debug($"Invalid move to {target}");
             }
         }
 
         public async void SendGridToClient(long clientId)
         {
             var grid = _gridSimulation.GetGrid();
-            GD.Print($"[Server] SendGridToClient: Sending {grid.Count} tiles to client {clientId}");
+            GameLogger.Debug($"SendGridToClient: Sending {grid.Count} tiles to client {clientId}");
             
             // Send grid size first via NetworkBridge
             _networkBridge.SendGridSize(clientId, grid.Count);
-            GD.Print($"[Server] Sent grid size: {grid.Count}");
             
             // Send each tile individually with a small delay to prevent network overload
             int tileCount = 0;
@@ -97,27 +96,27 @@ namespace CargoSpace.Server
                     await ToSignal(GetTree().CreateTimer(0.01f), "timeout");
                 }
             }
-            GD.Print($"[Server] Sent {tileCount} individual tile RPCs");
+            
+            GameLogger.Debug($"Sent {tileCount} individual tile RPCs");
             
             // Small delay before sending completion signal to ensure all tiles arrive
             await ToSignal(GetTree().CreateTimer(0.05f), "timeout");
             
             // Signal that grid transfer is complete via NetworkBridge
             _networkBridge.SendGridComplete(clientId);
-            GD.Print($"[Server] Sent grid complete signal");
         }
 
         public void SendPawnPositionToClient(long clientId)
         {
             var pawnPos = _gridSimulation.GetPawnPosition();
-            GD.Print($"[Server] SendPawnPositionToClient: Sending pawn position {pawnPos} to client {clientId}");
+            GameLogger.Debug($"SendPawnPositionToClient: Sending pawn position {pawnPos} to client {clientId}");
             _networkBridge.SendPawnPosition(clientId, pawnPos);
         }
 
         private void BroadcastPawnPosition()
         {
             var pawnPos = _gridSimulation.GetPawnPosition();
-            GD.Print($"[Server] BroadcastPawnPosition: Broadcasting pawn position {pawnPos} to all clients");
+            GameLogger.Debug($"BroadcastPawnPosition: Broadcasting pawn position {pawnPos} to all clients");
             _networkBridge.BroadcastPawnPosition(pawnPos);
         }
 

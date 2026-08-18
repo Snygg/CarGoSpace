@@ -24,14 +24,14 @@ namespace CargoSpace.Shared
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void RequestGrid_RPC()
         {
-            GD.Print($"[NetworkBridge] RequestGrid_RPC received from {Multiplayer.GetRemoteSenderId()}");
+            GameLogger.Debug($"RequestGrid_RPC received from {Multiplayer.GetRemoteSenderId()}");
             _serverManager?.HandleGridRequest(Multiplayer.GetRemoteSenderId());
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ReceiveMoveCommand_RPC(Vector2I target)
         {
-            GD.Print($"[NetworkBridge] ReceiveMoveCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}");
+            GameLogger.Debug($"ReceiveMoveCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}");
             _serverManager?.HandleMoveCommand(target, Multiplayer.GetRemoteSenderId());
         }
 
@@ -39,7 +39,7 @@ namespace CargoSpace.Shared
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ReceiveGridSize_RPC(int size)
         {
-            GD.Print($"[NetworkBridge] ReceiveGridSize_RPC: {size}");
+            GameLogger.Debug($"ReceiveGridSize_RPC: {size}");
             _clientManager?.HandleGridSize(size);
         }
 
@@ -52,14 +52,14 @@ namespace CargoSpace.Shared
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ReceiveGridComplete_RPC()
         {
-            GD.Print($"[NetworkBridge] ReceiveGridComplete_RPC");
+            GameLogger.Debug("ReceiveGridComplete_RPC");
             _clientManager?.HandleGridComplete();
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ReceivePawnPosition_RPC(Vector2I position)
         {
-            GD.Print($"[NetworkBridge] ReceivePawnPosition_RPC: {position}");
+            GameLogger.Debug($"ReceivePawnPosition_RPC: {position}");
             _clientManager?.HandlePawnPosition(position);
         }
 

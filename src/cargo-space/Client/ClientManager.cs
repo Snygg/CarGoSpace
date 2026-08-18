@@ -22,37 +22,34 @@ namespace CargoSpace.Client
 
         public override void _Ready()
         {
-            GD.Print("[Client] ClientManager._Ready() called");
+            GameLogger.Debug("ClientManager._Ready() called");
             
             // Add camera first so everything else is visible
             _camera = new Camera2D();
             _camera.Position = new Vector2(0, 0);
             AddChild(_camera);
-            GD.Print("[Client] Camera2D added at position (0,0)");
             
             _visualGrid = new VisualGrid();
             AddChild(_visualGrid);
-            GD.Print("[Client] VisualGrid added to scene tree");
             
             _pawn = new ColorRect();
             _pawn.Color = Colors.Red;
             _pawn.Size = new Vector2(Constants.TileSize, Constants.TileSize);
             _pawn.ZIndex = 10;
             AddChild(_pawn);
-            GD.Print("[Client] Pawn added to scene tree");
             
             StartClient();
         }
 
         private void StartClient()
         {
-            GD.Print("[Client] Starting client connection...");
+            GameLogger.Debug("Starting client connection...");
             _peer = new ENetMultiplayerPeer();
             var error = _peer.CreateClient(Constants.ServerAddress, Constants.ServerPort);
             
             if (error != Error.Ok)
             {
-                GD.PrintErr($"[Client] Failed to start client: {error}");
+                GameLogger.Error($"Failed to start client: {error}");
                 return;
             }
 
@@ -60,26 +57,23 @@ namespace CargoSpace.Client
             Multiplayer.ConnectedToServer += OnConnectedToServer;
             Multiplayer.ConnectionFailed += OnConnectionFailed;
             Multiplayer.ServerDisconnected += OnServerDisconnected;
-            
-            GD.Print($"[Client] Connecting to {Constants.ServerAddress}:{Constants.ServerPort}");
         }
 
         private void OnConnectedToServer()
         {
-            GD.Print("[Client] Successfully connected to server!");
+            GameLogger.Debug("Successfully connected to server!");
             // Request grid data from server via NetworkBridge
-            GD.Print("[Client] Requesting grid data from server...");
             _networkBridge.RequestGrid();
         }
 
         private void OnConnectionFailed()
         {
-            GD.PrintErr("[Client] Failed to connect to server");
+            GameLogger.Error("Failed to connect to server");
         }
 
         private void OnServerDisconnected()
         {
-            GD.Print("[Client] Disconnected from server");
+            GameLogger.Debug("Disconnected from server");
         }
 
         public override void _Input(InputEvent @event)
@@ -93,7 +87,7 @@ namespace CargoSpace.Client
         private void HandleTileClick(Vector2 screenPosition)
         {
             Vector2I gridCoord = ScreenToGrid(screenPosition);
-            GD.Print($"[Client] Clicked tile at {gridCoord}");
+            GameLogger.Debug($"Clicked tile at {gridCoord}");
             
             // Send move command via NetworkBridge
             _networkBridge.SendMoveCommand(gridCoord);
@@ -115,7 +109,7 @@ namespace CargoSpace.Client
         // Handler methods called by NetworkBridge RPCs
         public void HandleGridSize(int size)
         {
-            GD.Print($"[Client] HandleGridSize: Expecting {size} tiles");
+            GameLogger.Debug($"HandleGridSize: Expecting {size} tiles");
             _expectedTileCount = size;
             _pendingGrid.Clear();
         }
@@ -125,24 +119,23 @@ namespace CargoSpace.Client
             Vector2I coord = new Vector2I(x, y);
             _pendingGrid[coord] = new GridTileData((TileType)tileType);
             int count = _pendingGrid.Count;
-            GD.Print($"[Client] HandleTile: Received tile at ({x}, {y}) type: {tileType}, total tiles: {count}");
             
             // Log every 10th tile to reduce spam
             if (count % 10 == 0)
             {
-                GD.Print($"[Client] Progress: {count} tiles received so far");
+                GameLogger.Debug($"Progress: {count} tiles received so far");
             }
         }
 
         public void HandleGridComplete()
         {
-            GD.Print($"[Client] HandleGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
+            GameLogger.Debug($"HandleGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
             _visualGrid.RenderGrid(_pendingGrid);
         }
 
         public void HandlePawnPosition(Vector2I position)
         {
-            GD.Print($"[Client] HandlePawnPosition: {position}");
+            GameLogger.Debug($"HandlePawnPosition: {position}");
             UpdatePawnVisual(position);
         }
 
