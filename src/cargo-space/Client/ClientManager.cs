@@ -1,5 +1,6 @@
 using Godot;
 using CargoSpace.Core;
+using CargoSpace.Server;
 using System.Collections.Generic;
 using CargoSpace.Shared;
 
@@ -11,9 +12,11 @@ namespace CargoSpace.Client
         private VisualGrid _visualGrid;
         private ColorRect _pawn;
         private CameraController _camera;
+        private UIManager _uiManager;
         private NetworkBridge _networkBridge;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
         private int _expectedTileCount = 0;
+        private bool _gridRendered = false;
 
         public ClientManager(NetworkBridge networkBridge)
         {
@@ -36,6 +39,10 @@ namespace CargoSpace.Client
             _pawn.Size = new Vector2(Constants.TileSize, Constants.TileSize);
             _pawn.ZIndex = 10;
             AddChild(_pawn);
+            
+            _uiManager = new UIManager();
+            _uiManager.Initialize(_networkBridge);
+            AddChild(_uiManager);
             
             StartClient();
         }
@@ -75,7 +82,7 @@ namespace CargoSpace.Client
             GameLogger.Debug("Disconnected from server");
         }
 
-        public override void _Input(InputEvent @event)
+        public override void _UnhandledInput(InputEvent @event)
         {
             if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
             {
@@ -88,8 +95,19 @@ namespace CargoSpace.Client
             Vector2I gridCoord = ScreenToGrid(screenPosition);
             GameLogger.Debug($"Clicked tile at {gridCoord}");
             
-            // Send job command via NetworkBridge
-            _networkBridge.SendJobCommand(gridCoord);
+            if (_pendingGrid.TryGetValue(gridCoord, out GridTileData tileData))
+            {
+                TileDefinition tileDef = TileRegistry.Get(tileData.Type);
+                if (tileDef != null && tileDef.IsInteractable)
+                {
+                    // Show console menu for interactable tiles
+                    _uiManager.ShowConsoleMenu(gridCoord, tileData.State);
+                    return;
+                }
+            }
+            
+            // Hide UI if clicking elsewhere
+            _uiManager.HideMenu();
         }
 
         private Vector2I ScreenToGrid(Vector2 screenPosition)
@@ -113,10 +131,10 @@ namespace CargoSpace.Client
             _pendingGrid.Clear();
         }
 
-        public void HandleTile(int x, int y, byte tileType)
+        public void HandleTile(int x, int y, byte tileType, int state)
         {
             Vector2I coord = new Vector2I(x, y);
-            _pendingGrid[coord] = new GridTileData((TileType)tileType);
+            _pendingGrid[coord] = new GridTileData((TileType)tileType, state);
             int count = _pendingGrid.Count;
             
             // Log every 10th tile to reduce spam
@@ -124,12 +142,19 @@ namespace CargoSpace.Client
             {
                 GameLogger.Debug($"Progress: {count} tiles received so far");
             }
+            
+            // If the grid has already been rendered, re-render to reflect state changes
+            if (_gridRendered)
+            {
+                _visualGrid.RenderGrid(_pendingGrid);
+            }
         }
 
         public void HandleGridComplete()
         {
             GameLogger.Debug($"HandleGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
             _visualGrid.RenderGrid(_pendingGrid);
+            _gridRendered = true;
             
             // Center camera on the grid
             CenterCameraOnGrid();

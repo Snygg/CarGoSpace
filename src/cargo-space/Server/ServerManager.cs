@@ -20,7 +20,7 @@ namespace CargoSpace.Server
         public override void _Ready()
         {
             GameLogger.Debug("ServerManager._Ready() called");
-            _gridSimulation = new GridSimulation();
+            _gridSimulation = new GridSimulation(_networkBridge);
             StartServer();
             StartTickLoop();
         }
@@ -80,12 +80,12 @@ namespace CargoSpace.Server
             SendPawnPositionToClient(requesterId);
         }
 
-        public void HandleJobCommand(Vector2I target, long senderId)
+        public void HandleJobCommand(Vector2I target, JobType jobType, long senderId)
         {
-            GameLogger.Debug($"HandleJobCommand: Job request from {senderId} to {target}");
+            GameLogger.Debug($"HandleJobCommand: Job request from {senderId} to {target}, type {jobType}");
             
             // Add job to the simulation's job board
-            _gridSimulation.AddJob(target);
+            _gridSimulation.AddJob(new Job(target, jobType));
         }
 
         public async void SendGridToClient(long clientId)
@@ -100,7 +100,7 @@ namespace CargoSpace.Server
             int tileCount = 0;
             foreach (var kvp in grid)
             {
-                _networkBridge.SendTile(clientId, kvp.Key.X, kvp.Key.Y, (byte)kvp.Value.Type);
+                _networkBridge.SendTile(clientId, kvp.Key.X, kvp.Key.Y, (byte)kvp.Value.Type, kvp.Value.State);
                 tileCount++;
                 
                 // Add a small delay every 10 tiles to prevent network congestion

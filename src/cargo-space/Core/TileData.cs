@@ -12,10 +12,12 @@ namespace CargoSpace.Core
     public struct GridTileData
     {
         public TileType Type;
+        public int State;
 
-        public GridTileData(TileType type)
+        public GridTileData(TileType type, int state = 0)
         {
             Type = type;
+            State = state;
         }
     }
 }

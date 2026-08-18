@@ -1,27 +1,40 @@
 using Godot;
 using CargoSpace.Core;
+using CargoSpace.Shared;
 using System.Collections.Generic;
 
 namespace CargoSpace.Server
 {
+    public enum PawnState
+    {
+        Idle,
+        Walking,
+        Working
+    }
+
     public class GridSimulation
     {
         private Dictionary<Vector2I, GridTileData> _grid;
         private AStarGrid2D _pathfinding;
-        private Queue<Vector2I> _jobBoard;
+        private Queue<Job> _jobBoard;
         
         // Pawn state
         private Vector2I _pawnPosition;
         private List<Vector2I> _currentPath;
-        private bool _isBusy;
+        private PawnState _pawnState;
+        private Job _currentJob;
+        private int _workTicksRemaining;
+        private NetworkBridge _networkBridge;
 
-        public GridSimulation()
+        public GridSimulation(NetworkBridge networkBridge = null)
         {
+            _networkBridge = networkBridge;
             _grid = new Dictionary<Vector2I, GridTileData>();
-            _jobBoard = new Queue<Vector2I>();
+            _jobBoard = new Queue<Job>();
             _pawnPosition = new Vector2I(0, 0);
             _currentPath = new List<Vector2I>();
-            _isBusy = false;
+            _pawnState = PawnState.Idle;
+            _workTicksRemaining = 0;
             
             InitializeGrid();
             InitializePathfinding();
@@ -85,32 +98,34 @@ namespace CargoSpace.Server
             return _pawnPosition;
         }
 
-        public void AddJob(Vector2I consolePosition)
+        public void AddJob(Job job)
         {
-            if (_grid.ContainsKey(consolePosition))
+            if (_grid.ContainsKey(job.Target))
             {
-                TileDefinition tileDef = TileRegistry.Get(_grid[consolePosition].Type);
+                TileDefinition tileDef = TileRegistry.Get(_grid[job.Target].Type);
                 if (tileDef != null && tileDef.IsInteractable)
                 {
-                    _jobBoard.Enqueue(consolePosition);
-                    GameLogger.Debug($"Job added to board: {consolePosition}");
+                    _jobBoard.Enqueue(job);
+                    GameLogger.Debug($"Job added to board: {job.Type} at {job.Target}");
                 }
             }
         }
 
         public void Tick()
         {
-            // If pawn is idle and there are jobs, assign one
-            if (!_isBusy && _jobBoard.Count > 0)
+            if (_pawnState == PawnState.Idle && _jobBoard.Count > 0)
             {
-                Vector2I target = _jobBoard.Dequeue();
-                CalculatePath(target);
+                _currentJob = _jobBoard.Dequeue();
+                CalculatePath(_currentJob.Target);
             }
             
-            // If pawn has a path, move one step
-            if (_currentPath.Count > 0)
+            if (_pawnState == PawnState.Walking && _currentPath.Count > 0)
             {
                 MoveAlongPath();
+            }
+            else if (_pawnState == PawnState.Working)
+            {
+                WorkOnJob();
             }
         }
 
@@ -120,7 +135,7 @@ namespace CargoSpace.Server
             _currentPath = new List<Vector2I>(godotPath);
             if (_currentPath.Count > 0)
             {
-                _isBusy = true;
+                _pawnState = PawnState.Walking;
                 GameLogger.Debug($"Path calculated to {target}, {_currentPath.Count} steps");
             }
         }
@@ -135,11 +150,43 @@ namespace CargoSpace.Server
                 
                 GameLogger.Debug($"Pawn moved to {nextStep}");
                 
-                // If path is complete, mark as idle
+                // If path is complete, transition to Working
                 if (_currentPath.Count == 0)
                 {
-                    _isBusy = false;
-                    GameLogger.Debug("Pawn completed job, now idle");
+                    _pawnState = PawnState.Working;
+                    _workTicksRemaining = 3;
+                    GameLogger.Debug("Pawn reached target, starting work");
+                }
+            }
+        }
+
+        private void WorkOnJob()
+        {
+            _workTicksRemaining--;
+            GameLogger.Debug($"Working... {_workTicksRemaining} ticks remaining");
+            
+            if (_workTicksRemaining <= 0)
+            {
+                ExecuteJob(_currentJob);
+                _pawnState = PawnState.Idle;
+            }
+        }
+
+        private void ExecuteJob(Job job)
+        {
+            if (_grid.ContainsKey(job.Target))
+            {
+                GridTileData tileData = _grid[job.Target];
+                
+                if (job.Type == JobType.ToggleState)
+                {
+                    tileData.State = 1 - tileData.State;
+                    _grid[job.Target] = tileData;
+                    
+                    GameLogger.Debug($"Console at {job.Target} toggled to state {tileData.State}");
+                    
+                    // Broadcast tile state change to all clients
+                    _networkBridge?.BroadcastTileUpdate(job.Target, tileData);
                 }
             }
         }

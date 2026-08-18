@@ -29,10 +29,10 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveJobCommand_RPC(Vector2I target)
+        public void ReceiveJobCommand_RPC(Vector2I target, byte jobType)
         {
-            GameLogger.Debug($"ReceiveJobCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}");
-            _serverManager?.HandleJobCommand(target, Multiplayer.GetRemoteSenderId());
+            GameLogger.Debug($"ReceiveJobCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}, type {jobType}");
+            _serverManager?.HandleJobCommand(target, (JobType)jobType, Multiplayer.GetRemoteSenderId());
         }
 
         // Client-bound RPCs (called by server)
@@ -44,9 +44,9 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveTile_RPC(int x, int y, byte tileType)
+        public void ReceiveTile_RPC(int x, int y, byte tileType, int state)
         {
-            _clientManager?.HandleTile(x, y, tileType);
+            _clientManager?.HandleTile(x, y, tileType, state);
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -69,9 +69,9 @@ namespace CargoSpace.Shared
             RpcId(clientId, nameof(ReceiveGridSize_RPC), size);
         }
 
-        public void SendTile(long clientId, int x, int y, byte tileType)
+        public void SendTile(long clientId, int x, int y, byte tileType, int state)
         {
-            RpcId(clientId, nameof(ReceiveTile_RPC), x, y, tileType);
+            RpcId(clientId, nameof(ReceiveTile_RPC), x, y, tileType, state);
         }
 
         public void SendGridComplete(long clientId)
@@ -89,14 +89,19 @@ namespace CargoSpace.Shared
             Rpc(nameof(ReceivePawnPosition_RPC), position);
         }
 
+        public void BroadcastTileUpdate(Vector2I coord, GridTileData tileData)
+        {
+            Rpc(nameof(ReceiveTile_RPC), coord.X, coord.Y, (byte)tileData.Type, tileData.State);
+        }
+
         public void RequestGrid()
         {
             RpcId(1, nameof(RequestGrid_RPC));
         }
 
-        public void SendJobCommand(Vector2I target)
+        public void SendJobCommand(Vector2I target, JobType jobType)
         {
-            RpcId(1, nameof(ReceiveJobCommand_RPC), target);
+            RpcId(1, nameof(ReceiveJobCommand_RPC), target, (byte)jobType);
         }
     }
 }

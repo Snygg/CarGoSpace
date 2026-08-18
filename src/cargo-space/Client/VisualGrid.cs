@@ -31,9 +31,10 @@ namespace CargoSpace.Client
             {
                 Vector2I gridCoord = kvp.Key;
                 GridTileData tileData = kvp.Value;
+                int sourceId = GetSourceId(tileData.Type, tileData.State);
                 
                 // Set the cell at the grid coordinate with the tile type's atlas coords
-                _tileMapLayer.SetCell(gridCoord, (int)tileData.Type, new Vector2I(0, 0));
+                _tileMapLayer.SetCell(gridCoord, sourceId, new Vector2I(0, 0));
             }
 
             GameLogger.Debug($"Rendered {_tileMapLayer.GetUsedCells().Count} tiles total at world coordinates");
@@ -46,19 +47,51 @@ namespace CargoSpace.Client
             // Configure tile size
             tileSet.TileSize = new Vector2I(Constants.TileSize, Constants.TileSize);
             
-            // Create an atlas source for each tile type
+            // Create atlas sources for each tile type and state combination
             foreach (TileDefinition tileDef in TileRegistry.AllTiles)
             {
-                ImageTexture texture = GenerateTexture(tileDef.GetColor());
-                TileSetAtlasSource atlasSource = new TileSetAtlasSource();
-                atlasSource.Texture = texture;
-                atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
-                atlasSource.CreateTile(new Vector2I(0, 0));
+                // State 0 (default/off)
+                AddAtlasSource(tileSet, tileDef, 0);
                 
-                tileSet.AddSource(atlasSource, (int)tileDef.Type);
+                // State 1 (on) for interactable tiles
+                if (tileDef.IsInteractable)
+                {
+                    AddAtlasSource(tileSet, tileDef, 1);
+                }
             }
 
             return tileSet;
+        }
+
+        private void AddAtlasSource(TileSet tileSet, TileDefinition tileDef, int state)
+        {
+            Color color = GetRenderColor(tileDef, state);
+            ImageTexture texture = GenerateTexture(color);
+            TileSetAtlasSource atlasSource = new TileSetAtlasSource();
+            atlasSource.Texture = texture;
+            atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+            atlasSource.CreateTile(new Vector2I(0, 0));
+            
+            int sourceId = GetSourceId(tileDef.Type, state);
+            tileSet.AddSource(atlasSource, sourceId);
+        }
+
+        private int GetSourceId(TileType type, int state)
+        {
+            return (int)type * 2 + state;
+        }
+
+        private Color GetRenderColor(TileDefinition tileDef, int state)
+        {
+            Color baseColor = tileDef.GetColor();
+            
+            // If the tile is a Console and state is 0 (OFF), darken it
+            if (tileDef.IsInteractable && state == 0)
+            {
+                return new Color(baseColor.R * 0.5f, baseColor.G * 0.5f, baseColor.B * 0.5f, baseColor.A);
+            }
+            
+            return baseColor;
         }
 
         private ImageTexture GenerateTexture(Color color)
