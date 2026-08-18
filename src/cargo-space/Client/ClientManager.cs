@@ -141,13 +141,20 @@ namespace CargoSpace.Client
 
         private void UpdatePawnVisual(Vector2I gridPosition)
         {
+            // Calculate grid bounds (same as VisualGrid)
+            int minX = -3, maxX = 3, minY = -3, maxY = 3;
+            int gridWidth = (maxX - minX + 1) * Constants.TileSize;
+            int gridHeight = (maxY - minY + 1) * Constants.TileSize;
+            
+            // Position pawn relative to the centered grid
             Vector2 viewportCenter = GetViewport().GetVisibleRect().Size / 2;
-            Vector2 screenPosition = viewportCenter + new Vector2(
-                gridPosition.X * Constants.TileSize,
-                gridPosition.Y * Constants.TileSize
+            Vector2 gridOffset = viewportCenter - new Vector2(gridWidth / 2f, gridHeight / 2f);
+            Vector2 pawnPosition = gridOffset + new Vector2(
+                (gridPosition.X - minX) * Constants.TileSize,
+                (gridPosition.Y - minY) * Constants.TileSize
             );
             
-            _pawn.Position = screenPosition;
+            _pawn.Position = pawnPosition;
         }
 
         public override void _ExitTree()
