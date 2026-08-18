@@ -21,6 +21,7 @@ namespace CargoSpace.Server
         
         // Entity-based pawn state
         private Dictionary<PawnId, Pawn> _pawns = new();
+        private HashSet<IGridEntity> _dirtyEntities = new();
 
         public GridSimulation(NetworkBridge networkBridge = null)
         {
@@ -29,7 +30,9 @@ namespace CargoSpace.Server
             _jobBoard = new List<Job>();
             
             PawnId startingId = PawnId.Create();
-            _pawns[startingId] = new Pawn(startingId, new Vector2I(0, 0));
+            Pawn startingPawn = new Pawn(startingId, new Vector2I(0, 0));
+            _pawns[startingId] = startingPawn;
+            _dirtyEntities.Add(startingPawn);
             
             InitializeGrid();
             InitializePathfinding();
@@ -153,7 +156,8 @@ namespace CargoSpace.Server
             {
                 Vector2I nextStep = pawn.CurrentPath[0];
                 pawn.CurrentPath.RemoveAt(0);
-                pawn.Position = nextStep;
+                pawn.UpdatePosition(nextStep);
+                _dirtyEntities.Add(pawn);
                 
                 GameLogger.Debug($"Pawn {pawn.Id}: moved to {nextStep}");
                 
@@ -235,6 +239,13 @@ namespace CargoSpace.Server
         {
             // This method is deprecated - use job system instead
             return false;
+        }
+
+        public HashSet<IGridEntity> FlushDirtyEntities()
+        {
+            var copy = new HashSet<IGridEntity>(_dirtyEntities);
+            _dirtyEntities.Clear();
+            return copy;
         }
     }
 }

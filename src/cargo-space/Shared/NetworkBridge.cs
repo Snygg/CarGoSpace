@@ -66,11 +66,10 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceivePawnPosition_RPC(byte[] pawnIdBytes, Vector2I position)
+        public void ReceiveEntityPosition_RPC(byte typeByte, byte[] idBytes, Vector2I position)
         {
-            PawnId id = PawnId.FromBytes(pawnIdBytes);
-            GameLogger.Debug($"ReceivePawnPosition_RPC: {id} at {position}");
-            _clientManager?.HandlePawnPosition(id, position);
+            GameLogger.Debug($"ReceiveEntityPosition_RPC: type {typeByte} at {position}");
+            _clientManager?.HandleEntityPosition((EntityType)typeByte, idBytes, position);
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -113,14 +112,14 @@ namespace CargoSpace.Shared
             RpcId(clientId, nameof(ReceiveGridComplete_RPC));
         }
 
-        public void SendPawnPosition(long clientId, PawnId pawnId, Vector2I position)
+        public void SendEntityPosition(long clientId, IGridEntity entity)
         {
-            RpcId(clientId, nameof(ReceivePawnPosition_RPC), pawnId.ToNetworkBytes(), position);
+            RpcId(clientId, nameof(ReceiveEntityPosition_RPC), (byte)entity.Type, entity.GetNetworkIdBytes(), entity.Position);
         }
 
-        public void BroadcastPawnPosition(PawnId pawnId, Vector2I position)
+        public void BroadcastEntityPosition(IGridEntity entity)
         {
-            Rpc(nameof(ReceivePawnPosition_RPC), pawnId.ToNetworkBytes(), position);
+            Rpc(nameof(ReceiveEntityPosition_RPC), (byte)entity.Type, entity.GetNetworkIdBytes(), entity.Position);
         }
 
         public void BroadcastTileUpdate(Vector2I coord, GridTileData tileData)

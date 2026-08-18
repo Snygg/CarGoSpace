@@ -176,10 +176,15 @@ namespace CargoSpace.Client
             _camera.CenterOnGrid(gridWidth, gridHeight);
         }
 
-        public void HandlePawnPosition(PawnId id, Vector2I position)
+        public void HandleEntityPosition(EntityType entityType, byte[] idBytes, Vector2I position)
         {
-            GameLogger.Debug($"HandlePawnPosition: {id} at {position}");
-            UpdatePawnVisual(id, position);
+            GameLogger.Debug($"HandleEntityPosition: type {entityType} at {position}");
+
+            if (entityType == EntityType.Pawn)
+            {
+                PawnId id = PawnId.FromBytes(idBytes);
+                UpdatePawnVisual(id, position);
+            }
         }
 
         public void HandleJobAdded(JobId id, Vector2I target, JobType jobType)

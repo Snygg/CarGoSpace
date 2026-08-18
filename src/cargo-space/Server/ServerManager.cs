@@ -58,8 +58,12 @@ namespace CargoSpace.Server
         {
             _gridSimulation.Tick();
             
-            // Broadcast pawn position after each tick
-            BroadcastPawnPosition();
+            // Flush and broadcast any dirty entities
+            foreach (IGridEntity entity in _gridSimulation.FlushDirtyEntities())
+            {
+                _networkBridge.BroadcastEntityPosition(entity);
+                entity.ClearDirtyFlag();
+            }
         }
 
         private void OnPeerConnected(long id)
@@ -130,16 +134,7 @@ namespace CargoSpace.Server
             foreach (Pawn pawn in _gridSimulation.GetPawns())
             {
                 GameLogger.Debug($"SendPawnPositionToClient: Sending pawn position {pawn.Position} to client {clientId}");
-                _networkBridge.SendPawnPosition(clientId, pawn.Id, pawn.Position);
-            }
-        }
-
-        private void BroadcastPawnPosition()
-        {
-            foreach (Pawn pawn in _gridSimulation.GetPawns())
-            {
-                GameLogger.Debug($"BroadcastPawnPosition: Broadcasting pawn position {pawn.Position} to all clients");
-                _networkBridge.BroadcastPawnPosition(pawn.Id, pawn.Position);
+                _networkBridge.SendEntityPosition(clientId, pawn);
             }
         }
 
