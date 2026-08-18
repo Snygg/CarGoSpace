@@ -2,6 +2,7 @@ using Godot;
 using CargoSpace.Core;
 using CargoSpace.Shared;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CargoSpace.Server
 {
@@ -22,6 +23,7 @@ namespace CargoSpace.Server
         // Entity-based pawn state
         private Dictionary<PawnId, Pawn> _pawns = new();
         private HashSet<IGridEntity> _dirtyEntities = new();
+        private HashSet<Vector2I> _reservedTiles = new();
 
         public GridSimulation(NetworkBridge networkBridge = null)
         {
@@ -115,6 +117,22 @@ namespace CargoSpace.Server
                 return;
             }
 
+            // 1. Is it already on the board?
+            if (_jobBoard.Any(j => j.Target == job.Target))
+            {
+                GameLogger.Debug($"Job rejected: Tile {job.Target} already has a pending job.");
+                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
+                return;
+            }
+
+            // 2. Is it already reserved/claimed by a pawn?
+            if (_reservedTiles.Contains(job.Target) || _pawns.Values.Any(p => p.CurrentJob.Target == job.Target))
+            {
+                GameLogger.Debug($"Job rejected: Tile {job.Target} is actively being worked by a pawn.");
+                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
+                return;
+            }
+
             _jobBoard.Add(job);
             GameLogger.Debug($"Job added to board: {job.Id} {job.Type} at {job.Target}");
 
@@ -127,23 +145,29 @@ namespace CargoSpace.Server
             {
                 if (pawn.State == PawnState.Idle && _jobBoard.Count > 0)
                 {
-                    Job potentialJob = _jobBoard[0];
-                    _jobBoard.RemoveAt(0);
-
-                    // Attempt to pathfind BEFORE officially claiming the job
-                    CalculatePath(pawn, potentialJob.Target);
-
-                    if (pawn.CurrentPath.Count > 0)
+                    for (int i = 0; i < _jobBoard.Count; i++)
                     {
-                        // Path successful. Claim the job and start walking.
-                        pawn.CurrentJob = potentialJob;
-                        // pawn.State is set to Walking inside CalculatePath
-                    }
-                    else
-                    {
-                        // Path failed (unreachable). Reject the job and remain Idle.
-                        GameLogger.Warning($"Job {potentialJob.Id} at {potentialJob.Target} is unreachable. Discarding.");
-                        _networkBridge?.BroadcastJobRemoved(potentialJob.Id);
+                        Job potentialJob = _jobBoard[i];
+                        if (_reservedTiles.Contains(potentialJob.Target)) continue; // Skip reserved jobs
+
+                        CalculatePath(pawn, potentialJob.Target);
+
+                        if (pawn.CurrentPath.Count > 0)
+                        {
+                            // Path found. Reserve tile, claim job, remove from board.
+                            _reservedTiles.Add(potentialJob.Target);
+                            pawn.CurrentJob = potentialJob;
+                            _jobBoard.RemoveAt(i);
+                            break; // Stop looking for jobs
+                        }
+                        else
+                        {
+                            // Unreachable. Discard job.
+                            GameLogger.Warning($"Job {potentialJob.Id} is unreachable. Discarding.");
+                            _networkBridge?.BroadcastJobRemoved(potentialJob.Id);
+                            _jobBoard.RemoveAt(i);
+                            i--; // Adjust index after removal
+                        }
                     }
                 }
                 
@@ -190,6 +214,18 @@ namespace CargoSpace.Server
             }
         }
 
+        private void ResetPawnState(Pawn pawn)
+        {
+            if (pawn.CurrentJob.Target != default)
+            {
+                _reservedTiles.Remove(pawn.CurrentJob.Target);
+            }
+            pawn.CurrentPath.Clear();
+            pawn.WorkTicksRemaining = 0;
+            pawn.State = PawnState.Idle;
+            pawn.CurrentJob = default;
+        }
+
         private void WorkOnJob(Pawn pawn)
         {
             pawn.WorkTicksRemaining--;
@@ -207,20 +243,24 @@ namespace CargoSpace.Server
         private void ExecuteJob(Pawn pawn)
         {
             Job job = pawn.CurrentJob;
-            if (_grid.ContainsKey(job.Target))
+            try
             {
-                GridTileData tileData = _grid[job.Target];
-                
-                if (job.Type == JobType.ToggleState)
+                if (_grid.ContainsKey(job.Target))
                 {
-                    tileData.State = 1 - tileData.State;
-                    _grid[job.Target] = tileData;
-                    
-                    GameLogger.Debug($"Pawn {pawn.Id}: console at {job.Target} toggled to state {tileData.State}");
-                    
-                    // Broadcast tile state change to all clients
-                    _networkBridge?.BroadcastTileUpdate(job.Target, tileData);
+                    GridTileData tileData = _grid[job.Target];
+                    if (job.Type == JobType.SetState)
+                    {
+                        tileData.State = job.TargetState;
+                        _grid[job.Target] = tileData;
+                        GameLogger.Debug($"Pawn {pawn.Id}: console at {job.Target} set to state {tileData.State}");
+                        _networkBridge?.BroadcastTileUpdate(job.Target, tileData);
+                    }
                 }
+            }
+            finally
+            {
+                // GUARANTEED to run, preventing permanent tile locks
+                _reservedTiles.Remove(job.Target);
             }
         }
 
@@ -230,10 +270,7 @@ namespace CargoSpace.Server
             {
                 if (pawn.CurrentJob.Id == id)
                 {
-                    pawn.CurrentPath.Clear();
-                    pawn.WorkTicksRemaining = 0;
-                    pawn.State = PawnState.Idle;
-                    pawn.CurrentJob = default;
+                    ResetPawnState(pawn);
                     _networkBridge?.BroadcastJobRemoved(id);
                     GameLogger.Debug($"Pawn {pawn.Id}: active job cancelled and interrupted: {id}");
                     return;

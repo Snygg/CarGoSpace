@@ -126,16 +126,17 @@ namespace CargoSpace.Client
                 stateLabel.Text = $"Console: {(currentState == 1 ? "ON" : "OFF")}";
                 vbox.AddChild(stateLabel);
 
-                Button toggleButton = new Button();
-                toggleButton.Text = "Toggle";
-                toggleButton.Pressed += () =>
+                int desiredState = currentState == 0 ? 1 : 0;
+                Button setStateButton = new Button();
+                setStateButton.Text = currentState == 0 ? "Turn ON" : "Turn OFF";
+                setStateButton.Pressed += () =>
                 {
                     JobId jobId = JobId.Create();
-                    AddJobUI(jobId, JobType.ToggleState, gridCoord);
-                    _networkBridge?.SendJobCommand(jobId, gridCoord, JobType.ToggleState);
+                    AddJobUI(jobId, JobType.SetState, gridCoord);
+                    _networkBridge?.SendJobCommand(jobId, gridCoord, JobType.SetState, desiredState);
                     ClearContextMenu();
                 };
-                vbox.AddChild(toggleButton);
+                vbox.AddChild(setStateButton);
             }
         }
 
@@ -176,7 +177,7 @@ namespace CargoSpace.Client
         {
             return type switch
             {
-                JobType.ToggleState => "Toggle Console",
+                JobType.SetState => "Set Console",
                 _ => type.ToString()
             };
         }

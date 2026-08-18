@@ -5,7 +5,7 @@ namespace CargoSpace.Server
 {
     public enum JobType : byte
     {
-        ToggleState = 0
+        SetState = 0
     }
 
     public struct Job
@@ -14,13 +14,15 @@ namespace CargoSpace.Server
         public long OwnerPeerId;
         public Vector2I Target;
         public JobType Type;
+        public int TargetState;
 
-        public Job(JobId id, long ownerPeerId, Vector2I target, JobType type)
+        public Job(JobId id, long ownerPeerId, Vector2I target, JobType type, int targetState)
         {
             Id = id;
             OwnerPeerId = ownerPeerId;
             Target = target;
             Type = type;
+            TargetState = targetState;
         }
     }
 }

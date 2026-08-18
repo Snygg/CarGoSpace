@@ -29,11 +29,11 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveJobCommand_RPC(byte[] jobIdBytes, Vector2I target, byte jobType)
+        public void ReceiveJobCommand_RPC(byte[] jobIdBytes, Vector2I target, byte jobType, int targetState)
         {
             JobId id = JobId.FromBytes(jobIdBytes);
-            GameLogger.Debug($"ReceiveJobCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}, type {jobType}, id {id}");
-            _serverManager?.HandleJobCommand(id, target, (JobType)jobType, Multiplayer.GetRemoteSenderId());
+            GameLogger.Debug($"ReceiveJobCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}, type {jobType}, state {targetState}, id {id}");
+            _serverManager?.HandleJobCommand(id, target, (JobType)jobType, targetState, Multiplayer.GetRemoteSenderId());
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -154,9 +154,9 @@ namespace CargoSpace.Shared
             RpcId(1, nameof(RequestGrid_RPC));
         }
 
-        public void SendJobCommand(JobId jobId, Vector2I target, JobType jobType)
+        public void SendJobCommand(JobId jobId, Vector2I target, JobType jobType, int targetState)
         {
-            RpcId(1, nameof(ReceiveJobCommand_RPC), jobId.ToNetworkBytes(), target, (byte)jobType);
+            RpcId(1, nameof(ReceiveJobCommand_RPC), jobId.ToNetworkBytes(), target, (byte)jobType, targetState);
         }
 
         public void SendCancelJobRequest(JobId jobId)

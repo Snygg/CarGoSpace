@@ -197,7 +197,7 @@ namespace CargoSpace.Client
                 return;
             }
 
-            Job job = new Job(id, 0, target, jobType);
+            Job job = new Job(id, 0, target, jobType, 0);
             _activeJobs.Add(job);
             _uiManager.AddJobUI(id, jobType, target);
         }
@@ -214,20 +214,6 @@ namespace CargoSpace.Client
             GameLogger.Debug($"HandleJobRejected: {id}");
             RemoveActiveJob(id);
             _uiManager.RemoveJobUI(id);
-        }
-
-        public void QueueConsoleToggleJob(Vector2I target)
-        {
-            JobId jobId = JobId.Create();
-            long ownerPeerId = Multiplayer.GetUniqueId();
-            Job job = new Job(jobId, ownerPeerId, target, JobType.ToggleState);
-
-            // Optimistic UI: immediately show on client before server validation
-            _activeJobs.Add(job);
-            _uiManager.AddJobUI(jobId, JobType.ToggleState, target);
-
-            // Send to server for validation and queueing
-            _networkBridge?.SendJobCommand(jobId, target, JobType.ToggleState);
         }
 
         private Job? FindActiveJob(JobId id)
