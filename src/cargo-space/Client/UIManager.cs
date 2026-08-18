@@ -8,12 +8,11 @@ namespace CargoSpace.Client
 {
     public partial class UIManager : CanvasLayer
     {
-        private Panel _menuPanel;
-        private Label _stateLabel;
-        private Button _toggleButton;
         private ClientManager _clientManager;
         private NetworkBridge _networkBridge;
-        private Vector2I _currentGridCoord;
+
+        // Context slot (dynamic context menus)
+        private PanelContainer _contextSlot;
 
         // HUD toolbar
         private VBoxContainer _hudToolbar;
@@ -32,34 +31,25 @@ namespace CargoSpace.Client
 
         public override void _Ready()
         {
-            // Create console menu panel
-            _menuPanel = new Panel();
-            _menuPanel.Size = new Vector2(300, 150);
-            _menuPanel.Position = new Vector2(100, 100);
-            _menuPanel.Hide();
-            AddChild(_menuPanel);
-
-            // Create vertical container
-            VBoxContainer vbox = new VBoxContainer();
-            vbox.Size = new Vector2(280, 130);
-            vbox.Position = new Vector2(10, 10);
-            _menuPanel.AddChild(vbox);
-
-            // Create state label
-            _stateLabel = new Label();
-            _stateLabel.Text = "Console: OFF";
-            vbox.AddChild(_stateLabel);
-
-            // Create toggle button
-            _toggleButton = new Button();
-            _toggleButton.Text = "Toggle Console";
-            _toggleButton.Pressed += OnTogglePressed;
-            vbox.AddChild(_toggleButton);
+            // Create context slot for dynamic menus
+            _contextSlot = new PanelContainer();
+            _contextSlot.AnchorLeft = 0;
+            _contextSlot.AnchorTop = 1;
+            _contextSlot.AnchorRight = 0;
+            _contextSlot.AnchorBottom = 1;
+            _contextSlot.OffsetLeft = 20;
+            _contextSlot.OffsetTop = -200;
+            _contextSlot.OffsetRight = 320;
+            _contextSlot.OffsetBottom = -20;
+            _contextSlot.GrowHorizontal = Control.GrowDirection.End;
+            _contextSlot.GrowVertical = Control.GrowDirection.Begin;
+            _contextSlot.Hide();
+            AddChild(_contextSlot);
 
             // Create floating, togglable job board
             CreateJobBoard();
 
-            // Create persistent right-aligned HUD toolbar
+            // Create persistent left-aligned HUD toolbar
             CreateHudToolbar();
         }
 
@@ -107,16 +97,46 @@ namespace CargoSpace.Client
             _jobScrollContainer.AddChild(_jobListContainer);
         }
 
-        public void ShowConsoleMenu(Vector2I gridCoord, int currentState)
+        public void ClearContextMenu()
         {
-            _currentGridCoord = gridCoord;
-            _stateLabel.Text = $"Console: {(currentState == 1 ? "ON" : "OFF")}";
-            _menuPanel.Show();
+            foreach (Node child in _contextSlot.GetChildren())
+            {
+                child.QueueFree();
+            }
+            _contextSlot.Hide();
         }
 
-        public void HideMenu()
+        public void ShowContextMenu(Vector2I gridCoord, TileDefinition tileDef, int currentState)
         {
-            _menuPanel.Hide();
+            ClearContextMenu();
+            _contextSlot.Show();
+
+            VBoxContainer vbox = new VBoxContainer();
+            vbox.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            vbox.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+            _contextSlot.AddChild(vbox);
+
+            Label titleLabel = new Label();
+            titleLabel.Text = tileDef.Name ?? tileDef.Type.ToString();
+            vbox.AddChild(titleLabel);
+
+            if (tileDef.Type == TileType.Console)
+            {
+                Label stateLabel = new Label();
+                stateLabel.Text = $"Console: {(currentState == 1 ? "ON" : "OFF")}";
+                vbox.AddChild(stateLabel);
+
+                Button toggleButton = new Button();
+                toggleButton.Text = "Toggle";
+                toggleButton.Pressed += () =>
+                {
+                    JobId jobId = JobId.Create();
+                    AddJobUI(jobId, JobType.ToggleState, gridCoord);
+                    _networkBridge?.SendJobCommand(jobId, gridCoord, JobType.ToggleState);
+                    ClearContextMenu();
+                };
+                vbox.AddChild(toggleButton);
+            }
         }
 
         public void AddJobUI(JobId id, JobType type, Vector2I target)
@@ -159,14 +179,6 @@ namespace CargoSpace.Client
                 JobType.ToggleState => "Toggle Console",
                 _ => type.ToString()
             };
-        }
-
-        private void OnTogglePressed()
-        {
-            // Optimistic UI: ClientManager creates a local GUID and shows the job immediately,
-            // then sends the request to the server for validation.
-            _clientManager?.QueueConsoleToggleJob(_currentGridCoord);
-            HideMenu();
         }
 
         private void OnCancelJobPressed(JobId id)

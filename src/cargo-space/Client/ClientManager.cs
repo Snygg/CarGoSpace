@@ -101,14 +101,14 @@ namespace CargoSpace.Client
                 TileDefinition tileDef = TileRegistry.Get(tileData.Type);
                 if (tileDef != null && tileDef.IsInteractable)
                 {
-                    // Show console menu for interactable tiles
-                    _uiManager.ShowConsoleMenu(gridCoord, tileData.State);
+                    // Show context menu for the clicked interactable tile
+                    _uiManager.ShowContextMenu(gridCoord, tileDef, tileData.State);
                     return;
                 }
             }
             
-            // Hide UI if clicking elsewhere
-            _uiManager.HideMenu();
+            // Clear context slot if clicking elsewhere
+            _uiManager.ClearContextMenu();
         }
 
         private Vector2I ScreenToGrid(Vector2 screenPosition)
