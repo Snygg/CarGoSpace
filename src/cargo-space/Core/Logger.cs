@@ -5,16 +5,20 @@ namespace CargoSpace.Core
 {
     public enum LogLevel
     {
-        Debug,
-        Info,
-        Warning,
-        Error
+        Debug = 0,
+        Info = 1,
+        Warning = 2,
+        Error = 3
     }
 
     public static class GameLogger
     {
         public static void Log(LogLevel level, string message, [CallerFilePath] string filePath = "", [CallerMemberName] string memberName = "")
         {
+            // Only log if level is at or above minimum level
+            if ((int)level < Constants.MinimumLogLevel)
+                return;
+
             string className = ExtractClassName(filePath);
             string contextPrefix = GetContextPrefix();
             string methodPrefix = string.IsNullOrEmpty(memberName) ? className : $"{className}::{memberName}";
@@ -23,9 +27,6 @@ namespace CargoSpace.Core
             switch (level)
             {
                 case LogLevel.Debug:
-                    if (Constants.EnableDebugLogging)
-                        GD.Print(fullMessage);
-                    break;
                 case LogLevel.Info:
                     GD.Print(fullMessage);
                     break;
