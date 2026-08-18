@@ -1,0 +1,9 @@
+{
+  "scrap_metal": {
+    "StringId": "scrap_metal",
+    "Name": "Scrap Metal",
+    "Weight": 1.0,
+    "Stackable": true,
+    "MaxStack": 20
+  }
+}

@@ -20,7 +20,9 @@ namespace CargoSpace.Server
 
         // Flotsam collection state
         private float _flotsamProgress = 0f;
-        private Dictionary<string, int> _shipInventory = new();
+
+        // Physical items lying on the floor
+        private Dictionary<Vector2I, List<string>> _groundItems = new();
 
         public GridSimulation(NetworkBridge networkBridge = null)
         {
@@ -123,6 +125,21 @@ namespace CargoSpace.Server
         }
 
         public IEnumerable<Pawn> GetPawns() => _pawns.Values;
+
+        public void SpawnItemOnGrid(Vector2I coord, string itemStringId)
+        {
+            if (!_grid.ContainsKey(coord)) return; // Don't spawn in the void
+
+            if (!_groundItems.ContainsKey(coord))
+            {
+                _groundItems[coord] = new List<string>();
+            }
+            _groundItems[coord].Add(itemStringId);
+
+            GameLogger.Debug($"Spawned {itemStringId} at {coord}. Tile now has {_groundItems[coord].Count} items.");
+
+            _networkBridge?.BroadcastGroundItemsUpdate(coord, _groundItems[coord]);
+        }
 
         public void AddJob(Job job)
         {
@@ -227,28 +244,32 @@ namespace CargoSpace.Server
                 if (_flotsamProgress >= 1.0f)
                 {
                     _flotsamProgress -= 1.0f;
-                    string caughtItem = "ScrapMetal"; // Hardcoded for now
-
-                    if (_shipInventory.TryGetValue(caughtItem, out int currentCount))
-                    {
-                        _shipInventory[caughtItem] = currentCount + 1;
-                    }
-                    else
-                    {
-                        _shipInventory[caughtItem] = 1;
-                    }
-
-                    GameLogger.Info($"Harpoon caught {caughtItem}! Total: {_shipInventory[caughtItem]}");
+                    string caughtItem = "scrap_metal";
 
                     Pawn visualPawn = _pawns.Values.FirstOrDefault(p =>
                         p.State == PawnState.Operating &&
                         _grid.TryGetValue(p.CurrentJob.Target, out GridTileData t) &&
                         TileRegistry.Get(t.TypeId)?.Stats.TryGetValue("HarpoonRate", out float _) == true);
 
-                    if (visualPawn != null)
+                    if (visualPawn == null) return;
+
+                    Vector2I harpoonTarget = visualPawn.CurrentJob.Target;
+
+                    // Find an adjacent walkable tile
+                    Vector2I dropCoord = harpoonTarget;
+                    Vector2I[] adjacents = { Vector2I.Left, Vector2I.Right, Vector2I.Up, Vector2I.Down };
+                    foreach (var dir in adjacents)
                     {
-                        _networkBridge?.BroadcastHarpoonCatch(visualPawn.CurrentJob.Target, caughtItem);
+                        Vector2I test = harpoonTarget + dir;
+                        if (_grid.TryGetValue(test, out GridTileData tile) && TileRegistry.Get(tile.TypeId)?.IsWalkable == true)
+                        {
+                            dropCoord = test;
+                            break;
+                        }
                     }
+
+                    SpawnItemOnGrid(dropCoord, caughtItem);
+                    _networkBridge?.BroadcastHarpoonCatch(harpoonTarget, caughtItem);
                 }
             }
         }

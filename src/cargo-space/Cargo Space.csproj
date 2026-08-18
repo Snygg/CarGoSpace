@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Data\tiles.json" />
+    <Content Include="Data\items.json" />
   </ItemGroup>
 
   <ItemGroup>

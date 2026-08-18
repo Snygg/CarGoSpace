@@ -2,6 +2,7 @@ using Godot;
 using CargoSpace.Core;
 using CargoSpace.Server;
 using CargoSpace.Client;
+using System.Collections.Generic;
 
 namespace CargoSpace.Shared
 {
@@ -110,6 +111,13 @@ namespace CargoSpace.Shared
             _clientManager?.HandleHarpoonCatch(new Vector2I(x, y), itemId);
         }
 
+        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void ReceiveGroundItemsUpdate_RPC(int x, int y, string[] items)
+        {
+            GameLogger.Debug($"ReceiveGroundItemsUpdate_RPC: {items?.Length ?? 0} items at ({x}, {y})");
+            _clientManager?.HandleGroundItemsUpdate(new Vector2I(x, y), items);
+        }
+
         // Methods for managers to call RPCs
         public void SendGridSize(long clientId, int size)
         {
@@ -161,6 +169,11 @@ namespace CargoSpace.Shared
         public void BroadcastHarpoonCatch(Vector2I coord, string itemId)
         {
             Rpc(nameof(ReceiveHarpoonCatch_RPC), coord.X, coord.Y, itemId);
+        }
+
+        public void BroadcastGroundItemsUpdate(Vector2I coord, List<string> items)
+        {
+            Rpc(nameof(ReceiveGroundItemsUpdate_RPC), coord.X, coord.Y, items.ToArray());
         }
 
         public void SendJobRejected(JobId id, long peerId)

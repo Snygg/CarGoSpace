@@ -14,8 +14,9 @@ public partial class Main : Node
 
 	public override void _Ready()
 	{
-		// Load tile data registry first - this is data required by both server and client
+		// Load tile and item registries first - data required by both server and client
 		TileRegistry.LoadFromFile("res://Data/tiles.json");
+		ItemRegistry.LoadFromFile("res://Data/items.json");
 		
 		string[] args = OS.GetCmdlineArgs();
 		

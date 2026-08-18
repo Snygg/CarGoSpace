@@ -20,6 +20,7 @@ namespace CargoSpace.Client
         private Dictionary<PawnId, PawnVisual> _pawnVisuals = new Dictionary<PawnId, PawnVisual>();
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
+        private Dictionary<Vector2I, List<string>> _clientGroundItems = new();
 
         public ClientManager(NetworkBridge networkBridge)
         {
@@ -273,6 +274,13 @@ namespace CargoSpace.Client
         {
             GameLogger.Debug($"HandleHarpoonCatch: {itemId} at {coord}");
             _harpoonLayer?.PlayCatchEffect(coord, itemId);
+        }
+
+        public void HandleGroundItemsUpdate(Vector2I coord, string[] items)
+        {
+            GameLogger.Debug($"HandleGroundItemsUpdate: {items?.Length ?? 0} items at {coord}");
+            _clientGroundItems[coord] = new List<string>(items ?? new string[0]);
+            _visualGrid?.UpdateGroundItems(coord, _clientGroundItems[coord]);
         }
 
         private Job? FindActiveJob(JobId id)

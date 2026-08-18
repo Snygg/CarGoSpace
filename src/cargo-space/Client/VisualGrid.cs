@@ -8,6 +8,8 @@ namespace CargoSpace.Client
     {
         private TileMapLayer _tileMapLayer;
         private TileMapLayer _hazardLayer;
+        private ItemOverlayLayer _itemLayer;
+        private Dictionary<Vector2I, List<string>> _groundItems = new();
 
         public override void _Ready()
         {
@@ -20,6 +22,18 @@ namespace CargoSpace.Client
             _hazardLayer = new TileMapLayer();
             _hazardLayer.TileSet = CreateHazardTileSet();
             AddChild(_hazardLayer);
+
+            // Create the item overlay layer on top of everything
+            _itemLayer = new ItemOverlayLayer();
+            _itemLayer.GroundItemsRef = _groundItems;
+            _itemLayer.ZIndex = 2;
+            AddChild(_itemLayer);
+        }
+
+        public void UpdateGroundItems(Vector2I coord, List<string> items)
+        {
+            _groundItems[coord] = items;
+            _itemLayer?.QueueRedraw();
         }
 
         public void RenderGrid(Dictionary<Vector2I, GridTileData> grid)
