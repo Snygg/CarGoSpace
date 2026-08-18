@@ -6,57 +6,68 @@ namespace CargoSpace.Client
 {
     public partial class VisualGrid : Node2D
     {
-        private Dictionary<Vector2I, ColorRect> _tileVisuals = new Dictionary<Vector2I, ColorRect>();
+        private TileMapLayer _tileMapLayer;
+
+        public override void _Ready()
+        {
+            // Create and configure the TileMapLayer
+            _tileMapLayer = new TileMapLayer();
+            _tileMapLayer.TileSet = CreateTileSet();
+            AddChild(_tileMapLayer);
+        }
 
         public void RenderGrid(Dictionary<Vector2I, GridTileData> grid)
         {
             GameLogger.Debug($"RenderGrid called with {grid.Count} tiles");
             
-            // Clear existing visuals
-            foreach (var tileVisual in _tileVisuals.Values)
-            {
-                tileVisual.QueueFree();
-            }
-            _tileVisuals.Clear();
+            // Clear existing tiles
+            _tileMapLayer.Clear();
 
             // Keep this Node2D at world origin
             Position = Vector2.Zero;
 
-            // Create visuals for each tile at world coordinates
+            // Set tiles based on grid data
             foreach (var kvp in grid)
             {
                 Vector2I gridCoord = kvp.Key;
                 GridTileData tileData = kvp.Value;
-
-                ColorRect tileRect = new ColorRect();
-                tileRect.Size = new Vector2(Constants.TileSize, Constants.TileSize);
                 
-                // Set color based on tile type
-                switch (tileData.Type)
-                {
-                    case TileType.Deck:
-                        tileRect.Color = Colors.Gray;
-                        break;
-                    case TileType.Space:
-                        tileRect.Color = Colors.Black;
-                        break;
-                    case TileType.Console:
-                        tileRect.Color = Colors.Orange;
-                        break;
-                }
-                
-                // Position tile at world coordinates
-                Vector2 worldPosition = new Vector2(
-                    gridCoord.X * Constants.TileSize,
-                    gridCoord.Y * Constants.TileSize
-                );
-                tileRect.Position = worldPosition;
-
-                AddChild(tileRect);
-                _tileVisuals[gridCoord] = tileRect;
+                // Set the cell at the grid coordinate with the tile type's atlas coords
+                _tileMapLayer.SetCell(gridCoord, (int)tileData.Type, new Vector2I(0, 0));
             }
 
-            GameLogger.Debug($"Rendered {_tileVisuals.Count} tiles total at world coordinates");
+            GameLogger.Debug($"Rendered {_tileMapLayer.GetUsedCells().Count} tiles total at world coordinates");
+        }
+
+        private TileSet CreateTileSet()
+        {
+            TileSet tileSet = new TileSet();
+            
+            // Configure tile size
+            tileSet.TileSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+            
+            // Create an atlas source for each tile type
+            foreach (TileDefinition tileDef in TileRegistry.AllTiles)
+            {
+                ImageTexture texture = GenerateTexture(tileDef.GetColor());
+                TileSetAtlasSource atlasSource = new TileSetAtlasSource();
+                atlasSource.Texture = texture;
+                atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+                atlasSource.CreateTile(new Vector2I(0, 0));
+                
+                tileSet.AddSource(atlasSource, (int)tileDef.Type);
+            }
+
+            return tileSet;
+        }
+
+        private ImageTexture GenerateTexture(Color color)
+        {
+            Image image = Image.Create(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            image.Fill(color);
+            
+            ImageTexture texture = ImageTexture.CreateFromImage(image);
+            return texture;
         }
     }
 }

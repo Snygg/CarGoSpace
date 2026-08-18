@@ -69,7 +69,8 @@ namespace CargoSpace.Server
             foreach (var kvp in _grid)
             {
                 Vector2I coord = kvp.Key;
-                bool isWalkable = kvp.Value.Type == TileType.Deck || kvp.Value.Type == TileType.Console;
+                TileDefinition tileDef = TileRegistry.Get(kvp.Value.Type);
+                bool isWalkable = tileDef != null && tileDef.IsWalkable;
                 _pathfinding.SetPointSolid(coord, !isWalkable);
             }
         }
@@ -86,10 +87,14 @@ namespace CargoSpace.Server
 
         public void AddJob(Vector2I consolePosition)
         {
-            if (_grid.ContainsKey(consolePosition) && _grid[consolePosition].Type == TileType.Console)
+            if (_grid.ContainsKey(consolePosition))
             {
-                _jobBoard.Enqueue(consolePosition);
-                GameLogger.Debug($"Job added to board: {consolePosition}");
+                TileDefinition tileDef = TileRegistry.Get(_grid[consolePosition].Type);
+                if (tileDef != null && tileDef.IsInteractable)
+                {
+                    _jobBoard.Enqueue(consolePosition);
+                    GameLogger.Debug($"Job added to board: {consolePosition}");
+                }
             }
         }
 
