@@ -110,7 +110,7 @@ namespace CargoSpace.Server
             int tileCount = 0;
             foreach (var kvp in grid)
             {
-                _networkBridge.SendTile(clientId, kvp.Key.X, kvp.Key.Y, (byte)kvp.Value.Type, kvp.Value.State);
+                _networkBridge.SendTile(clientId, kvp.Key.X, kvp.Key.Y, (byte)kvp.Value.Type, kvp.Value.State, kvp.Value.HazardState);
                 tileCount++;
                 
                 // Add a small delay every 10 tiles to prevent network congestion

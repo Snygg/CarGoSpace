@@ -7,6 +7,7 @@ namespace CargoSpace.Client
     public partial class VisualGrid : Node2D
     {
         private TileMapLayer _tileMapLayer;
+        private TileMapLayer _hazardLayer;
 
         public override void _Ready()
         {
@@ -14,6 +15,11 @@ namespace CargoSpace.Client
             _tileMapLayer = new TileMapLayer();
             _tileMapLayer.TileSet = CreateTileSet();
             AddChild(_tileMapLayer);
+
+            // Create the hazard overlay layer on top
+            _hazardLayer = new TileMapLayer();
+            _hazardLayer.TileSet = CreateHazardTileSet();
+            AddChild(_hazardLayer);
         }
 
         public void RenderGrid(Dictionary<Vector2I, GridTileData> grid)
@@ -32,9 +38,19 @@ namespace CargoSpace.Client
                 Vector2I gridCoord = kvp.Key;
                 GridTileData tileData = kvp.Value;
                 int sourceId = GetSourceId(tileData.Type, tileData.State);
-                
+
                 // Set the cell at the grid coordinate with the tile type's atlas coords
                 _tileMapLayer.SetCell(gridCoord, sourceId, new Vector2I(0, 0));
+
+                // Render hazard overlay
+                if (tileData.HazardState == 1)
+                {
+                    _hazardLayer.SetCell(gridCoord, 1, new Vector2I(0, 0));
+                }
+                else
+                {
+                    _hazardLayer.EraseCell(gridCoord);
+                }
             }
 
             GameLogger.Debug($"Rendered {_tileMapLayer.GetUsedCells().Count} tiles total at world coordinates");
@@ -79,6 +95,22 @@ namespace CargoSpace.Client
         private int GetSourceId(TileType type, int state)
         {
             return (int)type * 2 + state;
+        }
+
+        private TileSet CreateHazardTileSet()
+        {
+            TileSet tileSet = new TileSet();
+            tileSet.TileSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+
+            Color fireColor = new Color(1.0f, 0.2f, 0.0f, 0.85f);
+            ImageTexture texture = GenerateTexture(fireColor);
+            TileSetAtlasSource atlasSource = new TileSetAtlasSource();
+            atlasSource.Texture = texture;
+            atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+            atlasSource.CreateTile(new Vector2I(0, 0));
+            tileSet.AddSource(atlasSource, 1);
+
+            return tileSet;
         }
 
         private Color GetRenderColor(TileDefinition tileDef, int state)

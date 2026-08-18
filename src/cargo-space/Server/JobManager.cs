@@ -20,6 +20,8 @@ namespace CargoSpace.Server
             _networkBridge = networkBridge;
             // Register behaviors
             _behaviors[JobType.SetState] = new SetStateJobBehavior();
+            _behaviors[JobType.StartFire] = new StartFireJobBehavior();
+            _behaviors[JobType.FightFire] = new FightFireJobBehavior();
         }
 
         public bool IsReserved(Vector2I target) => _reservedTiles.Contains(target);

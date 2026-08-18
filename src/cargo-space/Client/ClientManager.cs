@@ -77,6 +77,46 @@ namespace CargoSpace.Client
             GameLogger.Debug("Disconnected from server");
         }
 
+        public override void _Process(double delta)
+        {
+            if (!_gridRendered)
+            {
+                return;
+            }
+
+            Rect2 visibleRect = GetVisibleWorldRect();
+
+            foreach (var kvp in _pendingGrid)
+            {
+                Vector2I coord = kvp.Key;
+                GridTileData tileData = kvp.Value;
+
+                if (tileData.HazardState == 1 && IsCoordVisible(coord, visibleRect))
+                {
+                    _uiManager.TryDiscoverHazard(coord);
+                }
+            }
+        }
+
+        private Rect2 GetVisibleWorldRect()
+        {
+            Vector2 viewportSize = GetViewport().GetVisibleRect().Size;
+            Vector2 cameraPosition = _camera.Position;
+            Vector2 zoom = _camera.Zoom;
+            Vector2 visibleSize = viewportSize / zoom;
+
+            return new Rect2(cameraPosition - visibleSize / 2, visibleSize);
+        }
+
+        private bool IsCoordVisible(Vector2I coord, Rect2 visibleRect)
+        {
+            Vector2 worldMin = new Vector2(coord.X * Constants.TileSize, coord.Y * Constants.TileSize);
+            Vector2 worldMax = worldMin + new Vector2(Constants.TileSize, Constants.TileSize);
+            Rect2 tileRect = new Rect2(worldMin, worldMax - worldMin);
+
+            return visibleRect.Intersects(tileRect);
+        }
+
         public override void _UnhandledInput(InputEvent @event)
         {
             if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
@@ -96,7 +136,7 @@ namespace CargoSpace.Client
                 if (tileDef != null && tileDef.IsInteractable)
                 {
                     // Show context menu for the clicked interactable tile
-                    _uiManager.ShowContextMenu(gridCoord, tileDef, tileData.State);
+                    _uiManager.ShowContextMenu(gridCoord, tileDef, tileData.State, tileData.HazardState);
                     return;
                 }
             }
@@ -126,10 +166,10 @@ namespace CargoSpace.Client
             _pendingGrid.Clear();
         }
 
-        public void HandleTile(int x, int y, byte tileType, int state)
+        public void HandleTile(int x, int y, byte tileType, int state, byte hazardState)
         {
             Vector2I coord = new Vector2I(x, y);
-            _pendingGrid[coord] = new GridTileData((TileType)tileType, state);
+            _pendingGrid[coord] = new GridTileData((TileType)tileType, state, hazardState);
             int count = _pendingGrid.Count;
             
             // Log every 10th tile to reduce spam

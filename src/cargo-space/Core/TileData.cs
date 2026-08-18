@@ -13,11 +13,13 @@ namespace CargoSpace.Core
     {
         public TileType Type;
         public int State;
+        public byte HazardState;
 
-        public GridTileData(TileType type, int state = 0)
+        public GridTileData(TileType type, int state = 0, byte hazardState = 0)
         {
             Type = type;
             State = state;
+            HazardState = hazardState;
         }
     }
 }

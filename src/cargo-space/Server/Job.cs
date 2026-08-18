@@ -5,7 +5,9 @@ namespace CargoSpace.Server
 {
     public enum JobType : byte
     {
-        SetState = 0
+        SetState = 0,
+        StartFire = 1,
+        FightFire = 2
     }
 
     public struct Job

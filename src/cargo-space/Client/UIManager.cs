@@ -23,6 +23,11 @@ namespace CargoSpace.Client
         private VBoxContainer _jobListContainer;
         private Dictionary<JobId, Control> _jobRows = new Dictionary<JobId, Control>();
 
+        // Triage / unconfirmed hazard alerts
+        private VBoxContainer _triageContainer;
+        private HashSet<Vector2I> _knownHazards = new HashSet<Vector2I>();
+        private Dictionary<Vector2I, Control> _triageAlerts = new Dictionary<Vector2I, Control>();
+
         public void Initialize(ClientManager clientManager, NetworkBridge networkBridge)
         {
             _clientManager = clientManager;
@@ -51,6 +56,9 @@ namespace CargoSpace.Client
 
             // Create persistent left-aligned HUD toolbar
             CreateHudToolbar();
+
+            // Create triage queue for unconfirmed hazards
+            CreateTriageContainer();
         }
 
         private void CreateJobBoard()
@@ -106,7 +114,7 @@ namespace CargoSpace.Client
             _contextSlot.Hide();
         }
 
-        public void ShowContextMenu(Vector2I gridCoord, TileDefinition tileDef, int currentState)
+        public void ShowContextMenu(Vector2I gridCoord, TileDefinition tileDef, int currentState, byte hazardState)
         {
             ClearContextMenu();
             _contextSlot.Show();
@@ -138,6 +146,17 @@ namespace CargoSpace.Client
                 };
                 vbox.AddChild(setStateButton);
             }
+
+            Button startFireButton = new Button();
+            startFireButton.Text = "Debug: Start Fire";
+            startFireButton.Pressed += () =>
+            {
+                JobId jobId = JobId.Create();
+                AddJobUI(jobId, JobType.StartFire, gridCoord);
+                _networkBridge?.SendJobCommand(jobId, gridCoord, JobType.StartFire, 0);
+                ClearContextMenu();
+            };
+            vbox.AddChild(startFireButton);
         }
 
         public void AddJobUI(JobId id, JobType type, Vector2I target)
@@ -178,8 +197,61 @@ namespace CargoSpace.Client
             return type switch
             {
                 JobType.SetState => "Set Console",
+                JobType.StartFire => "Start Fire",
+                JobType.FightFire => "Fight Fire",
                 _ => type.ToString()
             };
+        }
+
+        private void CreateTriageContainer()
+        {
+            _triageContainer = new VBoxContainer();
+            _triageContainer.AnchorLeft = 1;
+            _triageContainer.AnchorTop = 0;
+            _triageContainer.AnchorRight = 1;
+            _triageContainer.AnchorBottom = 0;
+            _triageContainer.OffsetLeft = -220;
+            _triageContainer.OffsetTop = 10;
+            _triageContainer.OffsetRight = -10;
+            _triageContainer.OffsetBottom = 10;
+            _triageContainer.GrowHorizontal = Control.GrowDirection.Begin;
+            _triageContainer.GrowVertical = Control.GrowDirection.End;
+            AddChild(_triageContainer);
+        }
+
+        public void TryDiscoverHazard(Vector2I target)
+        {
+            if (_knownHazards.Contains(target))
+            {
+                return;
+            }
+
+            _knownHazards.Add(target);
+
+            HBoxContainer alert = new HBoxContainer();
+            alert.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+
+            Label alertLabel = new Label();
+            alertLabel.Text = $"Fire at {target.X},{target.Y}";
+            alertLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            alert.AddChild(alertLabel);
+
+            Button confirmButton = new Button();
+            confirmButton.Text = "+";
+            confirmButton.Pressed += () =>
+            {
+                JobId jobId = JobId.Create();
+                AddJobUI(jobId, JobType.FightFire, target);
+                _networkBridge?.SendJobCommand(jobId, target, JobType.FightFire, 0);
+
+                _knownHazards.Remove(target);
+                _triageAlerts.Remove(target);
+                alert.QueueFree();
+            };
+            alert.AddChild(confirmButton);
+
+            _triageContainer.AddChild(alert);
+            _triageAlerts[target] = alert;
         }
 
         private void OnCancelJobPressed(JobId id)

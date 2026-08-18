@@ -100,7 +100,13 @@ namespace CargoSpace.Server
 
         public void AddJob(Job job)
         {
-            bool isValidTile = IsInteractableTile(job.Target);
+            // Hazard jobs can target any tile in the grid; SetState must be interactable.
+            bool isValidTile = _grid.ContainsKey(job.Target);
+            if (job.Type == JobType.SetState)
+            {
+                isValidTile = IsInteractableTile(job.Target);
+            }
+
             bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
             _jobManager.AddJob(job, isValidTile, isActivelyWorked, job.OwnerPeerId);
         }
@@ -119,6 +125,17 @@ namespace CargoSpace.Server
             {
                 GridTileData tileData = _grid[target];
                 tileData.State = state;
+                _grid[target] = tileData;
+                _networkBridge?.BroadcastTileUpdate(target, tileData);
+            }
+        }
+
+        public void SetTileHazard(Vector2I target, byte hazardState)
+        {
+            if (_grid.ContainsKey(target))
+            {
+                GridTileData tileData = _grid[target];
+                tileData.HazardState = hazardState;
                 _grid[target] = tileData;
                 _networkBridge?.BroadcastTileUpdate(target, tileData);
             }
