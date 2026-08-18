@@ -29,10 +29,10 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveMoveCommand_RPC(Vector2I target)
+        public void ReceiveJobCommand_RPC(Vector2I target)
         {
-            GameLogger.Debug($"ReceiveMoveCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}");
-            _serverManager?.HandleMoveCommand(target, Multiplayer.GetRemoteSenderId());
+            GameLogger.Debug($"ReceiveJobCommand_RPC from {Multiplayer.GetRemoteSenderId()} to {target}");
+            _serverManager?.HandleJobCommand(target, Multiplayer.GetRemoteSenderId());
         }
 
         // Client-bound RPCs (called by server)
@@ -94,9 +94,9 @@ namespace CargoSpace.Shared
             RpcId(1, nameof(RequestGrid_RPC));
         }
 
-        public void SendMoveCommand(Vector2I target)
+        public void SendJobCommand(Vector2I target)
         {
-            RpcId(1, nameof(ReceiveMoveCommand_RPC), target);
+            RpcId(1, nameof(ReceiveJobCommand_RPC), target);
         }
     }
 }

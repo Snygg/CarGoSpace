@@ -88,19 +88,19 @@ namespace CargoSpace.Client
             Vector2I gridCoord = ScreenToGrid(screenPosition);
             GameLogger.Debug($"Clicked tile at {gridCoord}");
             
-            // Send move command via NetworkBridge
-            _networkBridge.SendMoveCommand(gridCoord);
+            // Send job command via NetworkBridge
+            _networkBridge.SendJobCommand(gridCoord);
         }
 
         private Vector2I ScreenToGrid(Vector2 screenPosition)
         {
-            // Center the grid on screen
-            Vector2 viewportCenter = GetViewport().GetVisibleRect().Size / 2;
-            Vector2 relativePosition = screenPosition - viewportCenter;
+            // Get mouse position in world coordinates (accounting for camera)
+            Camera2D camera = GetViewport().GetCamera2D();
+            Vector2 worldMousePos = camera.GetGlobalMousePosition();
             
-            // Convert to grid coordinates (assuming 5x5 grid centered at 0,0)
-            int gridX = Mathf.FloorToInt(relativePosition.X / Constants.TileSize);
-            int gridY = Mathf.FloorToInt(relativePosition.Y / Constants.TileSize);
+            // Convert to grid coordinates
+            int gridX = Mathf.FloorToInt(worldMousePos.X / Constants.TileSize);
+            int gridY = Mathf.FloorToInt(worldMousePos.Y / Constants.TileSize);
             
             return new Vector2I(gridX, gridY);
         }

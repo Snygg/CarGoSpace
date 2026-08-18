@@ -10,6 +10,7 @@ namespace CargoSpace.Server
         private ENetMultiplayerPeer _peer;
         private GridSimulation _gridSimulation;
         private NetworkBridge _networkBridge;
+        private Timer _tickTimer;
 
         public ServerManager(NetworkBridge networkBridge)
         {
@@ -21,6 +22,7 @@ namespace CargoSpace.Server
             GameLogger.Debug("ServerManager._Ready() called");
             _gridSimulation = new GridSimulation();
             StartServer();
+            StartTickLoop();
         }
 
         private void StartServer()
@@ -42,6 +44,24 @@ namespace CargoSpace.Server
             GameLogger.Debug($"Server started successfully on port {Constants.ServerPort}");
         }
 
+        private void StartTickLoop()
+        {
+            _tickTimer = new Timer();
+            _tickTimer.WaitTime = 0.5; // Tick every 0.5 seconds
+            _tickTimer.Autostart = true;
+            _tickTimer.Timeout += OnTick;
+            AddChild(_tickTimer);
+            GameLogger.Debug("Server tick loop started (0.5s interval)");
+        }
+
+        private void OnTick()
+        {
+            _gridSimulation.Tick();
+            
+            // Broadcast pawn position after each tick
+            BroadcastPawnPosition();
+        }
+
         private void OnPeerConnected(long id)
         {
             GameLogger.Debug($"Client connected: {id}");
@@ -60,19 +80,12 @@ namespace CargoSpace.Server
             SendPawnPositionToClient(requesterId);
         }
 
-        public void HandleMoveCommand(Vector2I target, long senderId)
+        public void HandleJobCommand(Vector2I target, long senderId)
         {
-            GameLogger.Debug($"HandleMoveCommand: Move from {senderId} to {target}");
+            GameLogger.Debug($"HandleJobCommand: Job request from {senderId} to {target}");
             
-            if (_gridSimulation.TryMovePawn(target))
-            {
-                GameLogger.Debug($"Pawn moved to {target}");
-                BroadcastPawnPosition();
-            }
-            else
-            {
-                GameLogger.Debug($"Invalid move to {target}");
-            }
+            // Add job to the simulation's job board
+            _gridSimulation.AddJob(target);
         }
 
         public async void SendGridToClient(long clientId)

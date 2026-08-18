@@ -32,7 +32,18 @@ namespace CargoSpace.Client
                 tileRect.Size = new Vector2(Constants.TileSize, Constants.TileSize);
                 
                 // Set color based on tile type
-                tileRect.Color = tileData.Type == TileType.Deck ? Colors.Gray : Colors.Black;
+                switch (tileData.Type)
+                {
+                    case TileType.Deck:
+                        tileRect.Color = Colors.Gray;
+                        break;
+                    case TileType.Space:
+                        tileRect.Color = Colors.Black;
+                        break;
+                    case TileType.Console:
+                        tileRect.Color = Colors.Orange;
+                        break;
+                }
                 
                 // Position tile at world coordinates
                 Vector2 worldPosition = new Vector2(
