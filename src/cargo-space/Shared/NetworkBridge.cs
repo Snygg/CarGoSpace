@@ -103,6 +103,13 @@ namespace CargoSpace.Shared
             _clientManager?.HandleJobRejected(id);
         }
 
+        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void ReceiveHarpoonCatch_RPC(int x, int y, string itemId)
+        {
+            GameLogger.Debug($"ReceiveHarpoonCatch_RPC: {itemId} at ({x}, {y})");
+            _clientManager?.HandleHarpoonCatch(new Vector2I(x, y), itemId);
+        }
+
         // Methods for managers to call RPCs
         public void SendGridSize(long clientId, int size)
         {
@@ -149,6 +156,11 @@ namespace CargoSpace.Shared
         public void BroadcastJobRemoved(JobId id)
         {
             Rpc(nameof(ReceiveJobRemoved_RPC), id.ToNetworkBytes());
+        }
+
+        public void BroadcastHarpoonCatch(Vector2I coord, string itemId)
+        {
+            Rpc(nameof(ReceiveHarpoonCatch_RPC), coord.X, coord.Y, itemId);
         }
 
         public void SendJobRejected(JobId id, long peerId)

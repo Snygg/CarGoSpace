@@ -11,6 +11,7 @@ namespace CargoSpace.Core
         public string StringId { get; set; }
         public string Name { get; set; }
         public HashSet<string> Tags { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, float> Stats { get; set; } = new();
         public string HexColor { get; set; }
 
         public bool IsWalkable => Tags != null && Tags.Contains("Walkable");

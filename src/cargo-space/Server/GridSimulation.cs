@@ -18,6 +18,10 @@ namespace CargoSpace.Server
         private HashSet<IGridEntity> _dirtyEntities = new();
         private HashSet<Vector2I> _reservedTiles = new();
 
+        // Flotsam collection state
+        private float _flotsamProgress = 0f;
+        private Dictionary<string, int> _shipInventory = new();
+
         public GridSimulation(NetworkBridge networkBridge = null)
         {
             _networkBridge = networkBridge;
@@ -215,6 +219,58 @@ namespace CargoSpace.Server
                     // Continuous operation: pawn remains locked on the tile.
                 }
             }
+
+            float currentRate = CalculateFlotsamRate();
+            if (currentRate > 0)
+            {
+                _flotsamProgress += currentRate;
+                if (_flotsamProgress >= 1.0f)
+                {
+                    _flotsamProgress -= 1.0f;
+                    string caughtItem = "ScrapMetal"; // Hardcoded for now
+
+                    if (_shipInventory.TryGetValue(caughtItem, out int currentCount))
+                    {
+                        _shipInventory[caughtItem] = currentCount + 1;
+                    }
+                    else
+                    {
+                        _shipInventory[caughtItem] = 1;
+                    }
+
+                    GameLogger.Info($"Harpoon caught {caughtItem}! Total: {_shipInventory[caughtItem]}");
+
+                    Pawn visualPawn = _pawns.Values.FirstOrDefault(p =>
+                        p.State == PawnState.Operating &&
+                        _grid.TryGetValue(p.CurrentJob.Target, out GridTileData t) &&
+                        TileRegistry.Get(t.TypeId)?.Stats.TryGetValue("HarpoonRate", out float _) == true);
+
+                    if (visualPawn != null)
+                    {
+                        _networkBridge?.BroadcastHarpoonCatch(visualPawn.CurrentJob.Target, caughtItem);
+                    }
+                }
+            }
+        }
+
+        private float CalculateFlotsamRate()
+        {
+            float rate = 0f;
+            foreach (Pawn pawn in _pawns.Values)
+            {
+                if (pawn.State == PawnState.Operating && pawn.CurrentJob.Type == JobType.Operate)
+                {
+                    if (_grid.TryGetValue(pawn.CurrentJob.Target, out GridTileData tile))
+                    {
+                        TileDefinition def = TileRegistry.Get(tile.TypeId);
+                        if (def != null && def.Stats.TryGetValue("HarpoonRate", out float bonus))
+                        {
+                            rate += bonus;
+                        }
+                    }
+                }
+            }
+            return rate;
         }
 
         private void CalculatePath(Pawn pawn, Vector2I target)

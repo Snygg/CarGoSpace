@@ -21,6 +21,7 @@
     "TypeId": 3,
     "Name": "Harpoon",
     "Tags": ["Walkable", "Interactable", "Operable"],
-    "HexColor": "#808080"
+    "HexColor": "#808080",
+    "Stats": { "HarpoonRate": 0.2 }
   }
 }

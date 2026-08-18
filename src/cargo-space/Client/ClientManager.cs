@@ -269,6 +269,12 @@ namespace CargoSpace.Client
             _uiManager.RemoveJobUI(id);
         }
 
+        public void HandleHarpoonCatch(Vector2I coord, string itemId)
+        {
+            GameLogger.Debug($"HandleHarpoonCatch: {itemId} at {coord}");
+            _harpoonLayer?.PlayCatchEffect(coord, itemId);
+        }
+
         private Job? FindActiveJob(JobId id)
         {
             foreach (Job job in _activeJobs)
