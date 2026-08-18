@@ -102,8 +102,7 @@ namespace CargoSpace.Client
             TileSet tileSet = new TileSet();
             tileSet.TileSize = new Vector2I(Constants.TileSize, Constants.TileSize);
 
-            Color fireColor = new Color(1.0f, 0.2f, 0.0f, 0.85f);
-            ImageTexture texture = GenerateTexture(fireColor);
+            ImageTexture texture = GenerateHazardTexture();
             TileSetAtlasSource atlasSource = new TileSetAtlasSource();
             atlasSource.Texture = texture;
             atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
@@ -111,6 +110,33 @@ namespace CargoSpace.Client
             tileSet.AddSource(atlasSource, 1);
 
             return tileSet;
+        }
+
+        private ImageTexture GenerateHazardTexture()
+        {
+            Image image = Image.Create(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            image.Fill(new Color(0, 0, 0, 0));
+
+            Vector2I center = new Vector2I(Constants.TileSize / 2, Constants.TileSize / 2);
+            int radius = Constants.TileSize / 3;
+            Color outerColor = new Color(1.0f, 0.2f, 0.0f, 0.85f);
+            Color innerColor = new Color(1.0f, 0.8f, 0.1f, 0.95f);
+
+            for (int x = 0; x < Constants.TileSize; x++)
+            {
+                for (int y = 0; y < Constants.TileSize; y++)
+                {
+                    float distance = new Vector2(x, y).DistanceTo(center);
+                    if (distance <= radius)
+                    {
+                        float t = distance / radius;
+                        Color pixelColor = innerColor.Lerp(outerColor, t);
+                        image.SetPixel(x, y, pixelColor);
+                    }
+                }
+            }
+
+            return ImageTexture.CreateFromImage(image);
         }
 
         private Color GetRenderColor(TileDefinition tileDef, int state)
