@@ -9,9 +9,16 @@ namespace CargoSpace.Core
     {
         public TileType Type { get; set; }
         public string Name { get; set; }
-        public bool IsWalkable { get; set; }
-        public bool IsInteractable { get; set; }
+        public List<string> Tags { get; set; } = new List<string>();
         public string HexColor { get; set; }
+
+        public bool IsWalkable => Tags != null && Tags.Contains("Walkable");
+        public bool IsInteractable => Tags != null && Tags.Contains("Interactable");
+
+        public bool HasTag(string tag)
+        {
+            return Tags != null && Tags.Contains(tag);
+        }
 
         public Color GetColor()
         {

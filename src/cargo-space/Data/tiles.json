@@ -2,22 +2,19 @@
   "Space": {
     "Type": 0,
     "Name": "Space",
-    "IsWalkable": false,
-    "IsInteractable": false,
+    "Tags": [],
     "HexColor": "#000000"
   },
   "Deck": {
     "Type": 1,
     "Name": "Deck",
-    "IsWalkable": true,
-    "IsInteractable": false,
+    "Tags": ["Walkable"],
     "HexColor": "#808080"
   },
   "Console": {
     "Type": 2,
     "Name": "Console",
-    "IsWalkable": true,
-    "IsInteractable": true,
+    "Tags": ["Walkable", "Interactable"],
     "HexColor": "#FFA500"
   }
 }
