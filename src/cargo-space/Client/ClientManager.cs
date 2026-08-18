@@ -1,7 +1,7 @@
 using Godot;
 using CargoSpace.Core;
 using System.Collections.Generic;
-using CargoSpace.Server;
+using CargoSpace.Shared;
 
 namespace CargoSpace.Client
 {
@@ -11,8 +11,14 @@ namespace CargoSpace.Client
         private VisualGrid _visualGrid;
         private ColorRect _pawn;
         private Camera2D _camera;
+        private NetworkBridge _networkBridge;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
         private int _expectedTileCount = 0;
+
+        public ClientManager(NetworkBridge networkBridge)
+        {
+            _networkBridge = networkBridge;
+        }
 
         public override void _Ready()
         {
@@ -61,6 +67,9 @@ namespace CargoSpace.Client
         private void OnConnectedToServer()
         {
             GD.Print("[Client] Successfully connected to server!");
+            // Request grid data from server via NetworkBridge
+            GD.Print("[Client] Requesting grid data from server...");
+            _networkBridge.RequestGrid();
         }
 
         private void OnConnectionFailed()
@@ -84,9 +93,10 @@ namespace CargoSpace.Client
         private void HandleTileClick(Vector2 screenPosition)
         {
             Vector2I gridCoord = ScreenToGrid(screenPosition);
-            GD.Print($"Clicked tile at {gridCoord}");
+            GD.Print($"[Client] Clicked tile at {gridCoord}");
             
-            RpcId(1, nameof(ServerManager.ReceiveMoveCommand), gridCoord);
+            // Send move command via NetworkBridge
+            _networkBridge.SendMoveCommand(gridCoord);
         }
 
         private Vector2I ScreenToGrid(Vector2 screenPosition)
@@ -102,33 +112,37 @@ namespace CargoSpace.Client
             return new Vector2I(gridX, gridY);
         }
 
-        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveGridSize(int size)
+        // Handler methods called by NetworkBridge RPCs
+        public void HandleGridSize(int size)
         {
-            GD.Print($"[Client] ReceiveGridSize: Expecting {size} tiles");
+            GD.Print($"[Client] HandleGridSize: Expecting {size} tiles");
             _expectedTileCount = size;
             _pendingGrid.Clear();
         }
 
-        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveTile(int x, int y, byte tileType)
+        public void HandleTile(int x, int y, byte tileType)
         {
             Vector2I coord = new Vector2I(x, y);
             _pendingGrid[coord] = new GridTileData((TileType)tileType);
-            GD.Print($"[Client] ReceiveTile: Received tile at ({x}, {y}) type: {tileType}, total tiles: {_pendingGrid.Count}");
+            int count = _pendingGrid.Count;
+            GD.Print($"[Client] HandleTile: Received tile at ({x}, {y}) type: {tileType}, total tiles: {count}");
+            
+            // Log every 10th tile to reduce spam
+            if (count % 10 == 0)
+            {
+                GD.Print($"[Client] Progress: {count} tiles received so far");
+            }
         }
 
-        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveGridComplete()
+        public void HandleGridComplete()
         {
-            GD.Print($"[Client] ReceiveGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
+            GD.Print($"[Client] HandleGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
             _visualGrid.RenderGrid(_pendingGrid);
         }
 
-        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceivePawnPosition(Vector2I position)
+        public void HandlePawnPosition(Vector2I position)
         {
-            GD.Print($"[Client] ReceivePawnPosition: {position}");
+            GD.Print($"[Client] HandlePawnPosition: {position}");
             UpdatePawnVisual(position);
         }
 
