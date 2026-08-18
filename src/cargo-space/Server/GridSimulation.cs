@@ -16,53 +16,80 @@ namespace CargoSpace.Server
         // Entity-based pawn state
         private Dictionary<PawnId, Pawn> _pawns = new();
         private HashSet<IGridEntity> _dirtyEntities = new();
+        private HashSet<Vector2I> _reservedTiles = new();
 
         public GridSimulation(NetworkBridge networkBridge = null)
         {
             _networkBridge = networkBridge;
             _grid = new Dictionary<Vector2I, GridTileData>();
             _jobManager = new JobManager(networkBridge);
-            
-            PawnId pawn1 = PawnId.Create();
-            _pawns[pawn1] = new Pawn(pawn1, new Vector2I(-1, -2));
-            _dirtyEntities.Add(_pawns[pawn1]);
+            _pawns = new Dictionary<PawnId, Pawn>();
+            _dirtyEntities = new HashSet<IGridEntity>();
+            _reservedTiles = new HashSet<Vector2I>();
 
-            PawnId pawn2 = PawnId.Create();
-            _pawns[pawn2] = new Pawn(pawn2, new Vector2I(1, -2));
-            _dirtyEntities.Add(_pawns[pawn2]);
-            
             InitializeGrid();
             InitializePathfinding();
         }
 
         private void InitializeGrid()
         {
-            // Create a U-shaped ship: left prong (x == -2), right prong (x == 2),
-            // and bottom connector (y == -2). Surround with Space tiles.
-            for (int x = -3; x <= 3; x++)
+            string[] blueprint = new string[]
             {
-                for (int y = -3; y <= 3; y++)
+                ". . C . C . .",
+                ". . D . D . .",
+                ". . D . D . .",
+                ". . D . D . .",
+                ". . P . P . .",
+                ". H C D C . .",
+                ". . . . . . ."
+            };
+
+            // Map characters to the StringIds in tiles.json
+            Dictionary<char, string> legend = new Dictionary<char, string>
+            {
+                { '.', "space" },
+                { 'D', "deck" },
+                { 'C', "console" },
+                { 'H', "harpoon" }
+            };
+
+            int height = blueprint.Length;
+            int width = blueprint[0].Replace(" ", "").Length; // ignore spaces for readability
+
+            int offsetX = width / 2;
+            int offsetY = height / 2;
+
+            for (int row = 0; row < height; row++)
+            {
+                // Remove spaces so ". . C" becomes "..C"
+                string cleanRow = blueprint[row].Replace(" ", "");
+
+                for (int col = 0; col < width; col++)
                 {
-                    Vector2I coord = new Vector2I(x, y);
-                    
-                    if (x == -2 || x == 2 || y == -2)
+                    char c = cleanRow[col];
+                    Vector2I coord = new Vector2I(col - offsetX, row - offsetY);
+
+                    if (c == 'P')
                     {
+                        // Spawn a Pawn, and put a Deck tile under them
                         _grid[coord] = new GridTileData(TileRegistry.GetId("deck"));
+
+                        PawnId newPawnId = PawnId.Create();
+                        Pawn newPawn = new Pawn(newPawnId, coord);
+                        _pawns[newPawnId] = newPawn;
+                        _dirtyEntities.Add(newPawn);
+                    }
+                    else if (legend.TryGetValue(c, out string stringId))
+                    {
+                        _grid[coord] = new GridTileData(TileRegistry.GetId(stringId));
                     }
                     else
                     {
+                        GameLogger.Warning($"InitializeGrid: Unknown blueprint character '{c}' at {coord}. Defaulting to space.");
                         _grid[coord] = new GridTileData(TileRegistry.GetId("space"));
                     }
                 }
             }
-            
-            // Place Console tiles at the extreme ends of the U-shape
-            _grid[new Vector2I(-2, 2)] = new GridTileData(TileRegistry.GetId("console"));
-            _grid[new Vector2I(2, 2)] = new GridTileData(TileRegistry.GetId("console"));
-            _grid[new Vector2I(-2, -2)] = new GridTileData(TileRegistry.GetId("console"));
-            _grid[new Vector2I(2, -2)] = new GridTileData(TileRegistry.GetId("console"));
-
-            _grid[new Vector2I(-3, -2)] = new GridTileData(TileRegistry.GetId("harpoon"));
         }
 
         private void InitializePathfinding()
