@@ -177,13 +177,13 @@ namespace CargoSpace.Client
         private void CreateHudToolbar()
         {
             _hudToolbar = new VBoxContainer();
-            _hudToolbar.AnchorLeft = 1;
+            _hudToolbar.AnchorLeft = 0;
             _hudToolbar.AnchorTop = 0.5f;
-            _hudToolbar.AnchorRight = 1;
+            _hudToolbar.AnchorRight = 0;
             _hudToolbar.AnchorBottom = 0.5f;
-            _hudToolbar.OffsetLeft = -60;
-            _hudToolbar.OffsetRight = -10;
-            _hudToolbar.GrowHorizontal = Control.GrowDirection.Begin;
+            _hudToolbar.OffsetLeft = 10;
+            _hudToolbar.OffsetRight = 60;
+            _hudToolbar.GrowHorizontal = Control.GrowDirection.End;
             _hudToolbar.GrowVertical = Control.GrowDirection.Both;
             AddChild(_hudToolbar);
 
