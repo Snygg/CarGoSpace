@@ -10,7 +10,7 @@ namespace CargoSpace.Client
         private ENetMultiplayerPeer _peer;
         private VisualGrid _visualGrid;
         private ColorRect _pawn;
-        private Camera2D _camera;
+        private CameraController _camera;
         private NetworkBridge _networkBridge;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
         private int _expectedTileCount = 0;
@@ -25,8 +25,7 @@ namespace CargoSpace.Client
             GameLogger.Debug("ClientManager._Ready() called");
             
             // Add camera first so everything else is visible
-            _camera = new Camera2D();
-            _camera.Position = new Vector2(0, 0);
+            _camera = new CameraController();
             AddChild(_camera);
             
             _visualGrid = new VisualGrid();
@@ -131,6 +130,30 @@ namespace CargoSpace.Client
         {
             GameLogger.Debug($"HandleGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
             _visualGrid.RenderGrid(_pendingGrid);
+            
+            // Center camera on the grid
+            CenterCameraOnGrid();
+        }
+
+        private void CenterCameraOnGrid()
+        {
+            // Calculate grid bounds
+            int minX = int.MaxValue, maxX = int.MinValue;
+            int minY = int.MaxValue, maxY = int.MinValue;
+            
+            foreach (var coord in _pendingGrid.Keys)
+            {
+                minX = Mathf.Min(minX, coord.X);
+                maxX = Mathf.Max(maxX, coord.X);
+                minY = Mathf.Min(minY, coord.Y);
+                maxY = Mathf.Max(maxY, coord.Y);
+            }
+            
+            int gridWidth = (maxX - minX + 1) * Constants.TileSize;
+            int gridHeight = (maxY - minY + 1) * Constants.TileSize;
+            
+            GameLogger.Debug($"Centering camera on grid: {gridWidth}x{gridHeight}");
+            _camera.CenterOnGrid(gridWidth, gridHeight);
         }
 
         public void HandlePawnPosition(Vector2I position)
@@ -141,20 +164,13 @@ namespace CargoSpace.Client
 
         private void UpdatePawnVisual(Vector2I gridPosition)
         {
-            // Calculate grid bounds (same as VisualGrid)
-            int minX = -3, maxX = 3, minY = -3, maxY = 3;
-            int gridWidth = (maxX - minX + 1) * Constants.TileSize;
-            int gridHeight = (maxY - minY + 1) * Constants.TileSize;
-            
-            // Position pawn relative to the centered grid
-            Vector2 viewportCenter = GetViewport().GetVisibleRect().Size / 2;
-            Vector2 gridOffset = viewportCenter - new Vector2(gridWidth / 2f, gridHeight / 2f);
-            Vector2 pawnPosition = gridOffset + new Vector2(
-                (gridPosition.X - minX) * Constants.TileSize,
-                (gridPosition.Y - minY) * Constants.TileSize
+            // Position pawn at world coordinates (same as VisualGrid)
+            Vector2 worldPosition = new Vector2(
+                gridPosition.X * Constants.TileSize,
+                gridPosition.Y * Constants.TileSize
             );
             
-            _pawn.Position = pawnPosition;
+            _pawn.Position = worldPosition;
         }
 
         public override void _ExitTree()

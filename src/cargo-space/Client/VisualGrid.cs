@@ -19,28 +19,10 @@ namespace CargoSpace.Client
             }
             _tileVisuals.Clear();
 
-            // Calculate grid bounds to center properly
-            int minX = int.MaxValue, maxX = int.MinValue;
-            int minY = int.MaxValue, maxY = int.MinValue;
-            
-            foreach (var coord in grid.Keys)
-            {
-                minX = Mathf.Min(minX, coord.X);
-                maxX = Mathf.Max(maxX, coord.X);
-                minY = Mathf.Min(minY, coord.Y);
-                maxY = Mathf.Max(maxY, coord.Y);
-            }
-            
-            int gridWidth = (maxX - minX + 1) * Constants.TileSize;
-            int gridHeight = (maxY - minY + 1) * Constants.TileSize;
-            
-            GameLogger.Debug($"Grid bounds: ({minX},{minY}) to ({maxX},{maxY}), size: {gridWidth}x{gridHeight}");
+            // Keep this Node2D at world origin
+            Position = Vector2.Zero;
 
-            // Position this Node2D at the center of the screen
-            Vector2 viewportCenter = GetViewport().GetVisibleRect().Size / 2;
-            Position = viewportCenter - new Vector2(gridWidth / 2f, gridHeight / 2f);
-
-            // Create visuals for each tile
+            // Create visuals for each tile at world coordinates
             foreach (var kvp in grid)
             {
                 Vector2I gridCoord = kvp.Key;
@@ -52,18 +34,18 @@ namespace CargoSpace.Client
                 // Set color based on tile type
                 tileRect.Color = tileData.Type == TileType.Deck ? Colors.Gray : Colors.Black;
                 
-                // Position tile relative to this Node2D (which is already centered)
-                Vector2 localPosition = new Vector2(
-                    (gridCoord.X - minX) * Constants.TileSize,
-                    (gridCoord.Y - minY) * Constants.TileSize
+                // Position tile at world coordinates
+                Vector2 worldPosition = new Vector2(
+                    gridCoord.X * Constants.TileSize,
+                    gridCoord.Y * Constants.TileSize
                 );
-                tileRect.Position = localPosition;
+                tileRect.Position = worldPosition;
 
                 AddChild(tileRect);
                 _tileVisuals[gridCoord] = tileRect;
             }
 
-            GameLogger.Debug($"Rendered {_tileVisuals.Count} tiles total, Node2D position: {Position}");
+            GameLogger.Debug($"Rendered {_tileVisuals.Count} tiles total at world coordinates");
         }
     }
 }
