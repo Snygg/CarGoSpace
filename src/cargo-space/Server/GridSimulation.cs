@@ -13,23 +13,22 @@ namespace CargoSpace.Server
         Working
     }
 
-    public class GridSimulation
+    public class GridSimulation : IJobExecutionContext
     {
         private Dictionary<Vector2I, GridTileData> _grid;
         private AStarGrid2D _pathfinding;
-        private List<Job> _jobBoard;
         private NetworkBridge _networkBridge;
-        
+        private JobManager _jobManager;
+
         // Entity-based pawn state
         private Dictionary<PawnId, Pawn> _pawns = new();
         private HashSet<IGridEntity> _dirtyEntities = new();
-        private HashSet<Vector2I> _reservedTiles = new();
 
         public GridSimulation(NetworkBridge networkBridge = null)
         {
             _networkBridge = networkBridge;
             _grid = new Dictionary<Vector2I, GridTileData>();
-            _jobBoard = new List<Job>();
+            _jobManager = new JobManager(networkBridge);
             
             PawnId pawn1 = PawnId.Create();
             _pawns[pawn1] = new Pawn(pawn1, new Vector2I(-1, -2));
@@ -101,76 +100,65 @@ namespace CargoSpace.Server
 
         public void AddJob(Job job)
         {
-            // Validate the target tile exists and is interactable
-            if (!_grid.ContainsKey(job.Target))
+            bool isValidTile = IsInteractableTile(job.Target);
+            bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
+            _jobManager.AddJob(job, isValidTile, isActivelyWorked, job.OwnerPeerId);
+        }
+
+        // IJobExecutionContext
+        public bool IsInteractableTile(Vector2I target)
+        {
+            if (!_grid.ContainsKey(target)) return false;
+            TileDefinition tileDef = TileRegistry.Get(_grid[target].Type);
+            return tileDef != null && tileDef.IsInteractable;
+        }
+
+        public void SetTileState(Vector2I target, int state)
+        {
+            if (_grid.ContainsKey(target))
             {
-                GameLogger.Debug($"Job rejected: target {job.Target} not in grid");
-                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
-                return;
+                GridTileData tileData = _grid[target];
+                tileData.State = state;
+                _grid[target] = tileData;
+                _networkBridge?.BroadcastTileUpdate(target, tileData);
             }
+        }
 
-            TileDefinition tileDef = TileRegistry.Get(_grid[job.Target].Type);
-            if (tileDef == null || !tileDef.IsInteractable)
-            {
-                GameLogger.Debug($"Job rejected: target {job.Target} is not interactable");
-                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
-                return;
-            }
-
-            // 1. Is it already on the board?
-            if (_jobBoard.Any(j => j.Target == job.Target))
-            {
-                GameLogger.Debug($"Job rejected: Tile {job.Target} already has a pending job.");
-                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
-                return;
-            }
-
-            // 2. Is it already reserved/claimed by a pawn?
-            if (_reservedTiles.Contains(job.Target) || _pawns.Values.Any(p => p.CurrentJob.Target == job.Target))
-            {
-                GameLogger.Debug($"Job rejected: Tile {job.Target} is actively being worked by a pawn.");
-                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
-                return;
-            }
-
-            _jobBoard.Add(job);
-            GameLogger.Debug($"Job added to board: {job.Id} {job.Type} at {job.Target}");
-
-            _networkBridge?.BroadcastJobAdded(job);
+        public void BroadcastTileUpdate(Vector2I target, GridTileData data)
+        {
+            _networkBridge?.BroadcastTileUpdate(target, data);
         }
 
         public void Tick()
         {
             foreach (Pawn pawn in _pawns.Values)
             {
-                if (pawn.State == PawnState.Idle && _jobBoard.Count > 0)
+                if (pawn.State == PawnState.Idle && _jobManager.BoardCount > 0)
                 {
-                    for (int i = 0; i < _jobBoard.Count; i++)
+                    for (int i = 0; i < _jobManager.BoardCount; i++)
                     {
-                        Job potentialJob = _jobBoard[i];
-                        if (_reservedTiles.Contains(potentialJob.Target)) continue; // Skip reserved jobs
+                        Job? potentialJob = _jobManager.ClaimNextAvailableJob(out int index);
+                        if (potentialJob == null) break;
 
-                        CalculatePath(pawn, potentialJob.Target);
+                        CalculatePath(pawn, potentialJob.Value.Target);
 
                         if (pawn.CurrentPath.Count > 0)
                         {
-                            // Path found. Reserve tile, claim job, remove from board.
-                            _reservedTiles.Add(potentialJob.Target);
-                            pawn.CurrentJob = potentialJob;
-                            _jobBoard.RemoveAt(i);
+                            // Path found. Assign job.
+                            pawn.CurrentJob = potentialJob.Value;
+                            GameLogger.Debug($"Pawn {pawn.Id}: claimed job {pawn.CurrentJob.Id} at {pawn.CurrentJob.Target}");
                             break; // Stop looking for jobs
                         }
                         else
                         {
-                            // Unreachable. Discard job.
-                            GameLogger.Warning($"Job {potentialJob.Id} is unreachable. Discarding.");
-                            _networkBridge?.BroadcastJobRemoved(potentialJob.Id);
-                            _jobBoard.RemoveAt(i);
-                            i--; // Adjust index after removal
+                            // Unreachable. Discard job and release reservation.
+                            GameLogger.Warning($"Job {potentialJob.Value.Id} is unreachable. Discarding.");
+                            _networkBridge?.BroadcastJobRemoved(potentialJob.Value.Id);
+                            _jobManager.Release(potentialJob.Value.Target);
                         }
                     }
                 }
-                
+
                 if (pawn.State == PawnState.Walking && pawn.CurrentPath.Count > 0)
                 {
                     MoveAlongPath(pawn);
@@ -218,7 +206,7 @@ namespace CargoSpace.Server
         {
             if (pawn.CurrentJob.Target != default)
             {
-                _reservedTiles.Remove(pawn.CurrentJob.Target);
+                _jobManager.Release(pawn.CurrentJob.Target);
             }
             pawn.CurrentPath.Clear();
             pawn.WorkTicksRemaining = 0;
@@ -230,37 +218,13 @@ namespace CargoSpace.Server
         {
             pawn.WorkTicksRemaining--;
             GameLogger.Debug($"Pawn {pawn.Id}: working... {pawn.WorkTicksRemaining} ticks remaining");
-            
+
             if (pawn.WorkTicksRemaining <= 0)
             {
-                ExecuteJob(pawn);
+                _jobManager.ExecuteJob(pawn.CurrentJob, this);
                 _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
                 pawn.CurrentJob = default;
                 pawn.State = PawnState.Idle;
-            }
-        }
-
-        private void ExecuteJob(Pawn pawn)
-        {
-            Job job = pawn.CurrentJob;
-            try
-            {
-                if (_grid.ContainsKey(job.Target))
-                {
-                    GridTileData tileData = _grid[job.Target];
-                    if (job.Type == JobType.SetState)
-                    {
-                        tileData.State = job.TargetState;
-                        _grid[job.Target] = tileData;
-                        GameLogger.Debug($"Pawn {pawn.Id}: console at {job.Target} set to state {tileData.State}");
-                        _networkBridge?.BroadcastTileUpdate(job.Target, tileData);
-                    }
-                }
-            }
-            finally
-            {
-                // GUARANTEED to run, preventing permanent tile locks
-                _reservedTiles.Remove(job.Target);
             }
         }
 
@@ -277,18 +241,7 @@ namespace CargoSpace.Server
                 }
             }
 
-            for (int i = 0; i < _jobBoard.Count; i++)
-            {
-                if (_jobBoard[i].Id == id)
-                {
-                    _jobBoard.RemoveAt(i);
-                    GameLogger.Debug($"Job cancelled and removed: {id}");
-                    _networkBridge?.BroadcastJobRemoved(id);
-                    return;
-                }
-            }
-
-            GameLogger.Debug($"CancelJob could not find job {id}");
+            _jobManager.CancelJob(id, _pawns.Values);
         }
 
         public bool TryMovePawn(Vector2I target)
