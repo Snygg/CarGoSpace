@@ -90,11 +90,7 @@ namespace CargoSpace.Client
             {
                 Vector2I coord = kvp.Key;
                 GridTileData tileData = kvp.Value;
-
-                if (tileData.HazardState == 1 && IsCoordVisible(coord, visibleRect))
-                {
-                    _uiManager.TryDiscoverHazard(coord);
-                }
+                _uiManager.TryDiscoverHazard(coord, tileData.HazardState, IsCoordVisible(coord, visibleRect));
             }
         }
 
@@ -177,6 +173,9 @@ namespace CargoSpace.Client
             {
                 GameLogger.Debug($"Progress: {count} tiles received so far");
             }
+
+            // Let the triage list react to the current hazard state (off-screen check is false here).
+            _uiManager.TryDiscoverHazard(coord, hazardState, false);
             
             // If the grid has already been rendered, re-render to reflect state changes
             if (_gridRendered)

@@ -25,8 +25,10 @@ namespace CargoSpace.Client
 
         // Triage / unconfirmed hazard alerts
         private VBoxContainer _triageListContainer;
-        private HashSet<Vector2I> _knownHazards = new HashSet<Vector2I>();
         private Dictionary<Vector2I, Control> _triageAlerts = new Dictionary<Vector2I, Control>();
+
+        // Active job tracking so triage doesn't re-add a fire that already has a FightFire job
+        private Dictionary<JobId, (JobType Type, Vector2I Target)> _jobInfo = new Dictionary<JobId, (JobType, Vector2I)>();
 
         public void Initialize(ClientManager clientManager, NetworkBridge networkBridge)
         {
@@ -203,6 +205,7 @@ namespace CargoSpace.Client
 
             _jobListContainer.AddChild(row);
             _jobRows[id] = row;
+            _jobInfo[id] = (type, target);
         }
 
         public void RemoveJobUI(JobId id)
@@ -212,6 +215,20 @@ namespace CargoSpace.Client
                 row.QueueFree();
                 _jobRows.Remove(id);
             }
+
+            _jobInfo.Remove(id);
+        }
+
+        private bool HasActiveFightFireJob(Vector2I target)
+        {
+            foreach (var kvp in _jobInfo)
+            {
+                if (kvp.Value.Type == JobType.FightFire && kvp.Value.Target == target)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private string GetJobDescription(JobType type)
@@ -225,14 +242,22 @@ namespace CargoSpace.Client
             };
         }
 
-        public void TryDiscoverHazard(Vector2I target)
+        public void TryDiscoverHazard(Vector2I target, byte hazardState, bool isVisible)
         {
-            if (_knownHazards.Contains(target))
+            if (hazardState == 0)
             {
+                if (_triageAlerts.TryGetValue(target, out Control existingAlert))
+                {
+                    existingAlert.QueueFree();
+                    _triageAlerts.Remove(target);
+                }
                 return;
             }
 
-            _knownHazards.Add(target);
+            if (!isVisible || HasActiveFightFireJob(target) || _triageAlerts.ContainsKey(target))
+            {
+                return;
+            }
 
             PanelContainer alertPanel = new PanelContainer();
             alertPanel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
@@ -258,7 +283,6 @@ namespace CargoSpace.Client
                 AddJobUI(jobId, JobType.FightFire, target);
                 _networkBridge?.SendJobCommand(jobId, target, JobType.FightFire, 0);
 
-                _knownHazards.Remove(target);
                 _triageAlerts.Remove(target);
                 alertPanel.QueueFree();
             };
