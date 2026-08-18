@@ -29,10 +29,13 @@ namespace CargoSpace.Server
             _grid = new Dictionary<Vector2I, GridTileData>();
             _jobBoard = new List<Job>();
             
-            PawnId startingId = PawnId.Create();
-            Pawn startingPawn = new Pawn(startingId, new Vector2I(0, 0));
-            _pawns[startingId] = startingPawn;
-            _dirtyEntities.Add(startingPawn);
+            PawnId pawn1 = PawnId.Create();
+            _pawns[pawn1] = new Pawn(pawn1, new Vector2I(-1, -2));
+            _dirtyEntities.Add(_pawns[pawn1]);
+
+            PawnId pawn2 = PawnId.Create();
+            _pawns[pawn2] = new Pawn(pawn2, new Vector2I(1, -2));
+            _dirtyEntities.Add(_pawns[pawn2]);
             
             InitializeGrid();
             InitializePathfinding();
@@ -40,16 +43,15 @@ namespace CargoSpace.Server
 
         private void InitializeGrid()
         {
-            // Create a 5x5 cluster of Deck tiles centered at (0, 0)
-            // Surrounded by Space tiles
+            // Create a U-shaped ship: left prong (x == -2), right prong (x == 2),
+            // and bottom connector (y == -2). Surround with Space tiles.
             for (int x = -3; x <= 3; x++)
             {
                 for (int y = -3; y <= 3; y++)
                 {
                     Vector2I coord = new Vector2I(x, y);
                     
-                    // 5x5 center area is Deck
-                    if (x >= -2 && x <= 2 && y >= -2 && y <= 2)
+                    if (x == -2 || x == 2 || y == -2)
                     {
                         _grid[coord] = new GridTileData(TileType.Deck);
                     }
@@ -60,9 +62,11 @@ namespace CargoSpace.Server
                 }
             }
             
-            // Place Console tiles on opposite sides of the deck
-            _grid[new Vector2I(-2, 0)] = new GridTileData(TileType.Console);
-            _grid[new Vector2I(2, 0)] = new GridTileData(TileType.Console);
+            // Place Console tiles at the extreme ends of the U-shape
+            _grid[new Vector2I(-2, 2)] = new GridTileData(TileType.Console);
+            _grid[new Vector2I(2, 2)] = new GridTileData(TileType.Console);
+            _grid[new Vector2I(-2, -2)] = new GridTileData(TileType.Console);
+            _grid[new Vector2I(2, -2)] = new GridTileData(TileType.Console);
         }
 
         private void InitializePathfinding()
@@ -123,9 +127,24 @@ namespace CargoSpace.Server
             {
                 if (pawn.State == PawnState.Idle && _jobBoard.Count > 0)
                 {
-                    pawn.CurrentJob = _jobBoard[0];
+                    Job potentialJob = _jobBoard[0];
                     _jobBoard.RemoveAt(0);
-                    CalculatePath(pawn, pawn.CurrentJob.Target);
+
+                    // Attempt to pathfind BEFORE officially claiming the job
+                    CalculatePath(pawn, potentialJob.Target);
+
+                    if (pawn.CurrentPath.Count > 0)
+                    {
+                        // Path successful. Claim the job and start walking.
+                        pawn.CurrentJob = potentialJob;
+                        // pawn.State is set to Walking inside CalculatePath
+                    }
+                    else
+                    {
+                        // Path failed (unreachable). Reject the job and remain Idle.
+                        GameLogger.Warning($"Job {potentialJob.Id} at {potentialJob.Target} is unreachable. Discarding.");
+                        _networkBridge?.BroadcastJobRemoved(potentialJob.Id);
+                    }
                 }
                 
                 if (pawn.State == PawnState.Walking && pawn.CurrentPath.Count > 0)
