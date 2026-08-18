@@ -2,7 +2,7 @@
   "Space": {
     "Type": 0,
     "Name": "Space",
-    "Tags": [],
+    "Tags": ["Vacuum", "KillsFire", "VentsGas"],
     "HexColor": "#000000"
   },
   "Deck": {
