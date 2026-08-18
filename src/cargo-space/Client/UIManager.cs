@@ -15,6 +15,9 @@ namespace CargoSpace.Client
         private NetworkBridge _networkBridge;
         private Vector2I _currentGridCoord;
 
+        // HUD toolbar
+        private VBoxContainer _hudToolbar;
+
         // Job Board UI
         private Panel _jobBoardPanel;
         private ScrollContainer _jobScrollContainer;
@@ -53,32 +56,37 @@ namespace CargoSpace.Client
             _toggleButton.Pressed += OnTogglePressed;
             vbox.AddChild(_toggleButton);
 
-            // Create persistent left-side job board
+            // Create floating, togglable job board
             CreateJobBoard();
+
+            // Create persistent right-aligned HUD toolbar
+            CreateHudToolbar();
         }
 
         private void CreateJobBoard()
         {
             _jobBoardPanel = new Panel();
-            _jobBoardPanel.AnchorLeft = 0;
-            _jobBoardPanel.AnchorTop = 0;
-            _jobBoardPanel.AnchorRight = 0;
-            _jobBoardPanel.AnchorBottom = 1;
-            _jobBoardPanel.OffsetLeft = 0;
-            _jobBoardPanel.OffsetTop = 0;
-            _jobBoardPanel.OffsetRight = 260;
-            _jobBoardPanel.OffsetBottom = 0;
+            _jobBoardPanel.Size = new Vector2(300, 400);
+            _jobBoardPanel.Position = new Vector2(50, 50);
+            _jobBoardPanel.Hide();
             AddChild(_jobBoardPanel);
 
-            // Title label
+            // Header bar with title and close button
+            HBoxContainer header = new HBoxContainer();
+            header.Size = new Vector2(280, 30);
+            header.Position = new Vector2(10, 10);
+            _jobBoardPanel.AddChild(header);
+
             Label titleLabel = new Label();
             titleLabel.Text = "Job Board";
             titleLabel.HorizontalAlignment = HorizontalAlignment.Center;
-            titleLabel.AnchorLeft = 0;
-            titleLabel.AnchorRight = 1;
-            titleLabel.OffsetTop = 10;
-            titleLabel.OffsetBottom = 30;
-            _jobBoardPanel.AddChild(titleLabel);
+            titleLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            header.AddChild(titleLabel);
+
+            Button closeButton = new Button();
+            closeButton.Text = "Close";
+            closeButton.Pressed += () => _jobBoardPanel.Hide();
+            header.AddChild(closeButton);
 
             // Scroll container for job list
             _jobScrollContainer = new ScrollContainer();
@@ -87,7 +95,7 @@ namespace CargoSpace.Client
             _jobScrollContainer.AnchorRight = 1;
             _jobScrollContainer.AnchorBottom = 1;
             _jobScrollContainer.OffsetLeft = 10;
-            _jobScrollContainer.OffsetTop = 40;
+            _jobScrollContainer.OffsetTop = 50;
             _jobScrollContainer.OffsetRight = -10;
             _jobScrollContainer.OffsetBottom = -10;
             _jobBoardPanel.AddChild(_jobScrollContainer);
@@ -164,6 +172,47 @@ namespace CargoSpace.Client
         private void OnCancelJobPressed(JobId id)
         {
             _networkBridge?.SendCancelJobRequest(id);
+        }
+
+        private void CreateHudToolbar()
+        {
+            _hudToolbar = new VBoxContainer();
+            _hudToolbar.AnchorLeft = 1;
+            _hudToolbar.AnchorTop = 0.5f;
+            _hudToolbar.AnchorRight = 1;
+            _hudToolbar.AnchorBottom = 0.5f;
+            _hudToolbar.OffsetLeft = -60;
+            _hudToolbar.OffsetRight = -10;
+            _hudToolbar.GrowHorizontal = Control.GrowDirection.Begin;
+            _hudToolbar.GrowVertical = Control.GrowDirection.Both;
+            AddChild(_hudToolbar);
+
+            Button hudButton = new Button();
+            hudButton.Text = "J";
+            hudButton.CustomMinimumSize = new Vector2(50, 50);
+            hudButton.Pressed += ToggleJobBoard;
+            _hudToolbar.AddChild(hudButton);
+        }
+
+        private void ToggleJobBoard()
+        {
+            if (_jobBoardPanel.Visible)
+            {
+                _jobBoardPanel.Hide();
+            }
+            else
+            {
+                _jobBoardPanel.Show();
+            }
+        }
+
+        public override void _UnhandledInput(InputEvent @event)
+        {
+            if (@event.IsActionPressed("toggle_job_board") && !@event.IsEcho())
+            {
+                ToggleJobBoard();
+                GetViewport().SetInputAsHandled();
+            }
         }
     }
 }

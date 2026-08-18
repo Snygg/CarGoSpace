@@ -208,8 +208,12 @@ namespace CargoSpace.Server
         {
             if (_currentJob.Id == id)
             {
-                // Ignore cancellation of an active job for now
-                GameLogger.Debug($"CancelJob ignored for active job {id}");
+                _currentPath.Clear();
+                _workTicksRemaining = 0;
+                _pawnState = PawnState.Idle;
+                _currentJob = default;
+                _networkBridge?.BroadcastJobRemoved(id);
+                GameLogger.Debug($"Active job cancelled and Pawn interrupted: {id}");
                 return;
             }
 
