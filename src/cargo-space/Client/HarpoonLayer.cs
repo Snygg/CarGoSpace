@@ -20,7 +20,7 @@ namespace CargoSpace.Client
                 Vector2I coord = kvp.Key;
                 GridTileData tileData = kvp.Value;
 
-                if (tileData.Type != TileType.Harpoon)
+                if (TileRegistry.Get(tileData.TypeId)?.StringId != "harpoon")
                 {
                     continue;
                 }

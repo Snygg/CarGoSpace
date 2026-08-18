@@ -1,26 +1,26 @@
 {
-  "Space": {
-    "Type": 0,
+  "space": {
+    "TypeId": 0,
     "Name": "Space",
-    "Tags": ["Vacuum", "KillsFire", "VentsGas"],
+    "Tags": ["Vacuum"],
     "HexColor": "#000000"
   },
-  "Deck": {
-    "Type": 1,
+  "deck": {
+    "TypeId": 1,
     "Name": "Deck",
     "Tags": ["Walkable"],
     "HexColor": "#808080"
   },
-  "Console": {
-    "Type": 2,
+  "console": {
+    "TypeId": 2,
     "Name": "Console",
-    "Tags": ["Walkable", "Interactable"],
+    "Tags": ["Walkable", "Interactable", "Toggleable"],
     "HexColor": "#FFA500"
   },
-  "Harpoon": {
-    "Type": 3,
+  "harpoon": {
+    "TypeId": 3,
     "Name": "Harpoon",
-    "Tags": ["Walkable", "Interactable"],
+    "Tags": ["Walkable", "Interactable", "Operable"],
     "HexColor": "#808080"
   }
 }

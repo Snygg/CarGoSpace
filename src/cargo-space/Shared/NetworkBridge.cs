@@ -131,7 +131,7 @@ namespace CargoSpace.Shared
 
         public void BroadcastTileUpdate(Vector2I coord, GridTileData tileData)
         {
-            Rpc(nameof(ReceiveTile_RPC), coord.X, coord.Y, (byte)tileData.Type, tileData.State, tileData.HazardState);
+            Rpc(nameof(ReceiveTile_RPC), coord.X, coord.Y, tileData.TypeId, tileData.State, tileData.HazardState);
         }
 
         public void BroadcastJobAdded(Job job)

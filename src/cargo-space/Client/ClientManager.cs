@@ -140,7 +140,7 @@ namespace CargoSpace.Client
             
             if (_pendingGrid.TryGetValue(gridCoord, out GridTileData tileData))
             {
-                TileDefinition tileDef = TileRegistry.Get(tileData.Type);
+                TileDefinition tileDef = TileRegistry.Get(tileData.TypeId);
                 if (tileDef != null && tileDef.IsInteractable)
                 {
                     // Show context menu for the clicked interactable tile
@@ -177,7 +177,7 @@ namespace CargoSpace.Client
         public void HandleTile(int x, int y, byte tileType, int state, byte hazardState)
         {
             Vector2I coord = new Vector2I(x, y);
-            _pendingGrid[coord] = new GridTileData((TileType)tileType, state, hazardState);
+            _pendingGrid[coord] = new GridTileData(tileType, state, hazardState);
             int count = _pendingGrid.Count;
             
             // Log every 10th tile to reduce spam

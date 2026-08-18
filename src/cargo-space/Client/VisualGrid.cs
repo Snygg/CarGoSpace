@@ -37,7 +37,7 @@ namespace CargoSpace.Client
             {
                 Vector2I gridCoord = kvp.Key;
                 GridTileData tileData = kvp.Value;
-                int sourceId = GetSourceId(tileData.Type, tileData.State);
+                int sourceId = GetSourceId(tileData.TypeId, tileData.State);
 
                 // Set the cell at the grid coordinate with the tile type's atlas coords
                 _tileMapLayer.SetCell(gridCoord, sourceId, new Vector2I(0, 0));
@@ -88,13 +88,13 @@ namespace CargoSpace.Client
             atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
             atlasSource.CreateTile(new Vector2I(0, 0));
             
-            int sourceId = GetSourceId(tileDef.Type, state);
+            int sourceId = GetSourceId(tileDef.TypeId, state);
             tileSet.AddSource(atlasSource, sourceId);
         }
 
-        private int GetSourceId(TileType type, int state)
+        private int GetSourceId(byte typeId, int state)
         {
-            return (int)type * 2 + state;
+            return typeId * 2 + state;
         }
 
         private TileSet CreateHazardTileSet()

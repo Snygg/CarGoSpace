@@ -47,22 +47,22 @@ namespace CargoSpace.Server
                     
                     if (x == -2 || x == 2 || y == -2)
                     {
-                        _grid[coord] = new GridTileData(TileType.Deck);
+                        _grid[coord] = new GridTileData(TileRegistry.GetId("deck"));
                     }
                     else
                     {
-                        _grid[coord] = new GridTileData(TileType.Space);
+                        _grid[coord] = new GridTileData(TileRegistry.GetId("space"));
                     }
                 }
             }
             
             // Place Console tiles at the extreme ends of the U-shape
-            _grid[new Vector2I(-2, 2)] = new GridTileData(TileType.Console);
-            _grid[new Vector2I(2, 2)] = new GridTileData(TileType.Console);
-            _grid[new Vector2I(-2, -2)] = new GridTileData(TileType.Console);
-            _grid[new Vector2I(2, -2)] = new GridTileData(TileType.Console);
-            
-            _grid[new Vector2I(-3, -2)] = new GridTileData(TileType.Harpoon);
+            _grid[new Vector2I(-2, 2)] = new GridTileData(TileRegistry.GetId("console"));
+            _grid[new Vector2I(2, 2)] = new GridTileData(TileRegistry.GetId("console"));
+            _grid[new Vector2I(-2, -2)] = new GridTileData(TileRegistry.GetId("console"));
+            _grid[new Vector2I(2, -2)] = new GridTileData(TileRegistry.GetId("console"));
+
+            _grid[new Vector2I(-3, -2)] = new GridTileData(TileRegistry.GetId("harpoon"));
         }
 
         private void InitializePathfinding()
@@ -80,7 +80,7 @@ namespace CargoSpace.Server
             foreach (var kvp in _grid)
             {
                 Vector2I coord = kvp.Key;
-                TileDefinition tileDef = TileRegistry.Get(kvp.Value.Type);
+                TileDefinition tileDef = TileRegistry.Get(kvp.Value.TypeId);
                 bool isWalkable = tileDef != null && tileDef.IsWalkable;
                 _pathfinding.SetPointSolid(coord, !isWalkable);
             }
@@ -103,7 +103,7 @@ namespace CargoSpace.Server
             }
             else if (job.Type == JobType.Operate)
             {
-                isValidTile = _grid.ContainsKey(job.Target) && _grid[job.Target].Type == TileType.Harpoon;
+                isValidTile = _grid.ContainsKey(job.Target) && TileRegistry.Get(_grid[job.Target].TypeId)?.HasTag("Operable") == true;
             }
 
             bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
@@ -114,7 +114,7 @@ namespace CargoSpace.Server
         public bool IsInteractableTile(Vector2I target)
         {
             if (!_grid.ContainsKey(target)) return false;
-            TileDefinition tileDef = TileRegistry.Get(_grid[target].Type);
+            TileDefinition tileDef = TileRegistry.Get(_grid[target].TypeId);
             return tileDef != null && tileDef.IsInteractable;
         }
 

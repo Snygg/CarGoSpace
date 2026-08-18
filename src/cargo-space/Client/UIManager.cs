@@ -149,13 +149,13 @@ namespace CargoSpace.Client
             _contextSlot.AddChild(vbox);
 
             Label titleLabel = new Label();
-            titleLabel.Text = tileDef.Name ?? tileDef.Type.ToString();
+            titleLabel.Text = tileDef.Name ?? tileDef.StringId;
             vbox.AddChild(titleLabel);
 
-            if (tileDef.Type == TileType.Console)
+            if (tileDef.HasTag("Toggleable"))
             {
                 Label stateLabel = new Label();
-                stateLabel.Text = $"Console: {(currentState == 1 ? "ON" : "OFF")}";
+                stateLabel.Text = $"{tileDef.Name}: {(currentState == 1 ? "ON" : "OFF")}";
                 vbox.AddChild(stateLabel);
 
                 int desiredState = currentState == 0 ? 1 : 0;
@@ -171,7 +171,7 @@ namespace CargoSpace.Client
                 vbox.AddChild(setStateButton);
             }
 
-            if (tileDef.Type == TileType.Harpoon)
+            if (tileDef.HasTag("Operable"))
             {
                 if (currentState == 0)
                 {

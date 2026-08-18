@@ -2,23 +2,15 @@ using Godot;
 
 namespace CargoSpace.Core
 {
-    public enum TileType : byte
-    {
-        Space = 0,
-        Deck = 1,
-        Console = 2,
-        Harpoon = 3
-    }
-
     public struct GridTileData
     {
-        public TileType Type;
+        public byte TypeId;
         public int State;
         public byte HazardState;
 
-        public GridTileData(TileType type, int state = 0, byte hazardState = 0)
+        public GridTileData(byte typeId, int state = 0, byte hazardState = 0)
         {
-            Type = type;
+            TypeId = typeId;
             State = state;
             HazardState = hazardState;
         }
