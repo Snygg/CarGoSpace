@@ -258,12 +258,26 @@ namespace CargoSpace.Server
             }
         }
 
+        private void CancelPawnOperation(Pawn pawn, JobId id, Vector2I target)
+        {
+            _networkBridge?.BroadcastJobRemoved(id);
+            ResetPawnState(pawn);
+            SetTileState(target, 0);
+            GameLogger.Debug($"Pawn {pawn.Id}: operation cancelled at {target}");
+        }
+
         public void CancelJob(JobId id)
         {
             foreach (Pawn pawn in _pawns.Values)
             {
                 if (pawn.CurrentJob.Id == id)
                 {
+                    if (pawn.CurrentJob.Type == JobType.Operate)
+                    {
+                        CancelPawnOperation(pawn, id, pawn.CurrentJob.Target);
+                        return;
+                    }
+
                     ResetPawnState(pawn);
                     _networkBridge?.BroadcastJobRemoved(id);
                     GameLogger.Debug($"Pawn {pawn.Id}: active job cancelled and interrupted: {id}");
@@ -280,10 +294,7 @@ namespace CargoSpace.Server
             {
                 if (pawn.CurrentJob.Target == target && pawn.CurrentJob.Type == JobType.Operate)
                 {
-                    _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
-                    ResetPawnState(pawn);
-                    SetTileState(target, 0);
-                    GameLogger.Debug($"Pawn {pawn.Id}: operation cancelled at {target}");
+                    CancelPawnOperation(pawn, pawn.CurrentJob.Id, target);
                     return;
                 }
             }
