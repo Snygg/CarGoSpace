@@ -13,4 +13,8 @@
   <ItemGroup>
     <Content Include="Data\tiles.json" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CargoSpace.SourceGenerators\CargoSpace.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

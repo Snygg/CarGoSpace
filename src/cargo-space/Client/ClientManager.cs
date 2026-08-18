@@ -15,6 +15,7 @@ namespace CargoSpace.Client
         private UIManager _uiManager;
         private NetworkBridge _networkBridge;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
+        private List<Job> _activeJobs = new List<Job>();
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
 
@@ -41,7 +42,7 @@ namespace CargoSpace.Client
             AddChild(_pawn);
             
             _uiManager = new UIManager();
-            _uiManager.Initialize(_networkBridge);
+            _uiManager.Initialize(this, _networkBridge);
             AddChild(_uiManager);
             
             StartClient();
@@ -185,6 +186,73 @@ namespace CargoSpace.Client
         {
             GameLogger.Debug($"HandlePawnPosition: {position}");
             UpdatePawnVisual(position);
+        }
+
+        public void HandleJobAdded(JobId id, Vector2I target, JobType jobType)
+        {
+            GameLogger.Debug($"HandleJobAdded: {id} at {target}, type {jobType}");
+
+            // Ignore if we already have this job (e.g. from our own optimistic add)
+            if (FindActiveJob(id) != null)
+            {
+                return;
+            }
+
+            Job job = new Job(id, 0, target, jobType);
+            _activeJobs.Add(job);
+            _uiManager.AddJobUI(id, jobType, target);
+        }
+
+        public void HandleJobRemoved(JobId id)
+        {
+            GameLogger.Debug($"HandleJobRemoved: {id}");
+            RemoveActiveJob(id);
+            _uiManager.RemoveJobUI(id);
+        }
+
+        public void HandleJobRejected(JobId id)
+        {
+            GameLogger.Debug($"HandleJobRejected: {id}");
+            RemoveActiveJob(id);
+            _uiManager.RemoveJobUI(id);
+        }
+
+        public void QueueConsoleToggleJob(Vector2I target)
+        {
+            JobId jobId = JobId.Create();
+            long ownerPeerId = Multiplayer.GetUniqueId();
+            Job job = new Job(jobId, ownerPeerId, target, JobType.ToggleState);
+
+            // Optimistic UI: immediately show on client before server validation
+            _activeJobs.Add(job);
+            _uiManager.AddJobUI(jobId, JobType.ToggleState, target);
+
+            // Send to server for validation and queueing
+            _networkBridge?.SendJobCommand(jobId, target, JobType.ToggleState);
+        }
+
+        private Job? FindActiveJob(JobId id)
+        {
+            foreach (Job job in _activeJobs)
+            {
+                if (job.Id == id)
+                {
+                    return job;
+                }
+            }
+            return null;
+        }
+
+        private void RemoveActiveJob(JobId id)
+        {
+            for (int i = 0; i < _activeJobs.Count; i++)
+            {
+                if (_activeJobs[i].Id == id)
+                {
+                    _activeJobs.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         private void UpdatePawnVisual(Vector2I gridPosition)

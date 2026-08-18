@@ -16,7 +16,7 @@ namespace CargoSpace.Server
     {
         private Dictionary<Vector2I, GridTileData> _grid;
         private AStarGrid2D _pathfinding;
-        private Queue<Job> _jobBoard;
+        private List<Job> _jobBoard;
         
         // Pawn state
         private Vector2I _pawnPosition;
@@ -30,7 +30,7 @@ namespace CargoSpace.Server
         {
             _networkBridge = networkBridge;
             _grid = new Dictionary<Vector2I, GridTileData>();
-            _jobBoard = new Queue<Job>();
+            _jobBoard = new List<Job>();
             _pawnPosition = new Vector2I(0, 0);
             _currentPath = new List<Vector2I>();
             _pawnState = PawnState.Idle;
@@ -100,22 +100,34 @@ namespace CargoSpace.Server
 
         public void AddJob(Job job)
         {
-            if (_grid.ContainsKey(job.Target))
+            // Validate the target tile exists and is interactable
+            if (!_grid.ContainsKey(job.Target))
             {
-                TileDefinition tileDef = TileRegistry.Get(_grid[job.Target].Type);
-                if (tileDef != null && tileDef.IsInteractable)
-                {
-                    _jobBoard.Enqueue(job);
-                    GameLogger.Debug($"Job added to board: {job.Type} at {job.Target}");
-                }
+                GameLogger.Debug($"Job rejected: target {job.Target} not in grid");
+                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
+                return;
             }
+
+            TileDefinition tileDef = TileRegistry.Get(_grid[job.Target].Type);
+            if (tileDef == null || !tileDef.IsInteractable)
+            {
+                GameLogger.Debug($"Job rejected: target {job.Target} is not interactable");
+                _networkBridge?.SendJobRejected(job.Id, job.OwnerPeerId);
+                return;
+            }
+
+            _jobBoard.Add(job);
+            GameLogger.Debug($"Job added to board: {job.Id} {job.Type} at {job.Target}");
+
+            _networkBridge?.BroadcastJobAdded(job);
         }
 
         public void Tick()
         {
             if (_pawnState == PawnState.Idle && _jobBoard.Count > 0)
             {
-                _currentJob = _jobBoard.Dequeue();
+                _currentJob = _jobBoard[0];
+                _jobBoard.RemoveAt(0);
                 CalculatePath(_currentJob.Target);
             }
             
@@ -168,6 +180,7 @@ namespace CargoSpace.Server
             if (_workTicksRemaining <= 0)
             {
                 ExecuteJob(_currentJob);
+                _networkBridge?.BroadcastJobRemoved(_currentJob.Id);
                 _pawnState = PawnState.Idle;
             }
         }
@@ -189,6 +202,29 @@ namespace CargoSpace.Server
                     _networkBridge?.BroadcastTileUpdate(job.Target, tileData);
                 }
             }
+        }
+
+        public void CancelJob(JobId id)
+        {
+            if (_currentJob.Id == id)
+            {
+                // Ignore cancellation of an active job for now
+                GameLogger.Debug($"CancelJob ignored for active job {id}");
+                return;
+            }
+
+            for (int i = 0; i < _jobBoard.Count; i++)
+            {
+                if (_jobBoard[i].Id == id)
+                {
+                    _jobBoard.RemoveAt(i);
+                    GameLogger.Debug($"Job cancelled and removed: {id}");
+                    _networkBridge?.BroadcastJobRemoved(id);
+                    return;
+                }
+            }
+
+            GameLogger.Debug($"CancelJob could not find job {id}");
         }
 
         public bool TryMovePawn(Vector2I target)

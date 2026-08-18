@@ -80,12 +80,18 @@ namespace CargoSpace.Server
             SendPawnPositionToClient(requesterId);
         }
 
-        public void HandleJobCommand(Vector2I target, JobType jobType, long senderId)
+        public void HandleJobCommand(JobId id, Vector2I target, JobType jobType, long senderId)
         {
-            GameLogger.Debug($"HandleJobCommand: Job request from {senderId} to {target}, type {jobType}");
-            
+            GameLogger.Debug($"HandleJobCommand: Job request from {senderId} to {target}, type {jobType}, id {id}");
+
             // Add job to the simulation's job board
-            _gridSimulation.AddJob(new Job(target, jobType));
+            _gridSimulation.AddJob(new Job(id, senderId, target, jobType));
+        }
+
+        public void HandleCancelJobRequest(JobId id)
+        {
+            GameLogger.Debug($"HandleCancelJobRequest: Cancelling job {id}");
+            _gridSimulation.CancelJob(id);
         }
 
         public async void SendGridToClient(long clientId)

@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder1", "Solution
 		..\..\.gitignore = ..\..\.gitignore
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CargoSpace.SourceGenerators", "..\CargoSpace.SourceGenerators\CargoSpace.SourceGenerators.csproj", "{5D29C56B-0C6D-4FFF-8357-0798AA0186AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 	Debug|Any CPU = Debug|Any CPU
@@ -20,5 +22,11 @@ Global
 		{23CE313A-C0E0-4BF5-84FE-B3B45BC2FB1B}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
 		{23CE313A-C0E0-4BF5-84FE-B3B45BC2FB1B}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
 		{23CE313A-C0E0-4BF5-84FE-B3B45BC2FB1B}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+		{5D29C56B-0C6D-4FFF-8357-0798AA0186AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D29C56B-0C6D-4FFF-8357-0798AA0186AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D29C56B-0C6D-4FFF-8357-0798AA0186AE}.ExportDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D29C56B-0C6D-4FFF-8357-0798AA0186AE}.ExportDebug|Any CPU.Build.0 = Debug|Any CPU
+		{5D29C56B-0C6D-4FFF-8357-0798AA0186AE}.ExportRelease|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D29C56B-0C6D-4FFF-8357-0798AA0186AE}.ExportRelease|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal
