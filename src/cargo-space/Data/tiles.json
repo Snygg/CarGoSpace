@@ -2,14 +2,17 @@
   "space": {
     "TypeId": 0,
     "Name": "Space",
+    "Layer": "Base",
     "Tags": ["Vacuum"],
     "HexColor": "#00000000"
   },
   "deck": {
     "TypeId": 1,
     "Name": "Deck",
+    "Layer": "Floor",
     "Tags": ["Walkable", "StoresUnidentified"],
-    "HexColor": "#808080"
+    "HexColor": "#808080",
+    "DeconstructYield": { "scrap_metal": 1 }
   },
   "console": {
     "TypeId": 2,
@@ -28,11 +31,13 @@
     "TypeId": 4,
     "Name": "Fusion Generator",
     "Tags": ["GeneratesPower", "TransfersPower"],
-    "HexColor": "#00FFFF"
+    "HexColor": "#00FFFF",
+    "DeconstructYield": { "scrap_metal": 1 }
   },
   "power_cable": {
     "TypeId": 5,
     "Name": "Power Cable",
+    "Layer": "Floor",
     "Tags": ["TransfersPower", "Walkable"],
     "HexColor": "#FFD700"
   },
@@ -45,8 +50,9 @@
   "wall": {
     "TypeId": 7,
     "Name": "Wall",
-    "Tags": ["Constructable", "Walkable"],
+    "Tags": ["Constructable"],
     "HexColor": "#555555",
-    "Recipe": { "scrap_metal": 2 }
+    "Recipe": { "scrap_metal": 2 },
+    "DeconstructYield": { "scrap_metal": 1 }
   }
 }

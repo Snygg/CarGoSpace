@@ -23,6 +23,25 @@ namespace CargoSpace.Server
             _activeMachines[coord] = new MachineEntity(coord);
         }
 
+        public void UnregisterMachine(Vector2I coord)
+        {
+            _activeMachines.Remove(coord);
+        }
+
+        public void OnTileChanged(Vector2I coord)
+        {
+            if (!_gridSimulation.TryGetTile(coord, out GridTileData tileData))
+                return;
+
+            TileDefinition def = tileData.GetEffectiveDefinition();
+            bool isMachine = def != null && (def.HasTag("GeneratesPower") || def.HasTag("ConsumesPower"));
+
+            if (isMachine && !_activeMachines.ContainsKey(coord))
+                RegisterMachine(coord);
+            else if (!isMachine && _activeMachines.ContainsKey(coord))
+                UnregisterMachine(coord);
+        }
+
         public void Tick()
         {
             SimulatePowerGrid();
@@ -46,7 +65,7 @@ namespace CargoSpace.Server
             {
                 if (_gridSimulation.TryGetTile(kvp.Key, out GridTileData tileData))
                 {
-                    if (TileRegistry.Get(tileData.TypeId)?.HasTag("GeneratesPower") == true)
+                    if (tileData.GetEffectiveDefinition()?.HasTag("GeneratesPower") == true)
                     {
                         queue.Enqueue(kvp.Key);
                         visited.Add(kvp.Key);
@@ -66,7 +85,7 @@ namespace CargoSpace.Server
                     if (visited.Contains(neighbor) || !_gridSimulation.TryGetTile(neighbor, out GridTileData neighborTile))
                         continue;
 
-                    TileDefinition def = TileRegistry.Get(neighborTile.TypeId);
+                    TileDefinition def = neighborTile.GetEffectiveDefinition();
                     if (def != null && def.HasTag("TransfersPower"))
                     {
                         visited.Add(neighbor);

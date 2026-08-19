@@ -89,10 +89,19 @@ namespace CargoSpace.Server
                         _pawns[newPawnId] = newPawn;
                         _dirtyEntities.Add(newPawn);
                     }
+                    else if (c == '.')
+                    {
+                        _grid[coord] = new GridTileData(TileRegistry.GetId("space"));
+                    }
+                    else if (c == 'D')
+                    {
+                        _grid[coord] = new GridTileData(TileRegistry.GetId("deck"));
+                    }
                     else if (legend.TryGetValue(c, out string stringId))
                     {
                         byte typeId = TileRegistry.GetId(stringId);
-                        _grid[coord] = new GridTileData(typeId);
+                        // Place surfaces on a deck floor
+                        _grid[coord] = new GridTileData(TileRegistry.GetId("deck"), typeId);
 
                         TileDefinition tileDef = TileRegistry.Get(typeId);
                         if (tileDef != null && (tileDef.HasTag("GeneratesPower") || tileDef.HasTag("ConsumesPower")))
@@ -124,7 +133,7 @@ namespace CargoSpace.Server
             foreach (var kvp in _grid)
             {
                 Vector2I coord = kvp.Key;
-                TileDefinition tileDef = TileRegistry.Get(kvp.Value.TypeId);
+                TileDefinition tileDef = kvp.Value.GetEffectiveDefinition();
                 bool isWalkable = tileDef != null && tileDef.IsWalkable;
                 _pathfinding.SetPointSolid(coord, !isWalkable);
             }
@@ -162,7 +171,7 @@ namespace CargoSpace.Server
             }
             else if (job.Type == JobType.Operate)
             {
-                isValidTile = _grid.ContainsKey(job.Target) && TileRegistry.Get(_grid[job.Target].TypeId)?.HasTag("Operable") == true;
+                isValidTile = _grid.ContainsKey(job.Target) && _grid[job.Target].GetEffectiveDefinition()?.HasTag("Operable") == true;
             }
             else if (job.Type == JobType.Haul)
             {
@@ -176,16 +185,37 @@ namespace CargoSpace.Server
             {
                 isValidTile = _constructionManager != null && _constructionManager.IsReadyToConstruct(job.Target);
             }
+            else if (job.Type == JobType.Deconstruct)
+            {
+                isValidTile = _grid.ContainsKey(job.Target) && CanDeconstruct(job.Target);
+            }
 
             bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
             return _jobManager.AddJob(job, isValidTile, isActivelyWorked, job.OwnerPeerId);
+        }
+
+        private bool CanDeconstruct(Vector2I target)
+        {
+            if (!_grid.TryGetValue(target, out GridTileData tile))
+                return false;
+
+            TileDefinition effective = tile.GetEffectiveDefinition();
+            if (effective == null)
+                return false;
+
+            // Can remove a surface, or a floor (if there is no surface), but never deconstruct raw space
+            if (tile.SurfaceTypeId != 0)
+                return true;
+
+            TileDefinition baseDef = TileRegistry.Get(tile.TypeId);
+            return baseDef?.Layer != "Base";
         }
 
         // IJobExecutionContext
         public bool IsInteractableTile(Vector2I target)
         {
             if (!_grid.ContainsKey(target)) return false;
-            TileDefinition tileDef = TileRegistry.Get(_grid[target].TypeId);
+            TileDefinition tileDef = _grid[target].GetEffectiveDefinition();
             return tileDef != null && tileDef.IsInteractable;
         }
 
@@ -197,12 +227,32 @@ namespace CargoSpace.Server
                 tileData.TypeId = typeId;
                 _grid[target] = tileData;
 
-                TileDefinition tileDef = TileRegistry.Get(typeId);
+                TileDefinition tileDef = tileData.GetEffectiveDefinition();
                 if (_pathfinding != null && tileDef != null)
                 {
                     _pathfinding.SetPointSolid(target, !tileDef.IsWalkable);
                 }
 
+                _powerManager?.OnTileChanged(target);
+                _networkBridge?.BroadcastTileUpdate(target, tileData);
+            }
+        }
+
+        public void SetSurfaceType(Vector2I target, byte typeId)
+        {
+            if (_grid.ContainsKey(target))
+            {
+                GridTileData tileData = _grid[target];
+                tileData.SurfaceTypeId = typeId;
+                _grid[target] = tileData;
+
+                TileDefinition tileDef = tileData.GetEffectiveDefinition();
+                if (_pathfinding != null && tileDef != null)
+                {
+                    _pathfinding.SetPointSolid(target, !tileDef.IsWalkable);
+                }
+
+                _powerManager?.OnTileChanged(target);
                 _networkBridge?.BroadcastTileUpdate(target, tileData);
             }
         }
@@ -290,7 +340,7 @@ namespace CargoSpace.Server
                     Pawn visualPawn = _pawns.Values.FirstOrDefault(p =>
                         p.State == PawnState.Operating &&
                         _grid.TryGetValue(p.CurrentJob.Target, out GridTileData t) &&
-                        TileRegistry.Get(t.TypeId)?.Stats.TryGetValue("HarpoonRate", out float _) == true);
+                        t.GetEffectiveDefinition()?.Stats.TryGetValue("HarpoonRate", out float _) == true);
 
                     if (visualPawn == null) return;
 
@@ -302,7 +352,7 @@ namespace CargoSpace.Server
                     foreach (var dir in adjacents)
                     {
                         Vector2I test = harpoonTarget + dir;
-                        if (_grid.TryGetValue(test, out GridTileData tile) && TileRegistry.Get(tile.TypeId)?.IsWalkable == true)
+                        if (_grid.TryGetValue(test, out GridTileData tile) && tile.GetEffectiveDefinition()?.IsWalkable == true)
                         {
                             dropCoord = test;
                             break;
@@ -330,7 +380,7 @@ namespace CargoSpace.Server
                 {
                     if (_grid.TryGetValue(pawn.CurrentJob.Target, out GridTileData tile))
                     {
-                        TileDefinition def = TileRegistry.Get(tile.TypeId);
+                        TileDefinition def = tile.GetEffectiveDefinition();
                         if (def != null && def.Stats.TryGetValue("HarpoonRate", out float bonus))
                         {
                             rate += bonus;

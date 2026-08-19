@@ -14,6 +14,9 @@ namespace CargoSpace.Core
         public Dictionary<string, float> Stats { get; set; } = new();
         public Dictionary<string, float> Attributes { get; set; } = new();
         public Dictionary<string, int> Recipe { get; set; } = new();
+        public string Layer { get; set; } = "Surface";
+        public Dictionary<string, int> DeconstructYield { get; set; } = new();
+        public byte DeconstructInto { get; set; } = 0;
         public string HexColor { get; set; }
 
         public bool IsWalkable => Tags != null && Tags.Contains("Walkable");

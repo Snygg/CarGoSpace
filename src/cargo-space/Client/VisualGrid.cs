@@ -7,6 +7,7 @@ namespace CargoSpace.Client
     public partial class VisualGrid : Node2D
     {
         private TileMapLayer _tileMapLayer;
+        private TileMapLayer _surfaceLayer;
         private TileMapLayer _hazardLayer;
         private TileMapLayer _zoneLayer;
         private ItemOverlayLayer _itemLayer;
@@ -22,6 +23,12 @@ namespace CargoSpace.Client
             _tileMapLayer.ZAsRelative = false;
             _tileMapLayer.ZIndex = -1;
             AddChild(_tileMapLayer);
+
+            // Surface layer sits on top of the floor
+            _surfaceLayer = new TileMapLayer();
+            _surfaceLayer.TileSet = CreateTileSet();
+            _surfaceLayer.ZIndex = 0;
+            AddChild(_surfaceLayer);
 
             // Create the hazard overlay layer on top
             _hazardLayer = new TileMapLayer();
@@ -56,6 +63,16 @@ namespace CargoSpace.Client
         {
             int sourceId = GetSourceId(tileData.TypeId, tileData.State);
             _tileMapLayer?.SetCell(coord, sourceId, new Vector2I(0, 0));
+
+            if (tileData.SurfaceTypeId != 0)
+            {
+                int surfaceSourceId = GetSourceId(tileData.SurfaceTypeId, tileData.State);
+                _surfaceLayer?.SetCell(coord, surfaceSourceId, new Vector2I(0, 0));
+            }
+            else
+            {
+                _surfaceLayer?.EraseCell(coord);
+            }
 
             if (tileData.HazardState == 1)
             {
@@ -128,6 +145,17 @@ namespace CargoSpace.Client
 
                 // Set the cell at the grid coordinate with the tile type's atlas coords
                 _tileMapLayer.SetCell(gridCoord, sourceId, new Vector2I(0, 0));
+
+                // Render surface overlay
+                if (tileData.SurfaceTypeId != 0)
+                {
+                    int surfaceSourceId = GetSourceId(tileData.SurfaceTypeId, tileData.State);
+                    _surfaceLayer.SetCell(gridCoord, surfaceSourceId, new Vector2I(0, 0));
+                }
+                else
+                {
+                    _surfaceLayer.EraseCell(gridCoord);
+                }
 
                 // Render hazard overlay
                 if (tileData.HazardState == 1)

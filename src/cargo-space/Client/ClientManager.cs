@@ -163,10 +163,10 @@ namespace CargoSpace.Client
             _dataCache.IsGridRendered = false;
         }
 
-        public void HandleTile(int x, int y, byte tileType, int state, byte hazardState)
+        public void HandleTile(int x, int y, byte tileType, int state, byte hazardState, byte surfaceTypeId)
         {
             Vector2I coord = new Vector2I(x, y);
-            GridTileData data = new GridTileData(tileType, state, hazardState);
+            GridTileData data = new GridTileData(tileType, surfaceTypeId, state, hazardState);
             _dataCache.UpdateTile(coord, data);
 
             int count = _dataCache.Grid.Count;

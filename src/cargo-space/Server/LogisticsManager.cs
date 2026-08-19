@@ -172,7 +172,7 @@ namespace CargoSpace.Server
             if (!_gridSimulation.TryGetTile(job.Destination, out GridTileData destTile))
                 return false;
 
-            TileDefinition destDef = TileRegistry.Get(destTile.TypeId);
+            TileDefinition destDef = destTile.GetEffectiveDefinition();
             if (destDef == null || !destDef.IsWalkable)
                 return false;
 
@@ -195,7 +195,7 @@ namespace CargoSpace.Server
 
                 if (_gridSimulation.TryGetTile(current, out GridTileData tile))
                 {
-                    TileDefinition tileDef = TileRegistry.Get(tile.TypeId);
+                    TileDefinition tileDef = tile.GetEffectiveDefinition();
                     if (tileDef != null && tileDef.HasTag("StoresUnidentified") &&
                         !IsItemStackFull(current, itemStringId, maxStack))
                     {
@@ -231,7 +231,7 @@ namespace CargoSpace.Server
                 if (!_gridSimulation.TryGetTile(tile, out GridTileData gridTile))
                     continue;
 
-                TileDefinition tileDef = TileRegistry.Get(gridTile.TypeId);
+                TileDefinition tileDef = gridTile.GetEffectiveDefinition();
                 if (tileDef == null || !tileDef.IsWalkable)
                     continue;
 

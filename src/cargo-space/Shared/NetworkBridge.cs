@@ -88,9 +88,9 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveTile_RPC(int x, int y, byte tileType, int state, byte hazardState)
+        public void ReceiveTile_RPC(int x, int y, byte tileType, int state, byte hazardState, byte surfaceTypeId)
         {
-            _clientManager?.HandleTile(x, y, tileType, state, hazardState);
+            _clientManager?.HandleTile(x, y, tileType, state, hazardState, surfaceTypeId);
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -188,9 +188,9 @@ namespace CargoSpace.Shared
             RpcId(clientId, nameof(ReceiveGridSize_RPC), size);
         }
 
-        public void SendTile(long clientId, int x, int y, byte tileType, int state, byte hazardState)
+        public void SendTile(long clientId, int x, int y, byte tileType, int state, byte hazardState, byte surfaceTypeId)
         {
-            RpcId(clientId, nameof(ReceiveTile_RPC), x, y, tileType, state, hazardState);
+            RpcId(clientId, nameof(ReceiveTile_RPC), x, y, tileType, state, hazardState, surfaceTypeId);
         }
 
         public void SendGridComplete(long clientId)
@@ -210,7 +210,7 @@ namespace CargoSpace.Shared
 
         public void BroadcastTileUpdate(Vector2I coord, GridTileData tileData)
         {
-            Rpc(nameof(ReceiveTile_RPC), coord.X, coord.Y, tileData.TypeId, tileData.State, tileData.HazardState);
+            Rpc(nameof(ReceiveTile_RPC), coord.X, coord.Y, tileData.TypeId, tileData.State, tileData.HazardState, tileData.SurfaceTypeId);
         }
 
         public void BroadcastJobAdded(Job job)

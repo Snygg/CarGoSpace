@@ -60,8 +60,31 @@ namespace CargoSpace.Server
             if (targetDef == null || targetDef.Recipe == null || targetDef.Recipe.Count == 0)
                 return false;
 
-            TileDefinition currentDef = TileRegistry.Get(currentTile.TypeId);
-            if (currentDef == null || !currentDef.IsWalkable)
+            bool canPlace;
+
+            if (targetDef.Layer == "Floor")
+            {
+                // Floors replace the base tile and must not be placed under an existing surface
+                if (currentTile.SurfaceTypeId != 0)
+                    return false;
+
+                TileDefinition currentDef = TileRegistry.Get(currentTile.TypeId);
+                canPlace = currentDef != null && (currentDef.Layer == "Base" || currentDef.Layer == "Floor");
+            }
+            else if (targetDef.Layer == "Surface")
+            {
+                // Surfaces need a floor base and an empty surface slot
+                TileDefinition currentDef = currentTile.GetEffectiveDefinition();
+                canPlace = currentDef != null
+                           && currentTile.GetEffectiveDefinition().Layer == "Floor"
+                           && currentTile.SurfaceTypeId == 0;
+            }
+            else
+            {
+                canPlace = false;
+            }
+
+            if (!canPlace)
                 return false;
 
             Blueprint bp = new Blueprint
@@ -166,7 +189,15 @@ namespace CargoSpace.Server
             TileDefinition targetDef = TileRegistry.Get(bp.TargetTypeId);
             if (targetDef != null)
             {
-                _gridSimulation?.SetTileType(coord, bp.TargetTypeId);
+                if (targetDef.Layer == "Floor")
+                {
+                    _gridSimulation?.SetTileType(coord, bp.TargetTypeId);
+                }
+                else
+                {
+                    _gridSimulation?.SetSurfaceType(coord, bp.TargetTypeId);
+                }
+
                 _gridSimulation?.SetTileState(coord, 1); // built / active
                 GameLogger.Debug($"Construction complete at {coord}: built {targetDef.Name}");
             }

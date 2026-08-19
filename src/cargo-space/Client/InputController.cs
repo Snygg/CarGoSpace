@@ -104,7 +104,7 @@ namespace CargoSpace.Client
 
             if (DataCache != null && DataCache.TryGetTile(gridCoord, out GridTileData tileData))
             {
-                TileDefinition tileDef = TileRegistry.Get(tileData.TypeId);
+                TileDefinition tileDef = tileData.GetEffectiveDefinition();
                 if (tileDef != null && tileDef.IsInteractable)
                 {
                     UIManager?.ShowContextMenu(gridCoord, tileDef, tileData.State, tileData.HazardState);

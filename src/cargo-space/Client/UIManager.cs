@@ -33,6 +33,9 @@ namespace CargoSpace.Client
         // Zone painting menu
         private Panel _zoneMenu;
 
+        // Build menu
+        private Panel _buildMenu;
+
         public void Initialize(ClientManager clientManager, NetworkBridge networkBridge)
         {
             _clientManager = clientManager;
@@ -64,6 +67,9 @@ namespace CargoSpace.Client
 
             // Create zone painting menu
             CreateZoneMenu();
+
+            // Create build menu
+            CreateBuildMenu();
         }
 
         private void CreateJobBoard()
@@ -277,6 +283,14 @@ namespace CargoSpace.Client
             };
         }
 
+        public void ToggleBuildMenu()
+        {
+            if (_buildMenu == null)
+                return;
+
+            _buildMenu.Visible = !_buildMenu.Visible;
+        }
+
         public void TryDiscoverHazard(Vector2I target, byte hazardState, bool isVisible)
         {
             if (hazardState == 0)
@@ -356,6 +370,12 @@ namespace CargoSpace.Client
             zoneButton.CustomMinimumSize = new Vector2(50, 50);
             zoneButton.Pressed += ToggleZoneMenu;
             _hudToolbar.AddChild(zoneButton);
+
+            Button buildButton = new Button();
+            buildButton.Text = "B";
+            buildButton.CustomMinimumSize = new Vector2(50, 50);
+            buildButton.Pressed += ToggleBuildMenu;
+            _hudToolbar.AddChild(buildButton);
         }
 
         private void ToggleJobBoard()
@@ -368,6 +388,50 @@ namespace CargoSpace.Client
             {
                 _jobBoardPanel.Show();
             }
+        }
+
+        private void CreateBuildMenu()
+        {
+            _buildMenu = new Panel();
+            _buildMenu.Size = new Vector2(220, 320);
+            _buildMenu.Position = new Vector2(80, 80);
+            _buildMenu.Hide();
+            AddChild(_buildMenu);
+
+            VBoxContainer vbox = new VBoxContainer();
+            vbox.Position = new Vector2(10, 10);
+            vbox.Size = new Vector2(200, 300);
+            _buildMenu.AddChild(vbox);
+
+            Label titleLabel = new Label();
+            titleLabel.Text = "Build Menu";
+            vbox.AddChild(titleLabel);
+
+            GridContainer grid = new GridContainer();
+            grid.Columns = 2;
+            grid.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            grid.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+            vbox.AddChild(grid);
+
+            foreach (TileDefinition tileDef in TileRegistry.AllTiles)
+            {
+                if (!tileDef.HasTag("Constructable"))
+                    continue;
+
+                Button buildButton = new Button();
+                buildButton.Text = tileDef.Name;
+                buildButton.Pressed += () =>
+                {
+                    _clientManager?.SetBlueprintMode(tileDef.TypeId);
+                    _buildMenu?.Hide();
+                };
+                grid.AddChild(buildButton);
+            }
+
+            Button closeButton = new Button();
+            closeButton.Text = "Close";
+            closeButton.Pressed += () => _buildMenu?.Hide();
+            vbox.AddChild(closeButton);
         }
 
         private void CreateZoneMenu()
@@ -432,6 +496,12 @@ namespace CargoSpace.Client
             if (@event.IsActionPressed("toggle_zone_menu") && !@event.IsEcho())
             {
                 ToggleZoneMenu();
+                GetViewport().SetInputAsHandled();
+            }
+
+            if (@event.IsActionPressed("toggle_build_menu") && !@event.IsEcho())
+            {
+                ToggleBuildMenu();
                 GetViewport().SetInputAsHandled();
             }
         }

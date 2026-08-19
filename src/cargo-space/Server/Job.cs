@@ -11,7 +11,8 @@ namespace CargoSpace.Server
         Operate = 3,
         Haul = 4,
         Supply = 5,
-        Construct = 6
+        Construct = 6,
+        Deconstruct = 7
     }
 
     public struct Job
