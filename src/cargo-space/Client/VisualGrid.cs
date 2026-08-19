@@ -181,14 +181,10 @@ namespace CargoSpace.Client
             // Create atlas sources for each tile type and state combination
             foreach (TileDefinition tileDef in TileRegistry.AllTiles)
             {
-                // State 0 (default/off)
+                // State 0 (default/off) and state 1 (on/built) for every tile,
+                // so non-interactable constructions like walls render after SetTileState(1).
                 AddAtlasSource(tileSet, tileDef, 0);
-                
-                // State 1 (on) for interactable tiles
-                if (tileDef.IsInteractable)
-                {
-                    AddAtlasSource(tileSet, tileDef, 1);
-                }
+                AddAtlasSource(tileSet, tileDef, 1);
             }
 
             return tileSet;
@@ -196,8 +192,7 @@ namespace CargoSpace.Client
 
         private void AddAtlasSource(TileSet tileSet, TileDefinition tileDef, int state)
         {
-            Color color = GetRenderColor(tileDef, state);
-            ImageTexture texture = GenerateTexture(color);
+            ImageTexture texture = GenerateTexture(tileDef, state);
             TileSetAtlasSource atlasSource = new TileSetAtlasSource();
             atlasSource.Texture = texture;
             atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
@@ -271,7 +266,42 @@ namespace CargoSpace.Client
         {
             Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
             image.Fill(color);
-            
+
+            ImageTexture texture = ImageTexture.CreateFromImage(image);
+            return texture;
+        }
+
+        private ImageTexture GenerateTexture(TileDefinition tileDef, int state)
+        {
+            Color color = GetRenderColor(tileDef, state);
+            Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            image.Fill(color);
+
+            // Draw a black border on wall tiles so they stand out from the deck floor
+            if (tileDef.StringId == "wall")
+            {
+                Color borderColor = Colors.Black;
+                int borderThickness = 2;
+
+                for (int y = 0; y < Constants.TileSize; y++)
+                {
+                    for (int t = 0; t < borderThickness; t++)
+                    {
+                        image.SetPixel(t, y, borderColor);
+                        image.SetPixel(Constants.TileSize - 1 - t, y, borderColor);
+                    }
+                }
+
+                for (int x = 0; x < Constants.TileSize; x++)
+                {
+                    for (int t = 0; t < borderThickness; t++)
+                    {
+                        image.SetPixel(x, t, borderColor);
+                        image.SetPixel(x, Constants.TileSize - 1 - t, borderColor);
+                    }
+                }
+            }
+
             ImageTexture texture = ImageTexture.CreateFromImage(image);
             return texture;
         }
