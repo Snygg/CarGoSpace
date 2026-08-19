@@ -12,31 +12,27 @@ namespace CargoSpace.Server
         private AStarGrid2D _pathfinding;
         private NetworkBridge _networkBridge;
         private JobManager _jobManager;
-        private ZoneManager _zoneManager;
 
         // Entity-based pawn state
         private Dictionary<PawnId, Pawn> _pawns = new();
         private HashSet<IGridEntity> _dirtyEntities = new();
-        private HashSet<Vector2I> _reservedTiles = new();
 
         // Flotsam collection state
         private float _flotsamProgress = 0f;
 
-        // Physical items lying on the floor
-        private Dictionary<Vector2I, List<string>> _groundItems = new();
-
-        // Sparse machine entities for tiles with dynamic state
-        private Dictionary<Vector2I, MachineEntity> _activeMachines = new();
+        private LogisticsManager _logisticsManager;
+        private PowerManager _powerManager;
 
         public GridSimulation(NetworkBridge networkBridge = null, ZoneManager zoneManager = null)
         {
             _networkBridge = networkBridge;
-            _zoneManager = zoneManager;
             _grid = new Dictionary<Vector2I, GridTileData>();
             _jobManager = new JobManager(networkBridge);
             _pawns = new Dictionary<PawnId, Pawn>();
             _dirtyEntities = new HashSet<IGridEntity>();
-            _reservedTiles = new HashSet<Vector2I>();
+
+            _logisticsManager = new LogisticsManager(this, zoneManager, _jobManager, networkBridge);
+            _powerManager = new PowerManager(this, networkBridge);
 
             InitializeGrid();
             InitializePathfinding();
@@ -98,7 +94,7 @@ namespace CargoSpace.Server
                         TileDefinition tileDef = TileRegistry.Get(typeId);
                         if (tileDef != null && (tileDef.HasTag("GeneratesPower") || tileDef.HasTag("ConsumesPower")))
                         {
-                            RegisterMachine(coord);
+                            _powerManager.RegisterMachine(coord);
                         }
                     }
                     else
@@ -138,117 +134,19 @@ namespace CargoSpace.Server
 
         public IEnumerable<Pawn> GetPawns() => _pawns.Values;
 
-        public void SpawnItemOnGrid(Vector2I coord, string itemStringId)
+        public bool TryGetTile(Vector2I coord, out GridTileData tileData)
         {
-            if (!_grid.ContainsKey(coord)) return; // Don't spawn in the void
-
-            ItemDefinition def = ItemRegistry.Get(itemStringId);
-            if (def == null)
-            {
-                GameLogger.Warning($"SpawnItemOnGrid: unknown item {itemStringId}");
-                return;
-            }
-
-            Vector2I dropCoord = FindDropTile(coord, itemStringId, def.MaxStack) ?? coord;
-            AddItemToGrid(dropCoord, itemStringId);
+            return _grid.TryGetValue(coord, out tileData);
         }
 
         public void AddItemToGrid(Vector2I coord, string itemStringId)
         {
-            if (!_grid.ContainsKey(coord)) return;
-
-            if (!_groundItems.ContainsKey(coord))
-            {
-                _groundItems[coord] = new List<string>();
-            }
-            _groundItems[coord].Add(itemStringId);
-
-            GameLogger.Debug($"Added {itemStringId} to {coord}. Tile now has {_groundItems[coord].Count} items.");
-
-            _networkBridge?.BroadcastGroundItemsUpdate(coord, _groundItems[coord]);
+            _logisticsManager.AddItemToGrid(coord, itemStringId);
         }
 
         public bool RemoveItemFromGrid(Vector2I coord, string itemStringId)
         {
-            if (!_groundItems.TryGetValue(coord, out List<string> items))
-            {
-                GameLogger.Warning($"RemoveItemFromGrid: no items at {coord}");
-                return false;
-            }
-
-            for (int i = 0; i < items.Count; i++)
-            {
-                if (items[i] == itemStringId)
-                {
-                    items.RemoveAt(i);
-                    if (items.Count == 0)
-                    {
-                        _groundItems.Remove(coord);
-                    }
-
-                    GameLogger.Debug($"Removed {itemStringId} from {coord}. Tile now has {items.Count} items.");
-                    _networkBridge?.BroadcastGroundItemsUpdate(coord, _groundItems.TryGetValue(coord, out List<string> remaining) ? remaining : new List<string>());
-                    return true;
-                }
-            }
-
-            GameLogger.Warning($"RemoveItemFromGrid: {itemStringId} not found at {coord}");
-            return false;
-        }
-
-        private Vector2I? FindDropTile(Vector2I start, string itemStringId, int maxStack)
-        {
-            Queue<Vector2I> queue = new();
-            HashSet<Vector2I> visited = new();
-            queue.Enqueue(start);
-            visited.Add(start);
-
-            while (queue.Count > 0)
-            {
-                Vector2I current = queue.Dequeue();
-
-                if (_grid.TryGetValue(current, out GridTileData tile))
-                {
-                    TileDefinition tileDef = TileRegistry.Get(tile.TypeId);
-                    if (tileDef != null && tileDef.HasTag("StoresUnidentified") &&
-                        !IsItemStackFull(current, itemStringId, maxStack))
-                    {
-                        return current;
-                    }
-                }
-
-                foreach (Vector2I dir in new[] { Vector2I.Left, Vector2I.Right, Vector2I.Up, Vector2I.Down })
-                {
-                    Vector2I next = current + dir;
-                    if (!visited.Contains(next) && _grid.ContainsKey(next))
-                    {
-                        visited.Add(next);
-                        queue.Enqueue(next);
-                    }
-                }
-            }
-
-            GameLogger.Warning($"FindDropTile: no non-full walkable tile found near {start} for {itemStringId}");
-            return null;
-        }
-
-        private bool IsItemStackFull(Vector2I coord, string itemStringId, int maxStack)
-        {
-            if (!_groundItems.TryGetValue(coord, out List<string> items))
-                return false;
-
-            int count = 0;
-            foreach (string item in items)
-            {
-                if (item == itemStringId)
-                {
-                    count++;
-                    if (count >= maxStack)
-                        return true;
-                }
-            }
-
-            return false;
+            return _logisticsManager.RemoveItemFromGrid(coord, itemStringId);
         }
 
         public void AddJob(Job job)
@@ -265,32 +163,11 @@ namespace CargoSpace.Server
             }
             else if (job.Type == JobType.Haul)
             {
-                isValidTile = IsValidHaulJob(job);
+                isValidTile = _logisticsManager.IsValidHaulJob(job);
             }
 
             bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
             _jobManager.AddJob(job, isValidTile, isActivelyWorked, job.OwnerPeerId);
-        }
-
-        private bool IsValidHaulJob(Job job)
-        {
-            if (!_grid.ContainsKey(job.Target) || !_grid.ContainsKey(job.Destination))
-                return false;
-
-            if (_groundItems == null || !_groundItems.TryGetValue(job.Target, out List<string> items) || !items.Contains(job.ItemId))
-                return false;
-
-            if (_zoneManager == null || !_zoneManager.IsStorageZone(job.Destination))
-                return false;
-
-            TileDefinition destDef = TileRegistry.Get(_grid[job.Destination].TypeId);
-            if (destDef == null || !destDef.IsWalkable)
-                return false;
-
-            ItemDefinition itemDef = ItemRegistry.Get(job.ItemId);
-            int maxStack = itemDef?.MaxStack ?? int.MaxValue;
-
-            return !IsItemStackFull(job.Destination, job.ItemId, maxStack);
         }
 
         // IJobExecutionContext
@@ -403,85 +280,16 @@ namespace CargoSpace.Server
                         }
                     }
 
-                    SpawnItemOnGrid(dropCoord, caughtItem);
+                    _logisticsManager.SpawnItemOnGrid(dropCoord, caughtItem);
                     _networkBridge?.BroadcastHarpoonCatch(harpoonTarget, caughtItem);
                 }
             }
 
-            GenerateHaulJobs();
-
-            SimulatePowerGrid();
+            _logisticsManager.Tick();
+            _powerManager.Tick();
         }
 
-        public void RegisterMachine(Vector2I coord)
-        {
-            _activeMachines[coord] = new MachineEntity(coord);
-        }
-
-        private void SimulatePowerGrid()
-        {
-            // 1. Cache the old state for diffing
-            Dictionary<Vector2I, float> oldPowerStates = new Dictionary<Vector2I, float>();
-            foreach (var kvp in _activeMachines)
-            {
-                oldPowerStates[kvp.Key] = kvp.Value.DynamicState.GetValueOrDefault("IsPowered", 0f);
-                kvp.Value.DynamicState["IsPowered"] = 0f; // Reset for this tick
-            }
-
-            Queue<Vector2I> queue = new Queue<Vector2I>();
-            HashSet<Vector2I> visited = new HashSet<Vector2I>();
-
-            // 2. Find generators ONLY by searching the sparse active machines list
-            foreach (var kvp in _activeMachines)
-            {
-                if (_grid.TryGetValue(kvp.Key, out GridTileData tileData))
-                {
-                    if (TileRegistry.Get(tileData.TypeId)?.HasTag("GeneratesPower") == true)
-                    {
-                        queue.Enqueue(kvp.Key);
-                        visited.Add(kvp.Key);
-                        kvp.Value.DynamicState["IsPowered"] = 1f;
-                    }
-                }
-            }
-
-            // 3. Flood fill
-            while (queue.Count > 0)
-            {
-                Vector2I current = queue.Dequeue();
-
-                foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
-                {
-                    Vector2I neighbor = current + dir;
-                    if (visited.Contains(neighbor) || !_grid.TryGetValue(neighbor, out GridTileData neighborTile)) continue;
-
-                    TileDefinition def = TileRegistry.Get(neighborTile.TypeId);
-                    if (def != null && def.HasTag("TransfersPower"))
-                    {
-                        visited.Add(neighbor);
-                        queue.Enqueue(neighbor);
-
-                        if (def.HasTag("ConsumesPower") && _activeMachines.TryGetValue(neighbor, out var machine))
-                        {
-                            machine.DynamicState["IsPowered"] = 1f;
-                        }
-                    }
-                }
-            }
-
-            // 4. Delta Sync: Only broadcast changes!
-            foreach (var kvp in _activeMachines)
-            {
-                float oldState = oldPowerStates[kvp.Key];
-                float newState = kvp.Value.DynamicState["IsPowered"];
-
-                if (oldState != newState)
-                {
-                    GameLogger.Debug($"Power State Changed at {kvp.Key}: {oldState} -> {newState}");
-                    _networkBridge?.BroadcastMachineState(kvp.Key, "IsPowered", newState);
-                }
-            }
-        }
+        // Power and logistics logic moved to dedicated managers.
 
         private float CalculateFlotsamRate()
         {
@@ -652,71 +460,6 @@ namespace CargoSpace.Server
             return copy;
         }
 
-        private Vector2I? FindStorageDestination(string itemStringId)
-        {
-            if (_zoneManager == null || _zoneManager.ZoneTiles.Count == 0)
-                return null;
-
-            ItemDefinition itemDef = ItemRegistry.Get(itemStringId);
-            int maxStack = itemDef?.MaxStack ?? int.MaxValue;
-
-            foreach (Vector2I tile in _zoneManager.ZoneTiles.Keys)
-            {
-                if (!_grid.TryGetValue(tile, out GridTileData gridTile))
-                    continue;
-
-                TileDefinition tileDef = TileRegistry.Get(gridTile.TypeId);
-                if (tileDef == null || !tileDef.IsWalkable)
-                    continue;
-
-                if (_jobManager.IsReserved(tile) || _jobManager.HasPendingHaulDestination(tile))
-                    continue;
-
-                if (!IsItemStackFull(tile, itemStringId, maxStack))
-                {
-                    return tile;
-                }
-            }
-
-            return null;
-        }
-
-        private void GenerateHaulJobs()
-        {
-            if (_zoneManager == null || _zoneManager.ZoneTiles.Count == 0)
-                return;
-
-            foreach (var kvp in _groundItems)
-            {
-                Vector2I itemCoord = kvp.Key;
-
-                if (_zoneManager.IsStorageZone(itemCoord))
-                    continue;
-
-                if (kvp.Value == null || kvp.Value.Count == 0)
-                    continue;
-
-                // Skip if a pawn is already working this tile or if a job is reserved
-                if (_pawns.Values.Any(p => p.CurrentJob.Target == itemCoord))
-                    continue;
-                if (_jobManager.IsReserved(itemCoord) || _jobManager.HasPendingJobForTarget(itemCoord))
-                    continue;
-
-                // Generate one haul job for the first item type on this tile
-                string itemId = kvp.Value[0];
-                Vector2I? destination = FindStorageDestination(itemId);
-
-                if (destination == null)
-                {
-                    GameLogger.Debug($"GenerateHaulJobs: no available storage destination for {itemId}");
-                    continue;
-                }
-
-                JobId newJobId = JobId.Create();
-                Job haulJob = new Job(newJobId, 0, itemCoord, destination.Value, JobType.Haul, 0, itemId);
-                AddJob(haulJob);
-                GameLogger.Debug($"GenerateHaulJobs: created haul job {newJobId} for {itemId} from {itemCoord} to {destination.Value}");
-            }
-        }
+        // Storage and haul logic moved to LogisticsManager.
     }
 }
