@@ -15,9 +15,7 @@ namespace CargoSpace.Client
         [Export]
         public int StarCount = 200;
 
-        private List<Vector2> _stars = new List<Vector2>();
-        private List<float> _starSizes = new List<float>();
-        private List<Color> _starColors = new List<Color>();
+        private List<Star> _stars = new List<Star>();
         private Random _random = new Random();
         private Rect2 _fieldBounds = new Rect2(-2000, -2000, 4000, 4000);
 
@@ -29,8 +27,6 @@ namespace CargoSpace.Client
         private void GenerateStars()
         {
             _stars.Clear();
-            _starSizes.Clear();
-            _starColors.Clear();
 
             Color[] tints = new Color[]
             {
@@ -43,17 +39,17 @@ namespace CargoSpace.Client
             {
                 float x = (float)(_random.NextDouble() * _fieldBounds.Size.X) + _fieldBounds.Position.X;
                 float y = (float)(_random.NextDouble() * _fieldBounds.Size.Y) + _fieldBounds.Position.Y;
-                _stars.Add(new Vector2(x, y));
+                Vector2 position = new Vector2(x, y);
 
                 float size = (float)(_random.NextDouble() * 2.0 + 0.5);
-                _starSizes.Add(size);
 
                 Color color = new Color(1, 1, 1);
                 if (_random.NextDouble() < 0.08)
                 {
                     color = tints[_random.Next(tints.Length)];
                 }
-                _starColors.Add(color);
+
+                _stars.Add(new Star(position, size, color));
             }
         }
 
@@ -65,9 +61,9 @@ namespace CargoSpace.Client
             for (int i = 0; i < _stars.Count; i++)
             {
                 // Parallax: larger stars are closer and move faster as a factor of the given speed
-                float parallax = 0.2f + _starSizes[i] * 0.4f;
-                _stars[i] += moveDir * Speed * parallax * dt;
-                _stars[i] = WrapPosition(_stars[i]);
+                Star star = _stars[i];
+                Vector2 newPosition = star.Position + moveDir * Speed * star.ParallaxFactor * dt;
+                _stars[i] = star.WithPosition(WrapPosition(newPosition));
             }
 
             QueueRedraw();
@@ -94,12 +90,12 @@ namespace CargoSpace.Client
 
             for (int i = 0; i < _stars.Count; i++)
             {
-                float size = _starSizes[i];
-                float alpha = Mathf.Clamp(0.4f + size * 0.2f, 0.5f, 1.0f);
+                Star star = _stars[i];
+                float alpha = Mathf.Clamp(0.4f + star.Size * 0.2f, 0.5f, 1.0f);
 
-                Color color = _starColors[i];
+                Color color = star.Color;
                 color.A = alpha;
-                DrawCircle(_stars[i], size * 0.5f, color);
+                DrawCircle(star.Position, star.Size * 0.5f, color);
             }
         }
     }
