@@ -39,7 +39,7 @@ namespace CargoSpace.Client
                     if (!DataCache.HoveredTile.HasValue || DataCache.HoveredTile.Value != newHover)
                     {
                         DataCache.HoveredTile = newHover;
-                        ClientManager?.QueueGridRedraw();
+                        ClientManager?.QueueHighlightRedraw();
                     }
                 }
                 return;
@@ -109,7 +109,7 @@ namespace CargoSpace.Client
                 DataCache.CurrentInputMode = _inputMode;
                 DataCache.CurrentBlueprintTargetTypeId = 0;
             }
-            ClientManager?.QueueGridRedraw();
+            ClientManager?.QueueHighlightRedraw();
             GameLogger.Debug($"InputController: entered painting mode for zone type {zoneType}");
         }
 
@@ -122,7 +122,7 @@ namespace CargoSpace.Client
                 DataCache.CurrentInputMode = _inputMode;
                 DataCache.CurrentBlueprintTargetTypeId = targetTypeId;
             }
-            ClientManager?.QueueGridRedraw();
+            ClientManager?.QueueHighlightRedraw();
             GameLogger.Debug($"InputController: entered blueprint mode for tile type {targetTypeId}");
         }
 
@@ -135,7 +135,7 @@ namespace CargoSpace.Client
                 DataCache.CurrentInputMode = _inputMode;
                 DataCache.CurrentBlueprintTargetTypeId = 0;
             }
-            ClientManager?.QueueGridRedraw();
+            ClientManager?.QueueHighlightRedraw();
             GameLogger.Debug("InputController: cancelled blueprint mode");
         }
 

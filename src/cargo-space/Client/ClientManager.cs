@@ -10,6 +10,9 @@ namespace CargoSpace.Client
     {
         private ENetMultiplayerPeer _peer;
         private VisualGrid _visualGrid;
+        private GridHighlighter _gridHighlighter;
+        private TextureFactory _textureFactory;
+        private ClientConstructionValidator _validator;
         private CameraController _camera;
         private UIManager _uiManager;
         private Starfield _starfield;
@@ -45,8 +48,17 @@ namespace CargoSpace.Client
             _flotsamVisualLayer.ZIndex = -1;
             AddChild(_flotsamVisualLayer);
 
-            _visualGrid = new VisualGrid();
+            _dataCache = new ClientDataCache();
+            _textureFactory = new TextureFactory();
+            _validator = new ClientConstructionValidator(_dataCache);
+
+            _visualGrid = new VisualGrid(_textureFactory);
+            _visualGrid.DataCache = _dataCache;
             AddChild(_visualGrid);
+
+            _gridHighlighter = new GridHighlighter(_dataCache, _validator, _textureFactory);
+            _gridHighlighter.ZIndex = 10;
+            AddChild(_gridHighlighter);
 
             _harpoonLayer = new HarpoonLayer();
             _harpoonLayer.ZIndex = 1;
@@ -55,9 +67,6 @@ namespace CargoSpace.Client
             _uiManager = new UIManager();
             _uiManager.Initialize(this, _networkBridge);
             AddChild(_uiManager);
-
-            _dataCache = new ClientDataCache();
-            _visualGrid.DataCache = _dataCache;
 
             _inputController = new InputController();
             _inputController.DataCache = _dataCache;
@@ -160,9 +169,9 @@ namespace CargoSpace.Client
             _inputController?.CancelBlueprintMode();
         }
 
-        public void QueueGridRedraw()
+        public void QueueHighlightRedraw()
         {
-            _visualGrid?.QueueRedraw();
+            _gridHighlighter?.QueueRedraw();
         }
 
         // Handler methods called by NetworkBridge RPCs
@@ -289,7 +298,7 @@ namespace CargoSpace.Client
             if (reqKeys == null || reqKeys.Length == 0)
             {
                 _dataCache.RemoveBlueprint(coord);
-                _visualGrid?.QueueRedraw();
+                _gridHighlighter?.QueueRedraw();
                 return;
             }
 
@@ -320,7 +329,7 @@ namespace CargoSpace.Client
             }
 
             _dataCache.UpdateBlueprint(coord, bp);
-            _visualGrid?.QueueRedraw();
+            _gridHighlighter?.QueueRedraw();
         }
 
         public void HandlePlaceBlueprint(Vector2I coord, byte targetTypeId)
