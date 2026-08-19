@@ -301,23 +301,50 @@ namespace CargoSpace.Server
 
         private void TryRelocatePawnFromUnwalkableTile(Vector2I target)
         {
-            Pawn pawn = _pawns.Values.FirstOrDefault(p => p.Position == target);
-            if (pawn == null)
+            List<Pawn> pawns = _pawns.Values.Where(p => p.Position == target).ToList();
+            if (pawns.Count == 0)
                 return;
 
+            HashSet<Vector2I> claimedNeighbors = new();
             foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
             {
                 Vector2I neighbor = target + dir;
                 if (_grid.TryGetValue(neighbor, out GridTileData n) && n.GetEffectiveDefinition()?.IsWalkable == true)
                 {
-                    pawn.UpdatePosition(neighbor);
-                    _dirtyEntities.Add(pawn);
-                    GameLogger.Debug($"Relocated pawn {pawn.Id} from {target} to {neighbor}");
-                    return;
+                    claimedNeighbors.Add(neighbor);
                 }
             }
 
-            GameLogger.Warning($"No walkable neighbor to relocate pawn {pawn.Id} from {target}");
+            foreach (Pawn pawn in pawns)
+            {
+                Vector2I? destination = null;
+                foreach (Vector2I neighbor in claimedNeighbors)
+                {
+                    // Prefer an unoccupied neighbor, but use the first walkable one if none are free.
+                    if (!_pawns.Values.Any(p => p != pawn && p.Position == neighbor))
+                    {
+                        destination = neighbor;
+                        break;
+                    }
+                }
+
+                // If every neighbor is already occupied, fall back to the first available walkable tile.
+                if (destination == null)
+                {
+                    destination = claimedNeighbors.FirstOrDefault();
+                }
+
+                if (destination.HasValue)
+                {
+                    pawn.UpdatePosition(destination.Value);
+                    _dirtyEntities.Add(pawn);
+                    GameLogger.Debug($"Relocated pawn {pawn.Id} from {target} to {destination.Value}");
+                }
+                else
+                {
+                    GameLogger.Warning($"No walkable neighbor to relocate pawn {pawn.Id} from {target}");
+                }
+            }
         }
 
         public void Tick()
