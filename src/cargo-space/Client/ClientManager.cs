@@ -64,6 +64,7 @@ namespace CargoSpace.Client
             _inputController.Camera = _camera;
             _inputController.UIManager = _uiManager;
             _inputController.NetworkBridge = _networkBridge;
+            _inputController.ClientManager = this;
             AddChild(_inputController);
 
             _harpoonLayer.GridRef = _dataCache.Grid;
@@ -157,6 +158,11 @@ namespace CargoSpace.Client
         public void CancelBlueprintMode()
         {
             _inputController?.CancelBlueprintMode();
+        }
+
+        public void QueueGridRedraw()
+        {
+            _visualGrid?.QueueRedraw();
         }
 
         // Handler methods called by NetworkBridge RPCs

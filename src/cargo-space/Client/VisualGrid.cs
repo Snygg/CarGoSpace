@@ -11,6 +11,7 @@ namespace CargoSpace.Client
         private TileMapLayer _hazardLayer;
         private TileMapLayer _zoneLayer;
         private ItemOverlayLayer _itemLayer;
+        private BlueprintPreview _blueprintPreview;
         private Dictionary<Vector2I, List<string>> _groundItems = new();
 
         public ClientDataCache DataCache;
@@ -46,6 +47,11 @@ namespace CargoSpace.Client
             _itemLayer.GroundItemsRef = _groundItems;
             _itemLayer.ZIndex = 2;
             AddChild(_itemLayer);
+
+            // Create a dedicated preview layer that draws above all tile layers
+            _blueprintPreview = new BlueprintPreview { Grid = this };
+            _blueprintPreview.ZIndex = 10;
+            AddChild(_blueprintPreview);
         }
 
         public void UpdateGroundItems(Vector2I coord, List<string> items)
@@ -103,6 +109,12 @@ namespace CargoSpace.Client
             }
         }
 
+        public new void QueueRedraw()
+        {
+            base.QueueRedraw();
+            _blueprintPreview?.QueueRedraw();
+        }
+
         public override void _Draw()
         {
             base._Draw();
@@ -123,6 +135,36 @@ namespace CargoSpace.Client
 
                 // Zero-allocation, hardware-accelerated rectangle drawing!
                 DrawRect(rect, hologramColor);
+            }
+
+            // Hover preview highlight
+            if (DataCache.HoveredTile.HasValue)
+            {
+                Vector2I coord = DataCache.HoveredTile.Value;
+                Vector2 worldPos = new Vector2(coord.X * Constants.TileSize, coord.Y * Constants.TileSize);
+
+                // Default: subtle grey outline with a little padding around the tile
+                float padding = 2.0f;
+                Rect2 rect = new Rect2(
+                    worldPos - new Vector2(padding, padding),
+                    new Vector2(Constants.TileSize + padding * 2, Constants.TileSize + padding * 2));
+
+                Color fillColor;
+                Color borderColor;
+
+                if (DataCache.CurrentInputMode == InputController.InputMode.PaintingZone)
+                {
+                    fillColor = new Color(0.2f, 0.5f, 1.0f, 0.12f);
+                    borderColor = new Color(0.2f, 0.5f, 1.0f, 0.6f);
+                }
+                else
+                {
+                    fillColor = new Color(0.8f, 0.8f, 0.8f, 0.08f);
+                    borderColor = new Color(0.8f, 0.8f, 0.8f, 0.4f);
+                }
+
+                DrawRect(rect, fillColor);
+                DrawRect(rect, borderColor, false, 1.0f);
             }
         }
 
@@ -301,6 +343,22 @@ namespace CargoSpace.Client
                     }
                 }
             }
+            else if (tileDef.StringId == "fusion_generator")
+            {
+                // Bright inner circle so the generator does not look like a wall
+                Vector2I center = new Vector2I(Constants.TileSize / 2, Constants.TileSize / 2);
+                int radius = Constants.TileSize / 4;
+                Color glow = new Color(1.0f, 0.95f, 0.3f, 1.0f);
+
+                for (int x = 0; x < Constants.TileSize; x++)
+                {
+                    for (int y = 0; y < Constants.TileSize; y++)
+                    {
+                        if (new Vector2(x, y).DistanceTo(center) <= radius)
+                            image.SetPixel(x, y, glow);
+                    }
+                }
+            }
 
             ImageTexture texture = ImageTexture.CreateFromImage(image);
             return texture;
@@ -377,6 +435,111 @@ namespace CargoSpace.Client
         private int GetZoneSourceId(ZoneType zoneType)
         {
             return (int)zoneType;
+        }
+
+        private bool CanPlaceBlueprint(Vector2I coord, TileDefinition targetDef)
+        {
+            if (DataCache == null || targetDef == null)
+                return false;
+
+            if (DataCache.Blueprints.ContainsKey(coord))
+                return false;
+
+            if (!DataCache.TryGetTile(coord, out GridTileData currentTile))
+                return false;
+
+            if (targetDef.Layer == "Floor")
+            {
+                if (currentTile.SurfaceTypeId != 0)
+                    return false;
+
+                TileDefinition currentDef = TileRegistry.Get(currentTile.TypeId);
+                if (currentDef == null)
+                    return false;
+
+                if (currentDef.Layer == "Floor")
+                    return true;
+
+                if (currentDef.Layer == "Base")
+                    return IsAdjacentToShip(coord);
+
+                return false;
+            }
+            else if (targetDef.Layer == "Surface")
+            {
+                TileDefinition currentDef = currentTile.GetEffectiveDefinition();
+                return currentDef != null
+                       && currentDef.Layer == "Floor"
+                       && currentTile.SurfaceTypeId == 0;
+            }
+
+            return false;
+        }
+
+        private bool IsAdjacentToShip(Vector2I coord)
+        {
+            foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
+            {
+                Vector2I neighbor = coord + dir;
+                if (DataCache.TryGetTile(neighbor, out GridTileData tile))
+                {
+                    TileDefinition def = tile.GetEffectiveDefinition();
+                    if (def != null && (def.Layer == "Floor" || def.Layer == "Surface"))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private partial class BlueprintPreview : Node2D
+        {
+            public VisualGrid Grid;
+
+            public override void _Draw()
+            {
+                base._Draw();
+
+                ClientDataCache data = Grid?.DataCache;
+                if (data == null) return;
+                if (data.CurrentInputMode != InputController.InputMode.Blueprint) return;
+                if (!data.HoveredTile.HasValue) return;
+
+                byte targetTypeId = data.CurrentBlueprintTargetTypeId;
+                if (targetTypeId == 0) return;
+
+                TileDefinition targetDef = TileRegistry.Get(targetTypeId);
+                if (targetDef == null) return;
+
+                Vector2I coord = data.HoveredTile.Value;
+                bool canPlace = Grid.CanPlaceBlueprint(coord, targetDef);
+
+                Color modulate = canPlace
+                    ? new Color(1.0f, 1.0f, 1.0f, 0.5f)
+                    : new Color(1.0f, 0.2f, 0.2f, 0.5f);
+
+                Vector2 worldPos = new Vector2(coord.X * Constants.TileSize, coord.Y * Constants.TileSize);
+                Rect2 rect = new Rect2(worldPos, new Vector2(Constants.TileSize, Constants.TileSize));
+
+                int sourceId = Grid.GetSourceId(targetDef.TypeId, 1);
+                TileSet tileSet = Grid._tileMapLayer?.TileSet;
+                if (tileSet != null && tileSet.GetSource(sourceId) is TileSetAtlasSource atlasSource && atlasSource.Texture != null)
+                {
+                    DrawTexture(atlasSource.Texture, worldPos, modulate);
+                }
+                else
+                {
+                    // Fallback: color rectangle if texture is unavailable
+                    Color ghostColor = canPlace
+                        ? new Color(0.2f, 1.0f, 0.4f, 0.35f)
+                        : new Color(1.0f, 0.2f, 0.2f, 0.35f);
+                    DrawRect(rect, ghostColor);
+                }
+
+                Color borderColor = canPlace
+                    ? new Color(0.2f, 1.0f, 0.4f, 0.8f)
+                    : new Color(1.0f, 0.2f, 0.2f, 0.8f);
+                DrawRect(rect, borderColor, false, 2.0f);
+            }
         }
     }
 }

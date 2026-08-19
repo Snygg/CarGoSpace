@@ -211,6 +211,19 @@ namespace CargoSpace.Client
                 }
             }
 
+            if (tileDef.DeconstructYield.Count > 0)
+            {
+                Button deconstructButton = new Button();
+                deconstructButton.Text = "Deconstruct";
+                deconstructButton.Pressed += () =>
+                {
+                    JobId jobId = JobId.Create();
+                    _networkBridge?.SendJobCommand(jobId, gridCoord, JobType.Deconstruct, 0);
+                    ClearContextMenu();
+                };
+                vbox.AddChild(deconstructButton);
+            }
+
             Button startFireButton = new Button();
             startFireButton.Text = "Debug: Start Fire";
             startFireButton.Pressed += () =>

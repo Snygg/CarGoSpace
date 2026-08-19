@@ -29,6 +29,10 @@ namespace CargoSpace.Client
             set => _gridRendered = value;
         }
 
+        public Vector2I? HoveredTile { get; set; }
+        public InputController.InputMode CurrentInputMode { get; set; }
+        public byte CurrentBlueprintTargetTypeId { get; set; }
+
         // Grid
         public Dictionary<Vector2I, GridTileData> Grid => _grid;
 

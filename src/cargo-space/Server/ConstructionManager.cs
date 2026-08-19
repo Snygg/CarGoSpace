@@ -69,7 +69,23 @@ namespace CargoSpace.Server
                     return false;
 
                 TileDefinition currentDef = TileRegistry.Get(currentTile.TypeId);
-                canPlace = currentDef != null && (currentDef.Layer == "Base" || currentDef.Layer == "Floor");
+                if (currentDef == null)
+                {
+                    canPlace = false;
+                }
+                else if (currentDef.Layer == "Floor")
+                {
+                    canPlace = true;
+                }
+                else if (currentDef.Layer == "Base")
+                {
+                    // Reject floating space tiles; must touch existing ship
+                    canPlace = IsAdjacentToShip(coord);
+                }
+                else
+                {
+                    canPlace = false;
+                }
             }
             else if (targetDef.Layer == "Surface")
             {
@@ -98,6 +114,21 @@ namespace CargoSpace.Server
             GameLogger.Debug($"Blueprint placed at {coord} for {targetDef.Name}");
             _networkBridge?.BroadcastBlueprintState(bp);
             return true;
+        }
+
+        private bool IsAdjacentToShip(Vector2I coord)
+        {
+            foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
+            {
+                Vector2I neighbor = coord + dir;
+                if (_gridSimulation.TryGetTile(neighbor, out GridTileData tile))
+                {
+                    TileDefinition def = tile.GetEffectiveDefinition();
+                    if (def != null && (def.Layer == "Floor" || def.Layer == "Surface"))
+                        return true;
+                }
+            }
+            return false;
         }
 
         public void Tick()

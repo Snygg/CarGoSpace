@@ -11,6 +11,7 @@ namespace CargoSpace.Client
         public CameraController Camera;
         public UIManager UIManager;
         public NetworkBridge NetworkBridge;
+        public ClientManager ClientManager;
 
         private bool _isPaintingZone;
         private Vector2I _paintStart;
@@ -28,6 +29,22 @@ namespace CargoSpace.Client
 
         public override void _UnhandledInput(InputEvent @event)
         {
+            if (@event is InputEventMouseMotion motion)
+            {
+                if (DataCache != null)
+                {
+                    Vector2I newHover = ScreenToGrid(motion.Position);
+                    DataCache.CurrentInputMode = _inputMode;
+
+                    if (!DataCache.HoveredTile.HasValue || DataCache.HoveredTile.Value != newHover)
+                    {
+                        DataCache.HoveredTile = newHover;
+                        ClientManager?.QueueGridRedraw();
+                    }
+                }
+                return;
+            }
+
             if (_inputMode == InputMode.PaintingZone)
             {
                 if (@event is InputEventMouseButton mouseBtn)
@@ -63,7 +80,7 @@ namespace CargoSpace.Client
                     Vector2I gridCoord = ScreenToGrid(mouseEvent.Position);
                     GameLogger.Debug($"Blueprint mode click at {gridCoord} for type {_blueprintTargetTypeId}");
                     NetworkBridge?.SendPlaceBlueprint(gridCoord, _blueprintTargetTypeId);
-                    _inputMode = InputMode.Normal;
+                    CancelBlueprintMode();
                 }
                 else if (@event is InputEventMouseButton rightEvent &&
                          rightEvent.ButtonIndex == MouseButton.Right &&
@@ -87,6 +104,12 @@ namespace CargoSpace.Client
         {
             _inputMode = InputMode.PaintingZone;
             _paintZoneType = zoneType;
+            if (DataCache != null)
+            {
+                DataCache.CurrentInputMode = _inputMode;
+                DataCache.CurrentBlueprintTargetTypeId = 0;
+            }
+            ClientManager?.QueueGridRedraw();
             GameLogger.Debug($"InputController: entered painting mode for zone type {zoneType}");
         }
 
@@ -94,6 +117,12 @@ namespace CargoSpace.Client
         {
             _inputMode = InputMode.Blueprint;
             _blueprintTargetTypeId = targetTypeId;
+            if (DataCache != null)
+            {
+                DataCache.CurrentInputMode = _inputMode;
+                DataCache.CurrentBlueprintTargetTypeId = targetTypeId;
+            }
+            ClientManager?.QueueGridRedraw();
             GameLogger.Debug($"InputController: entered blueprint mode for tile type {targetTypeId}");
         }
 
@@ -101,6 +130,12 @@ namespace CargoSpace.Client
         {
             _inputMode = InputMode.Normal;
             _blueprintTargetTypeId = 0;
+            if (DataCache != null)
+            {
+                DataCache.CurrentInputMode = _inputMode;
+                DataCache.CurrentBlueprintTargetTypeId = 0;
+            }
+            ClientManager?.QueueGridRedraw();
             GameLogger.Debug("InputController: cancelled blueprint mode");
         }
 
@@ -109,14 +144,27 @@ namespace CargoSpace.Client
             Vector2I gridCoord = ScreenToGrid(screenPosition);
             GameLogger.Debug($"Clicked tile at {gridCoord}");
 
-            if (DataCache != null && DataCache.TryGetTile(gridCoord, out GridTileData tileData))
+            if (DataCache == null || !DataCache.TryGetTile(gridCoord, out GridTileData tileData))
             {
-                TileDefinition tileDef = tileData.GetEffectiveDefinition();
-                if (tileDef != null && tileDef.IsInteractable)
+                UIManager?.ClearContextMenu();
+                return;
+            }
+
+            if (tileData.SurfaceTypeId != 0)
+            {
+                TileDefinition surfaceDef = TileRegistry.Get(tileData.SurfaceTypeId);
+                if (surfaceDef != null && (surfaceDef.IsInteractable || surfaceDef.DeconstructYield.Count > 0))
                 {
-                    UIManager?.ShowContextMenu(gridCoord, tileDef, tileData.State, tileData.HazardState);
+                    UIManager?.ShowContextMenu(gridCoord, surfaceDef, tileData.State, tileData.HazardState);
                     return;
                 }
+            }
+
+            TileDefinition floorDef = TileRegistry.Get(tileData.TypeId);
+            if (floorDef != null && (floorDef.IsInteractable || floorDef.DeconstructYield.Count > 0))
+            {
+                UIManager?.ShowContextMenu(gridCoord, floorDef, tileData.State, tileData.HazardState);
+                return;
             }
 
             // Clear context slot if clicking elsewhere
