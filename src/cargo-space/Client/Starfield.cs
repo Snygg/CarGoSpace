@@ -7,7 +7,10 @@ namespace CargoSpace.Client
     public partial class Starfield : Node2D
     {
         [Export]
-        public float WarpSpeed = 1f;
+        public float Speed = 30f;
+
+        [Export]
+        public Vector2 Direction = new Vector2(0, 1);
 
         [Export]
         public int StarCount = 200;
@@ -32,53 +35,52 @@ namespace CargoSpace.Client
                 float x = (float)(_random.NextDouble() * _fieldBounds.Size.X) + _fieldBounds.Position.X;
                 float y = (float)(_random.NextDouble() * _fieldBounds.Size.Y) + _fieldBounds.Position.Y;
                 _stars.Add(new Vector2(x, y));
-                _starSizes.Add((float)(_random.NextDouble() * 2.0 + 0.5));
+
+                float size = (float)(_random.NextDouble() * 2.0 + 0.5);
+                _starSizes.Add(size);
             }
         }
 
         public override void _Process(double delta)
         {
-            Vector2 center = _fieldBounds.GetCenter();
+            Vector2 moveDir = Direction == Vector2.Zero ? new Vector2(1, 0) : Direction.Normalized();
+            float dt = (float)delta;
 
             for (int i = 0; i < _stars.Count; i++)
             {
-                Vector2 star = _stars[i];
-                Vector2 direction = star - center;
-                if (direction == Vector2.Zero)
-                {
-                    direction = new Vector2(1, 0);
-                }
-
-                star += direction.Normalized() * WarpSpeed * (float)_starSizes[i] * (float)delta * 10f;
-
-                if (!_fieldBounds.HasPoint(star))
-                {
-                    star = new Vector2(
-                        (float)(_random.NextDouble() * _fieldBounds.Size.X) + _fieldBounds.Position.X,
-                        (float)(_random.NextDouble() * _fieldBounds.Size.Y) + _fieldBounds.Position.Y
-                    );
-                }
-
-                _stars[i] = star;
+                // Parallax: larger stars are closer and move faster as a factor of the given speed
+                float parallax = 0.2f + _starSizes[i] * 0.4f;
+                _stars[i] += moveDir * Speed * parallax * dt;
+                _stars[i] = WrapPosition(_stars[i]);
             }
 
             QueueRedraw();
+        }
+
+        private Vector2 WrapPosition(Vector2 position)
+        {
+            float minX = _fieldBounds.Position.X;
+            float maxX = _fieldBounds.Position.X + _fieldBounds.Size.X;
+            float minY = _fieldBounds.Position.Y;
+            float maxY = _fieldBounds.Position.Y + _fieldBounds.Size.Y;
+
+            if (position.X < minX) position.X += _fieldBounds.Size.X;
+            if (position.X >= maxX) position.X -= _fieldBounds.Size.X;
+            if (position.Y < minY) position.Y += _fieldBounds.Size.Y;
+            if (position.Y >= maxY) position.Y -= _fieldBounds.Size.Y;
+
+            return position;
         }
 
         public override void _Draw()
         {
             DrawRect(_fieldBounds, new Color(0, 0, 0, 1), true);
 
-            Vector2 center = _fieldBounds.GetCenter();
-
             for (int i = 0; i < _stars.Count; i++)
             {
-                Vector2 star = _stars[i];
-                Vector2 direction = (star - center).Normalized();
-                float length = _starSizes[i] * (1f + WarpSpeed * 2f);
-                float width = _starSizes[i];
-
-                DrawLine(star - direction * length * 0.5f, star + direction * length * 0.5f, new Color(1, 1, 1, 0.8f), width);
+                float size = _starSizes[i];
+                float alpha = Mathf.Clamp(0.4f + size * 0.2f, 0.5f, 1.0f);
+                DrawCircle(_stars[i], size * 0.5f, new Color(1, 1, 1, alpha));
             }
         }
     }
