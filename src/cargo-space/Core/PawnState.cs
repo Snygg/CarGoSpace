@@ -5,6 +5,7 @@ namespace CargoSpace.Core
         Idle,
         Walking,
         Working,
-        Operating
+        Operating,
+        Carrying
     }
 }

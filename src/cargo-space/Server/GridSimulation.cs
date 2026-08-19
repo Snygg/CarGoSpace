@@ -12,6 +12,7 @@ namespace CargoSpace.Server
         private AStarGrid2D _pathfinding;
         private NetworkBridge _networkBridge;
         private JobManager _jobManager;
+        private ZoneManager _zoneManager;
 
         // Entity-based pawn state
         private Dictionary<PawnId, Pawn> _pawns = new();
@@ -24,9 +25,10 @@ namespace CargoSpace.Server
         // Physical items lying on the floor
         private Dictionary<Vector2I, List<string>> _groundItems = new();
 
-        public GridSimulation(NetworkBridge networkBridge = null)
+        public GridSimulation(NetworkBridge networkBridge = null, ZoneManager zoneManager = null)
         {
             _networkBridge = networkBridge;
+            _zoneManager = zoneManager;
             _grid = new Dictionary<Vector2I, GridTileData>();
             _jobManager = new JobManager(networkBridge);
             _pawns = new Dictionary<PawnId, Pawn>();
@@ -251,9 +253,34 @@ namespace CargoSpace.Server
             {
                 isValidTile = _grid.ContainsKey(job.Target) && TileRegistry.Get(_grid[job.Target].TypeId)?.HasTag("Operable") == true;
             }
+            else if (job.Type == JobType.Haul)
+            {
+                isValidTile = IsValidHaulJob(job);
+            }
 
             bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
             _jobManager.AddJob(job, isValidTile, isActivelyWorked, job.OwnerPeerId);
+        }
+
+        private bool IsValidHaulJob(Job job)
+        {
+            if (!_grid.ContainsKey(job.Target) || !_grid.ContainsKey(job.Destination))
+                return false;
+
+            if (_groundItems == null || !_groundItems.TryGetValue(job.Target, out List<string> items) || !items.Contains(job.ItemId))
+                return false;
+
+            if (_zoneManager == null || !_zoneManager.IsStorageZone(job.Destination))
+                return false;
+
+            TileDefinition destDef = TileRegistry.Get(_grid[job.Destination].TypeId);
+            if (destDef == null || !destDef.IsWalkable)
+                return false;
+
+            ItemDefinition itemDef = ItemRegistry.Get(job.ItemId);
+            int maxStack = itemDef?.MaxStack ?? int.MaxValue;
+
+            return !IsItemStackFull(job.Destination, job.ItemId, maxStack);
         }
 
         // IJobExecutionContext
@@ -321,7 +348,7 @@ namespace CargoSpace.Server
                     }
                 }
 
-                if (pawn.State == PawnState.Walking && pawn.CurrentPath.Count > 0)
+                if ((pawn.State == PawnState.Walking || pawn.State == PawnState.Carrying) && pawn.CurrentPath.Count > 0)
                 {
                     MoveAlongPath(pawn);
                 }
@@ -370,6 +397,8 @@ namespace CargoSpace.Server
                     _networkBridge?.BroadcastHarpoonCatch(harpoonTarget, caughtItem);
                 }
             }
+
+            GenerateHaulJobs();
         }
 
         private float CalculateFlotsamRate()
@@ -411,15 +440,35 @@ namespace CargoSpace.Server
                 pawn.CurrentPath.RemoveAt(0);
                 pawn.UpdatePosition(nextStep);
                 _dirtyEntities.Add(pawn);
-                
+
                 GameLogger.Debug($"Pawn {pawn.Id}: moved to {nextStep}");
-                
-                // If path is complete, transition to Working
+
+                // If path is complete, transition
                 if (pawn.CurrentPath.Count == 0)
                 {
-                    pawn.State = PawnState.Working;
-                    pawn.WorkTicksRemaining = 3;
-                    GameLogger.Debug($"Pawn {pawn.Id}: reached target, starting work");
+                    if (pawn.CurrentJob.Type == JobType.Haul && pawn.State != PawnState.Carrying)
+                    {
+                        // Leg 1 complete: picked up the item, now walk to destination
+                        GameLogger.Debug($"Pawn {pawn.Id}: picked up haul at {pawn.Position}, heading to {pawn.CurrentJob.Destination}");
+                        pawn.State = PawnState.Carrying;
+                        CalculatePath(pawn, pawn.CurrentJob.Destination);
+
+                        if (pawn.CurrentPath.Count == 0)
+                        {
+                            GameLogger.Warning($"Pawn {pawn.Id}: no path to haul destination {pawn.CurrentJob.Destination}");
+                            ResetPawnState(pawn);
+                        }
+                        else
+                        {
+                            pawn.State = PawnState.Carrying;
+                        }
+                    }
+                    else
+                    {
+                        pawn.State = PawnState.Working;
+                        pawn.WorkTicksRemaining = 3;
+                        GameLogger.Debug($"Pawn {pawn.Id}: reached target, starting work");
+                    }
                 }
             }
         }
@@ -429,6 +478,10 @@ namespace CargoSpace.Server
             if (pawn.CurrentJob.Target != default)
             {
                 _jobManager.Release(pawn.CurrentJob.Target);
+            }
+            if (pawn.CurrentJob.Type == JobType.Haul)
+            {
+                _jobManager.Release(pawn.CurrentJob.Destination);
             }
             pawn.CurrentPath.Clear();
             pawn.WorkTicksRemaining = 0;
@@ -515,6 +568,73 @@ namespace CargoSpace.Server
             var copy = new HashSet<IGridEntity>(_dirtyEntities);
             _dirtyEntities.Clear();
             return copy;
+        }
+
+        private Vector2I? FindStorageDestination(string itemStringId)
+        {
+            if (_zoneManager == null || _zoneManager.StorageZoneTiles.Count == 0)
+                return null;
+
+            ItemDefinition itemDef = ItemRegistry.Get(itemStringId);
+            int maxStack = itemDef?.MaxStack ?? int.MaxValue;
+
+            foreach (Vector2I tile in _zoneManager.StorageZoneTiles)
+            {
+                if (!_grid.TryGetValue(tile, out GridTileData gridTile))
+                    continue;
+
+                TileDefinition tileDef = TileRegistry.Get(gridTile.TypeId);
+                if (tileDef == null || !tileDef.IsWalkable)
+                    continue;
+
+                if (_jobManager.IsReserved(tile) || _jobManager.HasPendingHaulDestination(tile))
+                    continue;
+
+                if (!IsItemStackFull(tile, itemStringId, maxStack))
+                {
+                    return tile;
+                }
+            }
+
+            return null;
+        }
+
+        private void GenerateHaulJobs()
+        {
+            if (_zoneManager == null || _zoneManager.StorageZoneTiles.Count == 0)
+                return;
+
+            foreach (var kvp in _groundItems)
+            {
+                Vector2I itemCoord = kvp.Key;
+
+                if (_zoneManager.IsStorageZone(itemCoord))
+                    continue;
+
+                if (kvp.Value == null || kvp.Value.Count == 0)
+                    continue;
+
+                // Skip if a pawn is already working this tile or if a job is reserved
+                if (_pawns.Values.Any(p => p.CurrentJob.Target == itemCoord))
+                    continue;
+                if (_jobManager.IsReserved(itemCoord) || _jobManager.HasPendingJobForTarget(itemCoord))
+                    continue;
+
+                // Generate one haul job for the first item type on this tile
+                string itemId = kvp.Value[0];
+                Vector2I? destination = FindStorageDestination(itemId);
+
+                if (destination == null)
+                {
+                    GameLogger.Debug($"GenerateHaulJobs: no available storage destination for {itemId}");
+                    continue;
+                }
+
+                JobId newJobId = JobId.Create();
+                Job haulJob = new Job(newJobId, 0, itemCoord, destination.Value, JobType.Haul, 0, itemId);
+                AddJob(haulJob);
+                GameLogger.Debug($"GenerateHaulJobs: created haul job {newJobId} for {itemId} from {itemCoord} to {destination.Value}");
+            }
         }
     }
 }

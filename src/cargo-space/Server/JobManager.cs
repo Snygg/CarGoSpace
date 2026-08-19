@@ -31,6 +31,7 @@ namespace CargoSpace.Server
         public void Release(Vector2I target) => _reservedTiles.Remove(target);
 
         public bool HasPendingJobForTarget(Vector2I target) => _jobBoard.Any(j => j.Target == target);
+        public bool HasPendingHaulDestination(Vector2I destination) => _jobBoard.Any(j => j.Type == JobType.Haul && j.Destination == destination);
 
         public void AddJob(Job job, bool isValidTile, bool isActivelyWorked, long peerId)
         {
@@ -41,7 +42,10 @@ namespace CargoSpace.Server
                 return;
             }
 
-            if (HasPendingJobForTarget(job.Target) || IsReserved(job.Target) || isActivelyWorked)
+            bool destinationBlocked = job.Type == JobType.Haul &&
+                (IsReserved(job.Destination) || HasPendingHaulDestination(job.Destination));
+
+            if (HasPendingJobForTarget(job.Target) || IsReserved(job.Target) || isActivelyWorked || destinationBlocked)
             {
                 GameLogger.Debug($"Job rejected: Tile {job.Target} is already pending, reserved, or actively worked.");
                 _networkBridge?.SendJobRejected(job.Id, peerId);
@@ -63,6 +67,10 @@ namespace CargoSpace.Server
                     Job job = _jobBoard[i];
                     _jobBoard.RemoveAt(i);
                     _reservedTiles.Add(job.Target);
+                    if (job.Type == JobType.Haul)
+                    {
+                        _reservedTiles.Add(job.Destination);
+                    }
                     return job;
                 }
             }
@@ -85,6 +93,10 @@ namespace CargoSpace.Server
                 if (job.Type != JobType.Operate)
                 {
                     Release(job.Target);
+                    if (job.Type == JobType.Haul)
+                    {
+                        Release(job.Destination);
+                    }
                 }
             }
         }

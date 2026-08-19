@@ -21,8 +21,8 @@ namespace CargoSpace.Server
         public override void _Ready()
         {
             GameLogger.Debug("ServerManager._Ready() called");
-            _gridSimulation = new GridSimulation(_networkBridge);
             _zoneManager = new ZoneManager(_networkBridge);
+            _gridSimulation = new GridSimulation(_networkBridge, _zoneManager);
             StartServer();
             StartTickLoop();
         }
