@@ -12,15 +12,23 @@ namespace CargoSpace.Server
         private ZoneManager _zoneManager;
         private JobManager _jobManager;
         private NetworkBridge _networkBridge;
+        private ConstructionManager _constructionManager;
 
         private Dictionary<Vector2I, List<string>> _groundItems = new();
 
-        public LogisticsManager(GridSimulation gridSimulation, ZoneManager zoneManager, JobManager jobManager, NetworkBridge networkBridge)
+        public LogisticsManager(GridSimulation gridSimulation, ZoneManager zoneManager, JobManager jobManager, NetworkBridge networkBridge, ConstructionManager constructionManager = null)
         {
             _gridSimulation = gridSimulation;
             _zoneManager = zoneManager;
             _jobManager = jobManager;
             _networkBridge = networkBridge;
+            _constructionManager = constructionManager;
+        }
+
+        public ConstructionManager ConstructionManager
+        {
+            get => _constructionManager;
+            set => _constructionManager = value;
         }
 
         public void Tick()
@@ -110,6 +118,44 @@ namespace CargoSpace.Server
             }
 
             return false;
+        }
+
+        public bool HasBlueprint(Vector2I coord)
+        {
+            return _constructionManager != null && _constructionManager.HasBlueprint(coord);
+        }
+
+        public Vector2I? FindNearestItem(Vector2I startCoord, string itemStringId)
+        {
+            if (!_gridSimulation.TryGetTile(startCoord, out _))
+                return null;
+
+            Queue<Vector2I> queue = new();
+            HashSet<Vector2I> visited = new();
+            queue.Enqueue(startCoord);
+            visited.Add(startCoord);
+
+            while (queue.Count > 0)
+            {
+                Vector2I current = queue.Dequeue();
+
+                if (_groundItems.TryGetValue(current, out List<string> items) && items.Contains(itemStringId))
+                {
+                    return current;
+                }
+
+                foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
+                {
+                    Vector2I next = current + dir;
+                    if (!visited.Contains(next) && _gridSimulation.TryGetTile(next, out _))
+                    {
+                        visited.Add(next);
+                        queue.Enqueue(next);
+                    }
+                }
+            }
+
+            return null;
         }
 
         public bool IsValidHaulJob(Job job)
@@ -209,6 +255,9 @@ namespace CargoSpace.Server
             foreach (var kvp in _groundItems)
             {
                 Vector2I itemCoord = kvp.Key;
+
+                if (HasBlueprint(itemCoord))
+                    continue;
 
                 if (_zoneManager.IsStorageZone(itemCoord))
                     continue;

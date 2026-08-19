@@ -53,6 +53,13 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void PlaceBlueprint_RPC(Vector2I coord, byte targetTypeId)
+        {
+            GameLogger.Debug($"PlaceBlueprint_RPC from {Multiplayer.GetRemoteSenderId()} at {coord} for type {targetTypeId}");
+            _serverManager?.HandlePlaceBlueprint(coord, targetTypeId, Multiplayer.GetRemoteSenderId());
+        }
+
+        [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ToggleZoneTiles_RPC(Godot.Collections.Array<Vector2I> tiles, byte zoneType)
         {
             GameLogger.Debug($"ToggleZoneTiles_RPC from {Multiplayer.GetRemoteSenderId()}: {tiles?.Count ?? 0} tiles, zoneType={zoneType}");
@@ -143,6 +150,13 @@ namespace CargoSpace.Shared
         {
             GameLogger.Debug($"ReceiveGroundItemsUpdate_RPC: {items?.Length ?? 0} items at ({x}, {y})");
             _clientManager?.HandleGroundItemsUpdate(new Vector2I(x, y), items);
+        }
+
+        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void ReceiveBlueprintState_RPC(int x, int y, byte targetTypeId, string[] reqKeys, int[] reqVals, string[] delKeys, int[] delVals)
+        {
+            GameLogger.Debug($"ReceiveBlueprintState_RPC: target {targetTypeId} at ({x}, {y})");
+            _clientManager?.HandleBlueprintState(new Vector2I(x, y), targetTypeId, reqKeys, reqVals, delKeys, delVals);
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -274,6 +288,69 @@ namespace CargoSpace.Shared
         public void SendCancelOperationAt(Vector2I target)
         {
             RpcId(1, nameof(CancelOperationAt_RPC), target);
+        }
+
+        public void SendPlaceBlueprint(Vector2I coord, byte targetTypeId)
+        {
+            RpcId(1, nameof(PlaceBlueprint_RPC), coord, targetTypeId);
+        }
+
+        public void SendBlueprintState(long clientId, Blueprint bp)
+        {
+            if (bp == null) return;
+
+            int reqCount = bp.Required?.Count ?? 0;
+            string[] reqKeys = new string[reqCount];
+            int[] reqVals = new int[reqCount];
+            int i = 0;
+            foreach (var kvp in bp.Required)
+            {
+                reqKeys[i] = kvp.Key;
+                reqVals[i] = kvp.Value;
+                i++;
+            }
+
+            int delCount = bp.Delivered?.Count ?? 0;
+            string[] delKeys = new string[delCount];
+            int[] delVals = new int[delCount];
+            i = 0;
+            foreach (var kvp in bp.Delivered)
+            {
+                delKeys[i] = kvp.Key;
+                delVals[i] = kvp.Value;
+                i++;
+            }
+
+            RpcId(clientId, nameof(ReceiveBlueprintState_RPC), bp.Position.X, bp.Position.Y, bp.TargetTypeId, reqKeys, reqVals, delKeys, delVals);
+        }
+
+        public void BroadcastBlueprintState(Blueprint bp)
+        {
+            if (bp == null) return;
+
+            int reqCount = bp.Required?.Count ?? 0;
+            string[] reqKeys = new string[reqCount];
+            int[] reqVals = new int[reqCount];
+            int i = 0;
+            foreach (var kvp in bp.Required)
+            {
+                reqKeys[i] = kvp.Key;
+                reqVals[i] = kvp.Value;
+                i++;
+            }
+
+            int delCount = bp.Delivered?.Count ?? 0;
+            string[] delKeys = new string[delCount];
+            int[] delVals = new int[delCount];
+            i = 0;
+            foreach (var kvp in bp.Delivered)
+            {
+                delKeys[i] = kvp.Key;
+                delVals[i] = kvp.Value;
+                i++;
+            }
+
+            Rpc(nameof(ReceiveBlueprintState_RPC), bp.Position.X, bp.Position.Y, bp.TargetTypeId, reqKeys, reqVals, delKeys, delVals);
         }
     }
 }

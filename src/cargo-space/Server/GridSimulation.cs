@@ -22,6 +22,7 @@ namespace CargoSpace.Server
 
         private LogisticsManager _logisticsManager;
         private PowerManager _powerManager;
+        private ConstructionManager _constructionManager;
 
         public GridSimulation(NetworkBridge networkBridge = null, ZoneManager zoneManager = null)
         {
@@ -31,7 +32,9 @@ namespace CargoSpace.Server
             _pawns = new Dictionary<PawnId, Pawn>();
             _dirtyEntities = new HashSet<IGridEntity>();
 
-            _logisticsManager = new LogisticsManager(this, zoneManager, _jobManager, networkBridge);
+            _logisticsManager = new LogisticsManager(this, zoneManager, _jobManager, networkBridge, null);
+            _constructionManager = new ConstructionManager(this, _logisticsManager, _jobManager, networkBridge);
+            _logisticsManager.ConstructionManager = _constructionManager;
             _powerManager = new PowerManager(this, networkBridge);
 
             InitializeGrid();
@@ -149,7 +152,7 @@ namespace CargoSpace.Server
             return _logisticsManager.RemoveItemFromGrid(coord, itemStringId);
         }
 
-        public void AddJob(Job job)
+        public bool AddJob(Job job)
         {
             // Hazard jobs can target any tile in the grid; SetState must be interactable.
             bool isValidTile = _grid.ContainsKey(job.Target);
@@ -165,9 +168,17 @@ namespace CargoSpace.Server
             {
                 isValidTile = _logisticsManager.IsValidHaulJob(job);
             }
+            else if (job.Type == JobType.Supply)
+            {
+                isValidTile = _constructionManager != null && _constructionManager.IsValidSupplyJob(job.Target, job.Destination, job.ItemId);
+            }
+            else if (job.Type == JobType.Construct)
+            {
+                isValidTile = _constructionManager != null && _constructionManager.IsReadyToConstruct(job.Target);
+            }
 
             bool isActivelyWorked = _pawns.Values.Any(p => p.CurrentJob.Target == job.Target);
-            _jobManager.AddJob(job, isValidTile, isActivelyWorked, job.OwnerPeerId);
+            return _jobManager.AddJob(job, isValidTile, isActivelyWorked, job.OwnerPeerId);
         }
 
         // IJobExecutionContext
@@ -176,6 +187,24 @@ namespace CargoSpace.Server
             if (!_grid.ContainsKey(target)) return false;
             TileDefinition tileDef = TileRegistry.Get(_grid[target].TypeId);
             return tileDef != null && tileDef.IsInteractable;
+        }
+
+        public void SetTileType(Vector2I target, byte typeId)
+        {
+            if (_grid.ContainsKey(target))
+            {
+                GridTileData tileData = _grid[target];
+                tileData.TypeId = typeId;
+                _grid[target] = tileData;
+
+                TileDefinition tileDef = TileRegistry.Get(typeId);
+                if (_pathfinding != null && tileDef != null)
+                {
+                    _pathfinding.SetPointSolid(target, !tileDef.IsWalkable);
+                }
+
+                _networkBridge?.BroadcastTileUpdate(target, tileData);
+            }
         }
 
         public void SetTileState(Vector2I target, int state)
@@ -285,6 +314,7 @@ namespace CargoSpace.Server
                 }
             }
 
+            _constructionManager.Tick();
             _logisticsManager.Tick();
             _powerManager.Tick();
         }
@@ -336,7 +366,7 @@ namespace CargoSpace.Server
                 // If path is complete, transition
                 if (pawn.CurrentPath.Count == 0)
                 {
-                    if (pawn.CurrentJob.Type == JobType.Haul && pawn.State != PawnState.Carrying)
+                    if ((pawn.CurrentJob.Type == JobType.Haul || pawn.CurrentJob.Type == JobType.Supply) && pawn.State != PawnState.Carrying)
                     {
                         // Leg 1 complete: picked up the item, now walk to destination
                         GameLogger.Debug($"Pawn {pawn.Id}: picked up haul at {pawn.Position}, heading to {pawn.CurrentJob.Destination}");
@@ -369,10 +399,18 @@ namespace CargoSpace.Server
             {
                 _jobManager.Release(pawn.CurrentJob.Target);
             }
-            if (pawn.CurrentJob.Type == JobType.Haul)
+
+            if (pawn.CurrentJob.Type == JobType.Haul || pawn.CurrentJob.Type == JobType.Supply)
             {
                 _jobManager.Release(pawn.CurrentJob.Destination);
             }
+
+            // PATCH: Notify the ConstructionManager that the supply run failed
+            if (pawn.CurrentJob.Type == JobType.Supply)
+            {
+                _constructionManager?.HandleSupplyJobAborted(pawn.CurrentJob.Destination, pawn.CurrentJob.ItemId);
+            }
+
             pawn.CurrentPath.Clear();
             pawn.WorkTicksRemaining = 0;
             pawn.State = PawnState.Idle;
@@ -390,9 +428,35 @@ namespace CargoSpace.Server
 
                 if (pawn.CurrentJob.Type == JobType.Operate)
                 {
-                    // Continuous Lock-in. Do NOT clear the job or release the reservation.
+                    // Continuous lock-in. Do NOT clear the job or release the reservation.
                     pawn.State = PawnState.Operating;
                     GameLogger.Debug($"Pawn {pawn.Id} locked into Operating state at {pawn.CurrentJob.Target}.");
+                }
+                else if (pawn.CurrentJob.Type == JobType.Supply)
+                {
+                    bool removed = _logisticsManager.RemoveItemFromGrid(pawn.CurrentJob.Destination, pawn.CurrentJob.ItemId)
+                                   || _logisticsManager.RemoveItemFromGrid(pawn.CurrentJob.Target, pawn.CurrentJob.ItemId);
+
+                    if (!removed)
+                    {
+                        GameLogger.Warning($"Supply job {pawn.CurrentJob.Id}: no {pawn.CurrentJob.ItemId} to consume");
+                    }
+                    else
+                    {
+                        _constructionManager.ConsumeSupply(pawn.CurrentJob.Destination, pawn.CurrentJob.ItemId);
+                    }
+
+                    _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
+                    pawn.CurrentJob = default;
+                    pawn.State = PawnState.Idle;
+                }
+                else if (pawn.CurrentJob.Type == JobType.Construct)
+                {
+                    _constructionManager.CompleteConstruction(pawn.CurrentJob.Target);
+
+                    _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
+                    pawn.CurrentJob = default;
+                    pawn.State = PawnState.Idle;
                 }
                 else
                 {
@@ -445,6 +509,16 @@ namespace CargoSpace.Server
             }
 
             GameLogger.Debug($"CancelOperationAt: no operating pawn found at {target}");
+        }
+
+        public bool PlaceBlueprint(Vector2I coord, byte targetTypeId)
+        {
+            return _constructionManager != null && _constructionManager.PlaceBlueprint(coord, targetTypeId);
+        }
+
+        public IEnumerable<Blueprint> GetBlueprints()
+        {
+            return _constructionManager?.GetBlueprints() ?? new List<Blueprint>();
         }
 
         public bool TryMovePawn(Vector2I target)

@@ -12,6 +12,7 @@ namespace CargoSpace.Client
         private Dictionary<Vector2I, List<string>> _groundItems = new();
         private Dictionary<Vector2I, ZoneType> _zoneTiles = new();
         private HashSet<Vector2I> _activeHazards = new();
+        private Dictionary<Vector2I, Blueprint> _blueprints = new();
 
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
@@ -32,11 +33,29 @@ namespace CargoSpace.Client
         public Dictionary<Vector2I, GridTileData> Grid => _grid;
 
         public IReadOnlyCollection<Vector2I> ActiveHazards => _activeHazards;
+        public IReadOnlyDictionary<Vector2I, Blueprint> Blueprints => _blueprints;
 
         public void ClearGrid()
         {
             _grid.Clear();
             _activeHazards.Clear();
+            _blueprints.Clear();
+        }
+
+        public void UpdateBlueprint(Vector2I coord, Blueprint blueprint)
+        {
+            if (blueprint == null || blueprint.Required == null || blueprint.Required.Count == 0)
+            {
+                _blueprints.Remove(coord);
+                return;
+            }
+
+            _blueprints[coord] = blueprint;
+        }
+
+        public void RemoveBlueprint(Vector2I coord)
+        {
+            _blueprints.Remove(coord);
         }
 
         public void UpdateTile(Vector2I coord, GridTileData data)

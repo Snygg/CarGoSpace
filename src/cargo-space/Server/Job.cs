@@ -9,7 +9,9 @@ namespace CargoSpace.Server
         StartFire = 1,
         FightFire = 2,
         Operate = 3,
-        Haul = 4
+        Haul = 4,
+        Supply = 5,
+        Construct = 6
     }
 
     public struct Job

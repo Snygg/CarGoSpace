@@ -57,6 +57,7 @@ namespace CargoSpace.Client
             AddChild(_uiManager);
 
             _dataCache = new ClientDataCache();
+            _visualGrid.DataCache = _dataCache;
 
             _inputController = new InputController();
             _inputController.DataCache = _dataCache;
@@ -146,6 +147,11 @@ namespace CargoSpace.Client
         public void SetPaintingMode(byte zoneType)
         {
             _inputController?.SetPaintingMode(zoneType);
+        }
+
+        public void SetBlueprintMode(byte targetTypeId)
+        {
+            _inputController?.SetBlueprintMode(targetTypeId);
         }
 
         // Handler methods called by NetworkBridge RPCs
@@ -263,6 +269,52 @@ namespace CargoSpace.Client
         public void HandleMachineStateUpdate(Vector2I coord, string key, float value)
         {
             GameLogger.Debug($"Machine {coord} updated {key} to {value}");
+        }
+
+        public void HandleBlueprintState(Vector2I coord, byte targetTypeId, string[] reqKeys, int[] reqVals, string[] delKeys, int[] delVals)
+        {
+            GameLogger.Debug($"HandleBlueprintState: target {targetTypeId} at {coord}");
+
+            if (reqKeys == null || reqKeys.Length == 0)
+            {
+                _dataCache.RemoveBlueprint(coord);
+                _visualGrid?.QueueRedraw();
+                return;
+            }
+
+            Blueprint bp = new Blueprint
+            {
+                Position = coord,
+                TargetTypeId = targetTypeId,
+                Required = new(),
+                Delivered = new()
+            };
+
+            if (reqKeys != null && reqVals != null)
+            {
+                for (int i = 0; i < reqKeys.Length; i++)
+                {
+                    if (i < reqVals.Length)
+                        bp.Required[reqKeys[i]] = reqVals[i];
+                }
+            }
+
+            if (delKeys != null && delVals != null)
+            {
+                for (int i = 0; i < delKeys.Length; i++)
+                {
+                    if (i < delVals.Length)
+                        bp.Delivered[delKeys[i]] = delVals[i];
+                }
+            }
+
+            _dataCache.UpdateBlueprint(coord, bp);
+            _visualGrid?.QueueRedraw();
+        }
+
+        public void HandlePlaceBlueprint(Vector2I coord, byte targetTypeId)
+        {
+            _networkBridge?.SendPlaceBlueprint(coord, targetTypeId);
         }
 
         public void HandleGroundItemsUpdate(Vector2I coord, string[] items)

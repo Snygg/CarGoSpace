@@ -41,5 +41,12 @@
     "Name": "Fabricator",
     "Tags": ["ConsumesPower", "TransfersPower"],
     "HexColor": "#FF69B4"
+  },
+  "wall": {
+    "TypeId": 7,
+    "Name": "Wall",
+    "Tags": ["Constructable", "Walkable"],
+    "HexColor": "#555555",
+    "Recipe": { "scrap_metal": 2 }
   }
 }

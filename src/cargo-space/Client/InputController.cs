@@ -18,11 +18,13 @@ namespace CargoSpace.Client
         public enum InputMode
         {
             Normal,
-            PaintingZone
+            PaintingZone,
+            Blueprint
         }
 
         private InputMode _inputMode = InputMode.Normal;
         private byte _paintZoneType = 0;
+        private byte _blueprintTargetTypeId = 0;
 
         public override void _UnhandledInput(InputEvent @event)
         {
@@ -52,6 +54,24 @@ namespace CargoSpace.Client
                     }
                 }
             }
+            else if (_inputMode == InputMode.Blueprint)
+            {
+                if (@event is InputEventMouseButton mouseEvent &&
+                    mouseEvent.ButtonIndex == MouseButton.Left &&
+                    mouseEvent.Pressed)
+                {
+                    Vector2I gridCoord = ScreenToGrid(mouseEvent.Position);
+                    GameLogger.Debug($"Blueprint mode click at {gridCoord} for type {_blueprintTargetTypeId}");
+                    NetworkBridge?.SendPlaceBlueprint(gridCoord, _blueprintTargetTypeId);
+                    _inputMode = InputMode.Normal;
+                }
+                else if (@event is InputEventMouseButton rightEvent &&
+                         rightEvent.ButtonIndex == MouseButton.Right &&
+                         rightEvent.Pressed)
+                {
+                    _inputMode = InputMode.Normal;
+                }
+            }
             else // Normal mode
             {
                 if (@event is InputEventMouseButton mouseEvent &&
@@ -68,6 +88,13 @@ namespace CargoSpace.Client
             _inputMode = InputMode.PaintingZone;
             _paintZoneType = zoneType;
             GameLogger.Debug($"InputController: entered painting mode for zone type {zoneType}");
+        }
+
+        public void SetBlueprintMode(byte targetTypeId)
+        {
+            _inputMode = InputMode.Blueprint;
+            _blueprintTargetTypeId = targetTypeId;
+            GameLogger.Debug($"InputController: entered blueprint mode for tile type {targetTypeId}");
         }
 
         private void HandleTileClick(Vector2 screenPosition)

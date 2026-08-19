@@ -33,13 +33,13 @@ namespace CargoSpace.Server
         public bool HasPendingJobForTarget(Vector2I target) => _jobBoard.Any(j => j.Target == target);
         public bool HasPendingHaulDestination(Vector2I destination) => _jobBoard.Any(j => j.Type == JobType.Haul && j.Destination == destination);
 
-        public void AddJob(Job job, bool isValidTile, bool isActivelyWorked, long peerId)
+        public bool AddJob(Job job, bool isValidTile, bool isActivelyWorked, long peerId)
         {
             if (!isValidTile)
             {
                 GameLogger.Debug($"Job rejected: target {job.Target} not valid/interactable");
                 _networkBridge?.SendJobRejected(job.Id, peerId);
-                return;
+                return false;
             }
 
             bool destinationBlocked = job.Type == JobType.Haul &&
@@ -49,12 +49,13 @@ namespace CargoSpace.Server
             {
                 GameLogger.Debug($"Job rejected: Tile {job.Target} is already pending, reserved, or actively worked.");
                 _networkBridge?.SendJobRejected(job.Id, peerId);
-                return;
+                return false;
             }
 
             _jobBoard.Add(job);
             GameLogger.Debug($"Job added to board: {job.Id} {job.Type} at {job.Target}");
             _networkBridge?.BroadcastJobAdded(job);
+            return true;
         }
 
         public Job? ClaimNextAvailableJob(out int index)

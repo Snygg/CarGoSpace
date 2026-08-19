@@ -106,6 +106,12 @@ namespace CargoSpace.Server
             _gridSimulation.CancelOperationAt(target);
         }
 
+        public void HandlePlaceBlueprint(Vector2I coord, byte targetTypeId, long senderId)
+        {
+            GameLogger.Debug($"HandlePlaceBlueprint: {senderId} wants type {targetTypeId} at {coord}");
+            _gridSimulation.PlaceBlueprint(coord, targetTypeId);
+        }
+
         public void HandleToggleZoneTiles(Vector2I[] tiles, byte zoneType)
         {
             GameLogger.Debug($"HandleToggleZoneTiles: {tiles.Length} tiles (zoneType={zoneType})");
@@ -136,6 +142,12 @@ namespace CargoSpace.Server
             
             GameLogger.Debug($"Sent {tileCount} individual tile RPCs");
             
+            // Send any existing construction blueprints before completion
+            foreach (Blueprint bp in _gridSimulation.GetBlueprints())
+            {
+                _networkBridge.SendBlueprintState(clientId, bp);
+            }
+
             // Small delay before sending completion signal to ensure all tiles arrive
             await ToSignal(GetTree().CreateTimer(0.05f), "timeout");
             

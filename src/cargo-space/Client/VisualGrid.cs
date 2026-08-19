@@ -12,11 +12,15 @@ namespace CargoSpace.Client
         private ItemOverlayLayer _itemLayer;
         private Dictionary<Vector2I, List<string>> _groundItems = new();
 
+        public ClientDataCache DataCache;
+
         public override void _Ready()
         {
             // Create and configure the TileMapLayer
             _tileMapLayer = new TileMapLayer();
             _tileMapLayer.TileSet = CreateTileSet();
+            _tileMapLayer.ZAsRelative = false;
+            _tileMapLayer.ZIndex = -1;
             AddChild(_tileMapLayer);
 
             // Create the hazard overlay layer on top
@@ -41,6 +45,11 @@ namespace CargoSpace.Client
         {
             _groundItems[coord] = items;
             _itemLayer?.QueueRedraw();
+        }
+
+        public void UpdateBlueprints()
+        {
+            QueueRedraw();
         }
 
         public void UpdateTile(Vector2I coord, GridTileData tileData)
@@ -74,6 +83,29 @@ namespace CargoSpace.Client
 
                 int sourceId = GetZoneSourceId(kvp.Value);
                 _zoneLayer?.SetCell(kvp.Key, sourceId, new Vector2I(0, 0));
+            }
+        }
+
+        public override void _Draw()
+        {
+            base._Draw();
+            if (DataCache == null) return;
+
+            foreach (var kvp in DataCache.Blueprints)
+            {
+                Vector2I coord = kvp.Key;
+                Blueprint bp = kvp.Value;
+                TileDefinition targetDef = TileRegistry.Get(bp.TargetTypeId);
+                if (targetDef == null) continue;
+
+                Color baseColor = targetDef.GetColor();
+                Color hologramColor = new Color(baseColor.R, baseColor.G, baseColor.B, 0.5f); // 50% opacity
+
+                Vector2 worldPos = new Vector2(coord.X * Constants.TileSize, coord.Y * Constants.TileSize);
+                Rect2 rect = new Rect2(worldPos, new Vector2(Constants.TileSize, Constants.TileSize));
+
+                // Zero-allocation, hardware-accelerated rectangle drawing!
+                DrawRect(rect, hologramColor);
             }
         }
 
