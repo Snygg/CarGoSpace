@@ -107,18 +107,20 @@ namespace CargoSpace.Client
 
         public override void _Process(double delta)
         {
-            if (!_dataCache.IsGridRendered)
+            if (!_dataCache.IsGridRendered || _dataCache.ActiveHazards.Count == 0)
             {
                 return;
             }
 
             Rect2 visibleRect = GetVisibleWorldRect();
 
-            foreach (var kvp in _dataCache.GetGrid())
+            // Only check intersection math for tiles that actually have hazards!
+            foreach (Vector2I coord in _dataCache.ActiveHazards)
             {
-                Vector2I coord = kvp.Key;
-                GridTileData tileData = kvp.Value;
-                _uiManager.TryDiscoverHazard(coord, tileData.HazardState, IsCoordVisible(coord, visibleRect));
+                if (_dataCache.TryGetTile(coord, out GridTileData tileData))
+                {
+                    _uiManager.TryDiscoverHazard(coord, tileData.HazardState, IsCoordVisible(coord, visibleRect));
+                }
             }
         }
 

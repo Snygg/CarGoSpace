@@ -11,6 +11,7 @@ namespace CargoSpace.Client
         private List<Job> _activeJobs = new();
         private Dictionary<Vector2I, List<string>> _groundItems = new();
         private Dictionary<Vector2I, ZoneType> _zoneTiles = new();
+        private HashSet<Vector2I> _activeHazards = new();
 
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
@@ -30,9 +31,26 @@ namespace CargoSpace.Client
         // Grid
         public Dictionary<Vector2I, GridTileData> Grid => _grid;
 
-        public void ClearGrid() => _grid.Clear();
+        public IReadOnlyCollection<Vector2I> ActiveHazards => _activeHazards;
 
-        public void UpdateTile(Vector2I coord, GridTileData data) => _grid[coord] = data;
+        public void ClearGrid()
+        {
+            _grid.Clear();
+            _activeHazards.Clear();
+        }
+
+        public void UpdateTile(Vector2I coord, GridTileData data)
+        {
+            _grid[coord] = data;
+            if (data.HazardState > 0)
+            {
+                _activeHazards.Add(coord);
+            }
+            else
+            {
+                _activeHazards.Remove(coord);
+            }
+        }
 
         public bool TryGetTile(Vector2I coord, out GridTileData data) => _grid.TryGetValue(coord, out data);
 
