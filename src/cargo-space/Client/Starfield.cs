@@ -17,6 +17,7 @@ namespace CargoSpace.Client
 
         private List<Vector2> _stars = new List<Vector2>();
         private List<float> _starSizes = new List<float>();
+        private List<Color> _starColors = new List<Color>();
         private Random _random = new Random();
         private Rect2 _fieldBounds = new Rect2(-2000, -2000, 4000, 4000);
 
@@ -29,6 +30,14 @@ namespace CargoSpace.Client
         {
             _stars.Clear();
             _starSizes.Clear();
+            _starColors.Clear();
+
+            Color[] tints = new Color[]
+            {
+                new Color(1.0f, 0.6f, 0.6f), // pale red
+                new Color(0.6f, 0.8f, 1.0f), // pale blue
+                new Color(1.0f, 0.9f, 0.6f)  // pale yellow
+            };
 
             for (int i = 0; i < StarCount; i++)
             {
@@ -38,6 +47,13 @@ namespace CargoSpace.Client
 
                 float size = (float)(_random.NextDouble() * 2.0 + 0.5);
                 _starSizes.Add(size);
+
+                Color color = new Color(1, 1, 1);
+                if (_random.NextDouble() < 0.08)
+                {
+                    color = tints[_random.Next(tints.Length)];
+                }
+                _starColors.Add(color);
             }
         }
 
@@ -80,7 +96,10 @@ namespace CargoSpace.Client
             {
                 float size = _starSizes[i];
                 float alpha = Mathf.Clamp(0.4f + size * 0.2f, 0.5f, 1.0f);
-                DrawCircle(_stars[i], size * 0.5f, new Color(1, 1, 1, alpha));
+
+                Color color = _starColors[i];
+                color.A = alpha;
+                DrawCircle(_stars[i], size * 0.5f, color);
             }
         }
     }
