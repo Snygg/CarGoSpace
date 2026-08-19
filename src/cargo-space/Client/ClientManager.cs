@@ -56,6 +56,7 @@ namespace CargoSpace.Client
 
             _flotsamVisualLayer = new FlotsamVisualLayer();
             _flotsamVisualLayer.CameraRef = _camera;
+            _flotsamVisualLayer.StarfieldRef = _starfield;
             _flotsamVisualLayer.ZIndex = -1;
             AddChild(_flotsamVisualLayer);
             

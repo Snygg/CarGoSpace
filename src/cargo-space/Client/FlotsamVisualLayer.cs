@@ -11,13 +11,16 @@ namespace CargoSpace.Client
         public Camera2D CameraRef;
 
         [Export]
-        public int MaxJunkCount = 20;
+        public Starfield StarfieldRef;
 
         [Export]
-        public float SpawnRadiusMargin = 1.1f;
+        public int MaxJunkCount = 40;
 
         [Export]
-        public float DespawnDistance = 1200f;
+        public float FixedSpawnRadius = 2500f;
+
+        [Export]
+        public float FixedDespawnRadius = 3000f;
 
         [Export]
         public float MinJunkSpeed = 10f;
@@ -57,7 +60,7 @@ namespace CargoSpace.Client
                 junk.Node.Position += junk.Velocity * dt;
                 junk.Node.Rotation += junk.RotationSpeed * dt;
 
-                if (junk.Node.GlobalPosition.DistanceTo(camPos) > DespawnDistance)
+                if (junk.Node.GlobalPosition.DistanceTo(camPos) > FixedDespawnRadius)
                 {
                     junk.Node.QueueFree();
                     _activeJunk.RemoveAt(i);
@@ -78,14 +81,19 @@ namespace CargoSpace.Client
             };
             AddChild(node);
 
+            // Base random drift (slow and meandering)
             float angle = (float)(_random.NextDouble() * Math.Tau);
-            Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)).Normalized();
-            float speed = (float)(_random.NextDouble() * (MaxJunkSpeed - MinJunkSpeed) + MinJunkSpeed);
+            Vector2 randomDriftDir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)).Normalized();
+            float randomSpeed = (float)(_random.NextDouble() * (MaxJunkSpeed - MinJunkSpeed) + MinJunkSpeed);
+            Vector2 baseDrift = randomDriftDir * randomSpeed;
+
+            // Starfield influence
+            Vector2 starfieldVelocity = StarfieldRef != null ? StarfieldRef.Direction.Normalized() * StarfieldRef.Speed : Vector2.Zero;
 
             DriftingJunk junk = new DriftingJunk
             {
                 Node = node,
-                Velocity = dir * speed,
+                Velocity = baseDrift + starfieldVelocity,
                 RotationSpeed = (float)((_random.NextDouble() * 2.0 - 1.0) * Math.PI)
             };
             _activeJunk.Add(junk);
@@ -93,14 +101,13 @@ namespace CargoSpace.Client
 
         private Vector2 GetOffScreenSpawnPosition()
         {
-            Vector2 viewportSize = CameraRef.GetViewport().GetVisibleRect().Size;
-            float zoom = CameraRef.Zoom.X; // Assuming uniform zoom
-            Vector2 visibleHalf = (viewportSize / zoom) * 0.5f;
-            float visibleRadius = visibleHalf.Length();
-            float spawnRadius = visibleRadius * SpawnRadiusMargin;
+            // Default to random if no starfield, otherwise bias upstream
+            float baseAngle = StarfieldRef != null ? StarfieldRef.Direction.Angle() + (float)Math.PI : 0f;
+            float spread = (float)(_random.NextDouble() * Math.PI - (Math.PI / 2f)); // +/- 90 degrees
+            float finalAngle = baseAngle + spread;
 
-            float angle = (float)(_random.NextDouble() * Math.Tau);
-            return CameraRef.GlobalPosition + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * spawnRadius;
+            // Use the camera's center (ship), but a fixed world-space radius
+            return CameraRef.GlobalPosition + new Vector2(Mathf.Cos(finalAngle), Mathf.Sin(finalAngle)) * FixedSpawnRadius;
         }
 
         public void PlayCatchEffect(Vector2I targetCoord, string itemId)
