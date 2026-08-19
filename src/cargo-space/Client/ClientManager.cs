@@ -16,25 +16,10 @@ namespace CargoSpace.Client
         private FlotsamVisualLayer _flotsamVisualLayer;
         private HarpoonLayer _harpoonLayer;
         private NetworkBridge _networkBridge;
-        private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
-        private List<Job> _activeJobs = new List<Job>();
-        private Dictionary<PawnId, PawnVisual> _pawnVisuals = new Dictionary<PawnId, PawnVisual>();
-        private int _expectedTileCount = 0;
-        private bool _gridRendered = false;
-        private Dictionary<Vector2I, List<string>> _clientGroundItems = new();
-        private Dictionary<Vector2I, ZoneType> _clientZoneTiles = new();
+        private Dictionary<PawnId, PawnVisual> _pawnVisuals = new();
 
-        private bool _isPaintingZone;
-        private Vector2I _paintStart;
-
-        public enum InputMode
-        {
-            Normal,
-            PaintingZone
-        }
-
-        private InputMode _inputMode = InputMode.Normal;
-        private byte _paintZoneType = 0;
+        private ClientDataCache _dataCache;
+        private InputController _inputController;
 
         public ClientManager(NetworkBridge networkBridge)
         {
@@ -44,12 +29,12 @@ namespace CargoSpace.Client
         public override void _Ready()
         {
             GameLogger.Debug("ClientManager._Ready() called");
-            
+
             // Starfield first so it renders behind everything
             _starfield = new Starfield();
             _starfield.ZIndex = -10;
             AddChild(_starfield);
-            
+
             // Add camera first so everything else is visible
             _camera = new CameraController();
             AddChild(_camera);
@@ -59,19 +44,29 @@ namespace CargoSpace.Client
             _flotsamVisualLayer.StarfieldRef = _starfield;
             _flotsamVisualLayer.ZIndex = -1;
             AddChild(_flotsamVisualLayer);
-            
+
             _visualGrid = new VisualGrid();
             AddChild(_visualGrid);
-            
+
             _harpoonLayer = new HarpoonLayer();
-            _harpoonLayer.GridRef = _pendingGrid;
             _harpoonLayer.ZIndex = 1;
             AddChild(_harpoonLayer);
-            
+
             _uiManager = new UIManager();
             _uiManager.Initialize(this, _networkBridge);
             AddChild(_uiManager);
-            
+
+            _dataCache = new ClientDataCache();
+
+            _inputController = new InputController();
+            _inputController.DataCache = _dataCache;
+            _inputController.Camera = _camera;
+            _inputController.UIManager = _uiManager;
+            _inputController.NetworkBridge = _networkBridge;
+            AddChild(_inputController);
+
+            _harpoonLayer.GridRef = _dataCache.Grid;
+
             StartClient();
         }
 
@@ -80,7 +75,7 @@ namespace CargoSpace.Client
             GameLogger.Debug("Starting client connection...");
             _peer = new ENetMultiplayerPeer();
             var error = _peer.CreateClient(Constants.ServerAddress, Constants.ServerPort);
-            
+
             if (error != Error.Ok)
             {
                 GameLogger.Error($"Failed to start client: {error}");
@@ -112,14 +107,14 @@ namespace CargoSpace.Client
 
         public override void _Process(double delta)
         {
-            if (!_gridRendered)
+            if (!_dataCache.IsGridRendered)
             {
                 return;
             }
 
             Rect2 visibleRect = GetVisibleWorldRect();
 
-            foreach (var kvp in _pendingGrid)
+            foreach (var kvp in _dataCache.GetGrid())
             {
                 Vector2I coord = kvp.Key;
                 GridTileData tileData = kvp.Value;
@@ -146,99 +141,28 @@ namespace CargoSpace.Client
             return visibleRect.Intersects(tileRect);
         }
 
-        public override void _UnhandledInput(InputEvent @event)
-        {
-            if (_inputMode == InputMode.PaintingZone)
-            {
-                if (@event is InputEventMouseButton mouseBtn)
-                {
-                    if (mouseBtn.ButtonIndex == MouseButton.Left)
-                    {
-                        if (mouseBtn.Pressed)
-                        {
-                            _isPaintingZone = true;
-                            _paintStart = ScreenToGrid(mouseBtn.Position);
-                        }
-                        else if (_isPaintingZone)
-                        {
-                            _isPaintingZone = false;
-                            List<Vector2I> tiles = GetTilesInRect(_paintStart, ScreenToGrid(mouseBtn.Position));
-                            _networkBridge?.SendToggleZoneTiles(tiles.ToArray(), _paintZoneType);
-                            _inputMode = InputMode.Normal;
-                        }
-                    }
-                    else if (mouseBtn.ButtonIndex == MouseButton.Right && mouseBtn.Pressed)
-                    {
-                        _isPaintingZone = false;
-                        _inputMode = InputMode.Normal;
-                    }
-                }
-            }
-            else // Normal mode
-            {
-                if (@event is InputEventMouseButton mouseEvent &&
-                    mouseEvent.ButtonIndex == MouseButton.Left &&
-                    mouseEvent.Pressed)
-                {
-                    HandleTileClick(mouseEvent.Position);
-                }
-            }
-        }
-
         public void SetPaintingMode(byte zoneType)
         {
-            _inputMode = InputMode.PaintingZone;
-            _paintZoneType = zoneType;
-            GameLogger.Debug($"ClientManager: entered painting mode for zone type {zoneType}");
-        }
-
-        private void HandleTileClick(Vector2 screenPosition)
-        {
-            Vector2I gridCoord = ScreenToGrid(screenPosition);
-            GameLogger.Debug($"Clicked tile at {gridCoord}");
-            
-            if (_pendingGrid.TryGetValue(gridCoord, out GridTileData tileData))
-            {
-                TileDefinition tileDef = TileRegistry.Get(tileData.TypeId);
-                if (tileDef != null && tileDef.IsInteractable)
-                {
-                    // Show context menu for the clicked interactable tile
-                    _uiManager.ShowContextMenu(gridCoord, tileDef, tileData.State, tileData.HazardState);
-                    return;
-                }
-            }
-            
-            // Clear context slot if clicking elsewhere
-            _uiManager.ClearContextMenu();
-        }
-
-        private Vector2I ScreenToGrid(Vector2 screenPosition)
-        {
-            // Get mouse position in world coordinates (accounting for camera)
-            Camera2D camera = GetViewport().GetCamera2D();
-            Vector2 worldMousePos = camera.GetGlobalMousePosition();
-            
-            // Convert to grid coordinates
-            int gridX = Mathf.FloorToInt(worldMousePos.X / Constants.TileSize);
-            int gridY = Mathf.FloorToInt(worldMousePos.Y / Constants.TileSize);
-            
-            return new Vector2I(gridX, gridY);
+            _inputController?.SetPaintingMode(zoneType);
         }
 
         // Handler methods called by NetworkBridge RPCs
         public void HandleGridSize(int size)
         {
             GameLogger.Debug($"HandleGridSize: Expecting {size} tiles");
-            _expectedTileCount = size;
-            _pendingGrid.Clear();
+            _dataCache.ExpectedTileCount = size;
+            _dataCache.ClearGrid();
+            _dataCache.IsGridRendered = false;
         }
 
         public void HandleTile(int x, int y, byte tileType, int state, byte hazardState)
         {
             Vector2I coord = new Vector2I(x, y);
-            _pendingGrid[coord] = new GridTileData(tileType, state, hazardState);
-            int count = _pendingGrid.Count;
-            
+            GridTileData data = new GridTileData(tileType, state, hazardState);
+            _dataCache.UpdateTile(coord, data);
+
+            int count = _dataCache.Grid.Count;
+
             // Log every 10th tile to reduce spam
             if (count % 10 == 0)
             {
@@ -246,23 +170,23 @@ namespace CargoSpace.Client
             }
 
             // Let the triage list react to the current hazard state (off-screen check is false here).
-            _uiManager.TryDiscoverHazard(coord, hazardState, false);
-            
-            // If the grid has already been rendered, re-render to reflect state changes
-            if (_gridRendered)
+            _uiManager.TryDiscoverHazard(coord, data.HazardState, false);
+
+            // If the grid has already been rendered, update this tile in place
+            if (_dataCache.IsGridRendered)
             {
-                _visualGrid.RenderGrid(_pendingGrid);
-                _harpoonLayer.QueueRedraw();
+                _visualGrid?.UpdateTile(coord, data);
+                _harpoonLayer?.QueueRedraw();
             }
         }
 
         public void HandleGridComplete()
         {
-            GameLogger.Debug($"HandleGridComplete: Received complete grid with {_pendingGrid.Count} tiles");
-            _visualGrid.RenderGrid(_pendingGrid);
-            _harpoonLayer.QueueRedraw();
-            _gridRendered = true;
-            
+            GameLogger.Debug($"HandleGridComplete: Received complete grid with {_dataCache.Grid.Count} tiles");
+            _visualGrid?.RenderGrid(_dataCache.Grid);
+            _harpoonLayer?.QueueRedraw();
+            _dataCache.IsGridRendered = true;
+
             // Center camera on the grid
             CenterCameraOnGrid();
         }
@@ -272,18 +196,18 @@ namespace CargoSpace.Client
             // Calculate grid bounds
             int minX = int.MaxValue, maxX = int.MinValue;
             int minY = int.MaxValue, maxY = int.MinValue;
-            
-            foreach (var coord in _pendingGrid.Keys)
+
+            foreach (var coord in _dataCache.Grid.Keys)
             {
                 minX = Mathf.Min(minX, coord.X);
                 maxX = Mathf.Max(maxX, coord.X);
                 minY = Mathf.Min(minY, coord.Y);
                 maxY = Mathf.Max(maxY, coord.Y);
             }
-            
+
             int gridWidth = (maxX - minX + 1) * Constants.TileSize;
             int gridHeight = (maxY - minY + 1) * Constants.TileSize;
-            
+
             GameLogger.Debug($"Centering camera on grid: {gridWidth}x{gridHeight}");
             _camera.CenterOnGrid(gridWidth, gridHeight);
         }
@@ -304,27 +228,27 @@ namespace CargoSpace.Client
             GameLogger.Debug($"HandleJobAdded: {id} at {target}, type {jobType}");
 
             // Ignore if we already have this job (e.g. from our own optimistic add)
-            if (FindActiveJob(id) != null)
+            if (_dataCache.TryFindJob(id, out _))
             {
                 return;
             }
 
             Job job = new Job(id, 0, target, jobType, 0);
-            _activeJobs.Add(job);
+            _dataCache.AddJob(job);
             _uiManager.AddJobUI(id, jobType, target);
         }
 
         public void HandleJobRemoved(JobId id)
         {
             GameLogger.Debug($"HandleJobRemoved: {id}");
-            RemoveActiveJob(id);
+            _dataCache.RemoveJob(id);
             _uiManager.RemoveJobUI(id);
         }
 
         public void HandleJobRejected(JobId id)
         {
             GameLogger.Debug($"HandleJobRejected: {id}");
-            RemoveActiveJob(id);
+            _dataCache.RemoveJob(id);
             _uiManager.RemoveJobUI(id);
         }
 
@@ -342,8 +266,10 @@ namespace CargoSpace.Client
         public void HandleGroundItemsUpdate(Vector2I coord, string[] items)
         {
             GameLogger.Debug($"HandleGroundItemsUpdate: {items?.Length ?? 0} items at {coord}");
-            _clientGroundItems[coord] = new List<string>(items ?? new string[0]);
-            _visualGrid?.UpdateGroundItems(coord, _clientGroundItems[coord]);
+
+            List<string> itemList = new List<string>(items ?? new string[0]);
+            _dataCache.UpdateGroundItems(coord, itemList);
+            _visualGrid?.UpdateGroundItems(coord, itemList);
         }
 
         public void HandleZoneUpdate(Vector2I[] tiles, byte[] types)
@@ -351,59 +277,16 @@ namespace CargoSpace.Client
             int count = tiles?.Length ?? 0;
             GameLogger.Debug($"HandleZoneUpdate: {count} zone tiles");
 
-            _clientZoneTiles = new Dictionary<Vector2I, ZoneType>();
+            _dataCache.ClearZones();
             if (tiles != null && types != null)
             {
                 for (int i = 0; i < count; i++)
                 {
-                    _clientZoneTiles[tiles[i]] = (ZoneType)types[i];
+                    _dataCache.UpdateZone(tiles[i], (ZoneType)types[i]);
                 }
             }
 
-            _visualGrid?.UpdateZones(_clientZoneTiles);
-        }
-
-        private List<Vector2I> GetTilesInRect(Vector2I start, Vector2I end)
-        {
-            List<Vector2I> tiles = new List<Vector2I>();
-            int minX = Mathf.Min(start.X, end.X);
-            int maxX = Mathf.Max(start.X, end.X);
-            int minY = Mathf.Min(start.Y, end.Y);
-            int maxY = Mathf.Max(start.Y, end.Y);
-
-            for (int x = minX; x <= maxX; x++)
-            {
-                for (int y = minY; y <= maxY; y++)
-                {
-                    tiles.Add(new Vector2I(x, y));
-                }
-            }
-
-            return tiles;
-        }
-
-        private Job? FindActiveJob(JobId id)
-        {
-            foreach (Job job in _activeJobs)
-            {
-                if (job.Id == id)
-                {
-                    return job;
-                }
-            }
-            return null;
-        }
-
-        private void RemoveActiveJob(JobId id)
-        {
-            for (int i = 0; i < _activeJobs.Count; i++)
-            {
-                if (_activeJobs[i].Id == id)
-                {
-                    _activeJobs.RemoveAt(i);
-                    return;
-                }
-            }
+            _visualGrid?.UpdateZones(_dataCache.GetAllZones());
         }
 
         private void UpdatePawnVisual(PawnId id, Vector2I gridPosition)
@@ -423,7 +306,7 @@ namespace CargoSpace.Client
                 gridPosition.X * Constants.TileSize,
                 gridPosition.Y * Constants.TileSize
             );
-            
+
             visual.Position = worldPosition;
         }
 

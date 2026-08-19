@@ -43,7 +43,22 @@ namespace CargoSpace.Client
             _itemLayer?.QueueRedraw();
         }
 
-        public void UpdateZones(Dictionary<Vector2I, ZoneType> zoneTiles)
+        public void UpdateTile(Vector2I coord, GridTileData tileData)
+        {
+            int sourceId = GetSourceId(tileData.TypeId, tileData.State);
+            _tileMapLayer?.SetCell(coord, sourceId, new Vector2I(0, 0));
+
+            if (tileData.HazardState == 1)
+            {
+                _hazardLayer?.SetCell(coord, 1, new Vector2I(0, 0));
+            }
+            else
+            {
+                _hazardLayer?.EraseCell(coord);
+            }
+        }
+
+        public void UpdateZones(IReadOnlyDictionary<Vector2I, ZoneType> zoneTiles)
         {
             _zoneLayer?.Clear();
 
@@ -62,7 +77,7 @@ namespace CargoSpace.Client
             }
         }
 
-        public void RenderGrid(Dictionary<Vector2I, GridTileData> grid)
+        public void RenderGrid(IReadOnlyDictionary<Vector2I, GridTileData> grid)
         {
             GameLogger.Debug($"RenderGrid called with {grid.Count} tiles");
             
