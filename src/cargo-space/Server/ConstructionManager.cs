@@ -89,11 +89,25 @@ namespace CargoSpace.Server
             }
             else if (targetDef.Layer == "Surface")
             {
-                // Surfaces need a floor base and an empty surface slot
+                // Surfaces can be built on a floor, or on a space tile that
+                // touches the ship so you can place a hull/wall around the edge.
                 TileDefinition currentDef = currentTile.GetEffectiveDefinition();
-                canPlace = currentDef != null
-                           && currentTile.GetEffectiveDefinition().Layer == "Floor"
-                           && currentTile.SurfaceTypeId == 0;
+                if (currentDef == null || currentTile.SurfaceTypeId != 0)
+                {
+                    canPlace = false;
+                }
+                else if (currentDef.Layer == "Floor")
+                {
+                    canPlace = true;
+                }
+                else if (currentDef.Layer == "Base")
+                {
+                    canPlace = IsAdjacentToShip(coord);
+                }
+                else
+                {
+                    canPlace = false;
+                }
             }
             else
             {

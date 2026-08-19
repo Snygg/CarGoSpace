@@ -468,9 +468,18 @@ namespace CargoSpace.Client
             else if (targetDef.Layer == "Surface")
             {
                 TileDefinition currentDef = currentTile.GetEffectiveDefinition();
-                return currentDef != null
-                       && currentDef.Layer == "Floor"
-                       && currentTile.SurfaceTypeId == 0;
+                if (currentDef == null || currentTile.SurfaceTypeId != 0)
+                    return false;
+
+                // Surfaces can be built on a floor, or on a space tile that
+                // touches the ship so you can place a hull/wall around the edge.
+                if (currentDef.Layer == "Floor")
+                    return true;
+
+                if (currentDef.Layer == "Base")
+                    return IsAdjacentToShip(coord);
+
+                return false;
             }
 
             return false;

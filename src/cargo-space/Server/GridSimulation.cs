@@ -454,8 +454,43 @@ namespace CargoSpace.Server
             return rate;
         }
 
+        private Vector2I? GetWalkableAdjacent(Vector2I target, Vector2I pawnPos)
+        {
+            Vector2I? best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
+            {
+                Vector2I neighbor = target + dir;
+                if (!_grid.ContainsKey(neighbor) || _pathfinding.IsPointSolid(neighbor))
+                    continue;
+
+                float dist = neighbor.DistanceTo(pawnPos);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    best = neighbor;
+                }
+            }
+
+            return best;
+        }
+
         private void CalculatePath(Pawn pawn, Vector2I target)
         {
+            // If the target itself is unwalkable (e.g. a Wall or Space-floor blueprint),
+            // try to use a neighboring walkable tile and work from there.
+            if (_grid.ContainsKey(target) && _pathfinding.IsPointSolid(target))
+            {
+                Vector2I? adjacent = GetWalkableAdjacent(target, pawn.Position);
+                if (!adjacent.HasValue)
+                {
+                    pawn.CurrentPath.Clear();
+                    return;
+                }
+                target = adjacent.Value;
+            }
+
             var godotPath = _pathfinding.GetIdPath(pawn.Position, target);
             pawn.CurrentPath = new List<Vector2I>(godotPath);
             if (pawn.CurrentPath.Count > 0)
@@ -483,6 +518,15 @@ namespace CargoSpace.Server
                     {
                         // Leg 1 complete: picked up the item, now walk to destination
                         GameLogger.Debug($"Pawn {pawn.Id}: picked up haul at {pawn.Position}, heading to {pawn.CurrentJob.Destination}");
+
+                        // For supply runs, remove the item from the source tile now so the pawn is
+                        // conceptually carrying it. If the run aborts before delivery, the item will
+                        // be returned to the source tile in ResetPawnState.
+                        if (pawn.CurrentJob.Type == JobType.Supply)
+                        {
+                            _logisticsManager?.RemoveItemFromGrid(pawn.CurrentJob.Target, pawn.CurrentJob.ItemId);
+                        }
+
                         pawn.State = PawnState.Carrying;
                         CalculatePath(pawn, pawn.CurrentJob.Destination);
 
@@ -522,6 +566,13 @@ namespace CargoSpace.Server
             if (pawn.CurrentJob.Type == JobType.Supply)
             {
                 _constructionManager?.HandleSupplyJobAborted(pawn.CurrentJob.Destination, pawn.CurrentJob.ItemId);
+
+                // If the pawn had picked up the item, return it to the source tile
+                // so it is not lost and another supply run can be attempted.
+                if (pawn.State == PawnState.Carrying)
+                {
+                    _logisticsManager?.AddItemToGrid(pawn.CurrentJob.Target, pawn.CurrentJob.ItemId);
+                }
             }
 
             pawn.CurrentPath.Clear();
@@ -547,17 +598,9 @@ namespace CargoSpace.Server
                 }
                 else if (pawn.CurrentJob.Type == JobType.Supply)
                 {
-                    bool removed = _logisticsManager.RemoveItemFromGrid(pawn.CurrentJob.Destination, pawn.CurrentJob.ItemId)
-                                   || _logisticsManager.RemoveItemFromGrid(pawn.CurrentJob.Target, pawn.CurrentJob.ItemId);
-
-                    if (!removed)
-                    {
-                        GameLogger.Warning($"Supply job {pawn.CurrentJob.Id}: no {pawn.CurrentJob.ItemId} to consume");
-                    }
-                    else
-                    {
-                        _constructionManager.ConsumeSupply(pawn.CurrentJob.Destination, pawn.CurrentJob.ItemId);
-                    }
+                    // The pawn is carrying the item and working from an adjacent tile;
+                    // just consume it directly for the blueprint at the destination.
+                    _constructionManager.ConsumeSupply(pawn.CurrentJob.Destination, pawn.CurrentJob.ItemId);
 
                     _networkBridge?.BroadcastJobRemoved(pawn.CurrentJob.Id);
                     pawn.CurrentJob = default;
