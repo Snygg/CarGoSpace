@@ -53,13 +53,13 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ToggleZoneTiles_RPC(Godot.Collections.Array<Vector2I> tiles, bool isAdding)
+        public void ToggleZoneTiles_RPC(Godot.Collections.Array<Vector2I> tiles, byte zoneType)
         {
-            GameLogger.Debug($"ToggleZoneTiles_RPC from {Multiplayer.GetRemoteSenderId()}: {tiles?.Count ?? 0} tiles, adding={isAdding}");
+            GameLogger.Debug($"ToggleZoneTiles_RPC from {Multiplayer.GetRemoteSenderId()}: {tiles?.Count ?? 0} tiles, zoneType={zoneType}");
 
             if (tiles == null)
             {
-                _serverManager?.HandleToggleZoneTiles(new Vector2I[0], isAdding);
+                _serverManager?.HandleToggleZoneTiles(new Vector2I[0], zoneType);
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace CargoSpace.Shared
                 tileArray[i] = tiles[i];
             }
 
-            _serverManager?.HandleToggleZoneTiles(tileArray, isAdding);
+            _serverManager?.HandleToggleZoneTiles(tileArray, zoneType);
         }
 
         // Client-bound RPCs (called by server)
@@ -139,23 +139,26 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveZoneUpdate_RPC(Godot.Collections.Array<Vector2I> tiles)
+        public void ReceiveZoneUpdate_RPC(Godot.Collections.Array<Vector2I> tiles, Godot.Collections.Array<byte> types)
         {
-            GameLogger.Debug($"ReceiveZoneUpdate_RPC: {tiles?.Count ?? 0} zone tiles");
+            int count = tiles?.Count ?? 0;
+            GameLogger.Debug($"ReceiveZoneUpdate_RPC: {count} zone tiles");
 
-            if (tiles == null)
+            if (tiles == null || types == null)
             {
-                _clientManager?.HandleZoneUpdate(new Vector2I[0]);
+                _clientManager?.HandleZoneUpdate(new Vector2I[0], new byte[0]);
                 return;
             }
 
-            Vector2I[] tileArray = new Vector2I[tiles.Count];
-            for (int i = 0; i < tiles.Count; i++)
+            Vector2I[] tileArray = new Vector2I[count];
+            byte[] typeArray = new byte[count];
+            for (int i = 0; i < count; i++)
             {
                 tileArray[i] = tiles[i];
+                typeArray[i] = i < types.Count ? types[i] : (byte)0;
             }
 
-            _clientManager?.HandleZoneUpdate(tileArray);
+            _clientManager?.HandleZoneUpdate(tileArray, typeArray);
         }
 
         // Methods for managers to call RPCs
@@ -216,14 +219,24 @@ namespace CargoSpace.Shared
             Rpc(nameof(ReceiveGroundItemsUpdate_RPC), coord.X, coord.Y, items.ToArray());
         }
 
-        public void BroadcastZoneUpdate(Vector2I[] tiles)
+        public void BroadcastZoneUpdate(Dictionary<Vector2I, ZoneType> zoneTiles)
         {
-            Rpc(nameof(ReceiveZoneUpdate_RPC), new Godot.Collections.Array<Vector2I>(tiles));
+            int count = zoneTiles?.Count ?? 0;
+            Godot.Collections.Array<Vector2I> tiles = new();
+            Godot.Collections.Array<byte> types = new();
+
+            foreach (var kvp in zoneTiles)
+            {
+                tiles.Add(kvp.Key);
+                types.Add((byte)kvp.Value);
+            }
+
+            Rpc(nameof(ReceiveZoneUpdate_RPC), tiles, types);
         }
 
-        public void SendToggleZoneTiles(Vector2I[] tiles, bool isAdding)
+        public void SendToggleZoneTiles(Vector2I[] tiles, byte zoneType)
         {
-            RpcId(1, nameof(ToggleZoneTiles_RPC), new Godot.Collections.Array<Vector2I>(tiles), isAdding);
+            RpcId(1, nameof(ToggleZoneTiles_RPC), new Godot.Collections.Array<Vector2I>(tiles), zoneType);
         }
 
         public void SendJobRejected(JobId id, long peerId)

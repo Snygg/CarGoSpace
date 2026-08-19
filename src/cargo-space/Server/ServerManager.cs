@@ -106,10 +106,10 @@ namespace CargoSpace.Server
             _gridSimulation.CancelOperationAt(target);
         }
 
-        public void HandleToggleZoneTiles(Vector2I[] tiles, bool isAdding)
+        public void HandleToggleZoneTiles(Vector2I[] tiles, byte zoneType)
         {
-            GameLogger.Debug($"HandleToggleZoneTiles: {tiles.Length} tiles (adding={isAdding})");
-            _zoneManager?.ToggleZoneTiles(tiles, isAdding);
+            GameLogger.Debug($"HandleToggleZoneTiles: {tiles.Length} tiles (zoneType={zoneType})");
+            _zoneManager?.ToggleZoneTiles(tiles, zoneType);
         }
 
         public async void SendGridToClient(long clientId)

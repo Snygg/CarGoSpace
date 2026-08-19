@@ -21,10 +21,19 @@ namespace CargoSpace.Client
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
         private Dictionary<Vector2I, List<string>> _clientGroundItems = new();
-        private HashSet<Vector2I> _storageZoneTiles = new();
+        private Dictionary<Vector2I, ZoneType> _clientZoneTiles = new();
 
         private bool _isPaintingZone;
         private Vector2I _paintStart;
+
+        public enum InputMode
+        {
+            Normal,
+            PaintingZone
+        }
+
+        private InputMode _inputMode = InputMode.Normal;
+        private byte _paintZoneType = 0;
 
         public ClientManager(NetworkBridge networkBridge)
         {
@@ -132,28 +141,48 @@ namespace CargoSpace.Client
 
         public override void _UnhandledInput(InputEvent @event)
         {
-            if (@event is InputEventMouseButton mouseEvent)
+            if (_inputMode == InputMode.PaintingZone)
             {
-                if (mouseEvent.ButtonIndex == MouseButton.Left && mouseEvent.Pressed)
+                if (@event is InputEventMouseButton mouseBtn)
                 {
-                    HandleTileClick(mouseEvent.Position);
-                }
-                else if (mouseEvent.ButtonIndex == MouseButton.Right)
-                {
-                    if (mouseEvent.Pressed)
+                    if (mouseBtn.ButtonIndex == MouseButton.Left)
                     {
-                        _isPaintingZone = true;
-                        _paintStart = ScreenToGrid(mouseEvent.Position);
+                        if (mouseBtn.Pressed)
+                        {
+                            _isPaintingZone = true;
+                            _paintStart = ScreenToGrid(mouseBtn.Position);
+                        }
+                        else if (_isPaintingZone)
+                        {
+                            _isPaintingZone = false;
+                            List<Vector2I> tiles = GetTilesInRect(_paintStart, ScreenToGrid(mouseBtn.Position));
+                            _networkBridge?.SendToggleZoneTiles(tiles.ToArray(), _paintZoneType);
+                            _inputMode = InputMode.Normal;
+                        }
                     }
-                    else if (_isPaintingZone)
+                    else if (mouseBtn.ButtonIndex == MouseButton.Right && mouseBtn.Pressed)
                     {
                         _isPaintingZone = false;
-                        Vector2I paintEnd = ScreenToGrid(mouseEvent.Position);
-                        List<Vector2I> tilesToUpdate = GetTilesInRect(_paintStart, paintEnd);
-                        _networkBridge?.SendToggleZoneTiles(tilesToUpdate.ToArray(), true);
+                        _inputMode = InputMode.Normal;
                     }
                 }
             }
+            else // Normal mode
+            {
+                if (@event is InputEventMouseButton mouseEvent &&
+                    mouseEvent.ButtonIndex == MouseButton.Left &&
+                    mouseEvent.Pressed)
+                {
+                    HandleTileClick(mouseEvent.Position);
+                }
+            }
+        }
+
+        public void SetPaintingMode(byte zoneType)
+        {
+            _inputMode = InputMode.PaintingZone;
+            _paintZoneType = zoneType;
+            GameLogger.Debug($"ClientManager: entered painting mode for zone type {zoneType}");
         }
 
         private void HandleTileClick(Vector2 screenPosition)
@@ -305,11 +334,21 @@ namespace CargoSpace.Client
             _visualGrid?.UpdateGroundItems(coord, _clientGroundItems[coord]);
         }
 
-        public void HandleZoneUpdate(Vector2I[] tiles)
+        public void HandleZoneUpdate(Vector2I[] tiles, byte[] types)
         {
-            GameLogger.Debug($"HandleZoneUpdate: {tiles?.Length ?? 0} zone tiles");
-            _storageZoneTiles = new HashSet<Vector2I>(tiles ?? new Vector2I[0]);
-            _visualGrid?.UpdateZones(_storageZoneTiles);
+            int count = tiles?.Length ?? 0;
+            GameLogger.Debug($"HandleZoneUpdate: {count} zone tiles");
+
+            _clientZoneTiles = new Dictionary<Vector2I, ZoneType>();
+            if (tiles != null && types != null)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    _clientZoneTiles[tiles[i]] = (ZoneType)types[i];
+                }
+            }
+
+            _visualGrid?.UpdateZones(_clientZoneTiles);
         }
 
         private List<Vector2I> GetTilesInRect(Vector2I start, Vector2I end)

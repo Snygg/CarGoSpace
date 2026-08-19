@@ -8,7 +8,7 @@ namespace CargoSpace.Server
 {
     public class ZoneManager
     {
-        public HashSet<Vector2I> StorageZoneTiles = new();
+        public Dictionary<Vector2I, ZoneType> ZoneTiles = new();
 
         private NetworkBridge _networkBridge;
 
@@ -17,28 +17,29 @@ namespace CargoSpace.Server
             _networkBridge = networkBridge;
         }
 
-        public void ToggleZoneTiles(Vector2I[] tiles, bool isAdding)
+        public void ToggleZoneTiles(Vector2I[] tiles, byte zoneTypeByte)
         {
+            ZoneType type = (ZoneType)zoneTypeByte;
             foreach (Vector2I tile in tiles)
             {
-                if (isAdding)
+                if (type == ZoneType.None)
                 {
-                    StorageZoneTiles.Add(tile);
+                    ZoneTiles.Remove(tile);
                 }
                 else
                 {
-                    StorageZoneTiles.Remove(tile);
+                    ZoneTiles[tile] = type;
                 }
             }
 
-            GameLogger.Debug($"ZoneManager: toggled {tiles.Length} tiles (adding={isAdding}). StorageZoneTiles now has {StorageZoneTiles.Count} tiles.");
+            GameLogger.Debug($"ZoneManager: toggled {tiles.Length} tiles (type={type}). ZoneTiles now has {ZoneTiles.Count} tiles.");
 
-            _networkBridge?.BroadcastZoneUpdate(StorageZoneTiles.ToArray());
+            _networkBridge?.BroadcastZoneUpdate(ZoneTiles);
         }
 
         public bool IsStorageZone(Vector2I tile)
         {
-            return StorageZoneTiles.Contains(tile);
+            return ZoneTiles.TryGetValue(tile, out ZoneType type) && type == ZoneType.Storage;
         }
     }
 }

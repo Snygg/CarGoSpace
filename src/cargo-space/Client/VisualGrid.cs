@@ -43,7 +43,7 @@ namespace CargoSpace.Client
             _itemLayer?.QueueRedraw();
         }
 
-        public void UpdateZones(HashSet<Vector2I> zoneTiles)
+        public void UpdateZones(Dictionary<Vector2I, ZoneType> zoneTiles)
         {
             _zoneLayer?.Clear();
 
@@ -52,9 +52,13 @@ namespace CargoSpace.Client
                 return;
             }
 
-            foreach (Vector2I tile in zoneTiles)
+            foreach (var kvp in zoneTiles)
             {
-                _zoneLayer?.SetCell(tile, 1, new Vector2I(0, 0));
+                if (kvp.Value == ZoneType.None)
+                    continue;
+
+                int sourceId = GetZoneSourceId(kvp.Value);
+                _zoneLayer?.SetCell(kvp.Key, sourceId, new Vector2I(0, 0));
             }
         }
 
@@ -150,7 +154,7 @@ namespace CargoSpace.Client
 
         private ImageTexture GenerateHazardTexture()
         {
-            Image image = Image.Create(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
             image.Fill(new Color(0, 0, 0, 0));
 
             Vector2I center = new Vector2I(Constants.TileSize / 2, Constants.TileSize / 2);
@@ -190,7 +194,7 @@ namespace CargoSpace.Client
 
         private ImageTexture GenerateTexture(Color color)
         {
-            Image image = Image.Create(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
             image.Fill(color);
             
             ImageTexture texture = ImageTexture.CreateFromImage(image);
@@ -202,18 +206,38 @@ namespace CargoSpace.Client
             TileSet tileSet = new TileSet();
             tileSet.TileSize = new Vector2I(Constants.TileSize, Constants.TileSize);
 
-            Color zoneColor = new Color(0.2f, 0.5f, 1.0f, 0.35f); // Translucent blue
-            Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
-            image.Fill(zoneColor);
+            foreach (ZoneType zoneType in System.Enum.GetValues<ZoneType>())
+            {
+                if (zoneType == ZoneType.None)
+                    continue;
 
-            ImageTexture texture = ImageTexture.CreateFromImage(image);
-            TileSetAtlasSource atlasSource = new TileSetAtlasSource();
-            atlasSource.Texture = texture;
-            atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
-            atlasSource.CreateTile(new Vector2I(0, 0));
-            tileSet.AddSource(atlasSource, 1);
+                Color zoneColor = GetZoneColor(zoneType);
+                Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+                image.Fill(zoneColor);
+
+                ImageTexture texture = ImageTexture.CreateFromImage(image);
+                TileSetAtlasSource atlasSource = new TileSetAtlasSource();
+                atlasSource.Texture = texture;
+                atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+                atlasSource.CreateTile(new Vector2I(0, 0));
+                tileSet.AddSource(atlasSource, GetZoneSourceId(zoneType));
+            }
 
             return tileSet;
+        }
+
+        private Color GetZoneColor(ZoneType zoneType)
+        {
+            return zoneType switch
+            {
+                ZoneType.Storage => new Color(0.2f, 0.5f, 1.0f, 0.35f), // Translucent blue
+                _ => new Color(1.0f, 1.0f, 1.0f, 0.0f)
+            };
+        }
+
+        private int GetZoneSourceId(ZoneType zoneType)
+        {
+            return (int)zoneType;
         }
     }
 }

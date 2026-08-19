@@ -30,6 +30,9 @@ namespace CargoSpace.Client
         // Active job tracking so triage doesn't re-add a fire that already has a FightFire job
         private Dictionary<JobId, (JobType Type, Vector2I Target)> _jobInfo = new Dictionary<JobId, (JobType, Vector2I)>();
 
+        // Zone painting menu
+        private Panel _zoneMenu;
+
         public void Initialize(ClientManager clientManager, NetworkBridge networkBridge)
         {
             _clientManager = clientManager;
@@ -58,6 +61,9 @@ namespace CargoSpace.Client
 
             // Create persistent left-aligned HUD toolbar
             CreateHudToolbar();
+
+            // Create zone painting menu
+            CreateZoneMenu();
         }
 
         private void CreateJobBoard()
@@ -344,6 +350,12 @@ namespace CargoSpace.Client
             hudButton.CustomMinimumSize = new Vector2(50, 50);
             hudButton.Pressed += ToggleJobBoard;
             _hudToolbar.AddChild(hudButton);
+
+            Button zoneButton = new Button();
+            zoneButton.Text = "Z";
+            zoneButton.CustomMinimumSize = new Vector2(50, 50);
+            zoneButton.Pressed += ToggleZoneMenu;
+            _hudToolbar.AddChild(zoneButton);
         }
 
         private void ToggleJobBoard()
@@ -358,11 +370,68 @@ namespace CargoSpace.Client
             }
         }
 
+        private void CreateZoneMenu()
+        {
+            _zoneMenu = new Panel();
+            _zoneMenu.Size = new Vector2(160, 140);
+            _zoneMenu.Position = new Vector2(80, 200);
+            _zoneMenu.Hide();
+            AddChild(_zoneMenu);
+
+            VBoxContainer vbox = new VBoxContainer();
+            vbox.Position = new Vector2(10, 10);
+            vbox.Size = new Vector2(140, 120);
+            _zoneMenu.AddChild(vbox);
+
+            Label titleLabel = new Label();
+            titleLabel.Text = "Zone Painter";
+            vbox.AddChild(titleLabel);
+
+            Button storageButton = new Button();
+            storageButton.Text = "Storage Zone";
+            storageButton.Pressed += () =>
+            {
+                _clientManager?.SetPaintingMode((byte)ZoneType.Storage);
+                _zoneMenu.Hide();
+            };
+            vbox.AddChild(storageButton);
+
+            Button clearButton = new Button();
+            clearButton.Text = "Clear Zone";
+            clearButton.Pressed += () =>
+            {
+                _clientManager?.SetPaintingMode((byte)ZoneType.None);
+                _zoneMenu.Hide();
+            };
+            vbox.AddChild(clearButton);
+        }
+
+        private void ToggleZoneMenu()
+        {
+            if (_zoneMenu.Visible)
+            {
+                _zoneMenu.Hide();
+            }
+            else
+            {
+                _zoneMenu.Show();
+            }
+        }
+
         public override void _UnhandledInput(InputEvent @event)
         {
+            if (GetViewport().GuiGetFocusOwner() != null)
+                return;
+
             if (@event.IsActionPressed("toggle_job_board") && !@event.IsEcho())
             {
                 ToggleJobBoard();
+                GetViewport().SetInputAsHandled();
+            }
+
+            if (@event.IsActionPressed("toggle_zone_menu") && !@event.IsEcho())
+            {
+                ToggleZoneMenu();
                 GetViewport().SetInputAsHandled();
             }
         }

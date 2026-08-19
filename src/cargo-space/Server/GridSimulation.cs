@@ -572,13 +572,13 @@ namespace CargoSpace.Server
 
         private Vector2I? FindStorageDestination(string itemStringId)
         {
-            if (_zoneManager == null || _zoneManager.StorageZoneTiles.Count == 0)
+            if (_zoneManager == null || _zoneManager.ZoneTiles.Count == 0)
                 return null;
 
             ItemDefinition itemDef = ItemRegistry.Get(itemStringId);
             int maxStack = itemDef?.MaxStack ?? int.MaxValue;
 
-            foreach (Vector2I tile in _zoneManager.StorageZoneTiles)
+            foreach (Vector2I tile in _zoneManager.ZoneTiles.Keys)
             {
                 if (!_grid.TryGetValue(tile, out GridTileData gridTile))
                     continue;
@@ -601,7 +601,7 @@ namespace CargoSpace.Server
 
         private void GenerateHaulJobs()
         {
-            if (_zoneManager == null || _zoneManager.StorageZoneTiles.Count == 0)
+            if (_zoneManager == null || _zoneManager.ZoneTiles.Count == 0)
                 return;
 
             foreach (var kvp in _groundItems)
