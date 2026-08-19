@@ -97,6 +97,13 @@ namespace CargoSpace.Client
             GameLogger.Debug($"InputController: entered blueprint mode for tile type {targetTypeId}");
         }
 
+        public void CancelBlueprintMode()
+        {
+            _inputMode = InputMode.Normal;
+            _blueprintTargetTypeId = 0;
+            GameLogger.Debug("InputController: cancelled blueprint mode");
+        }
+
         private void HandleTileClick(Vector2 screenPosition)
         {
             Vector2I gridCoord = ScreenToGrid(screenPosition);

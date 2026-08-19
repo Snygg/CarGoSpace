@@ -154,6 +154,11 @@ namespace CargoSpace.Client
             _inputController?.SetBlueprintMode(targetTypeId);
         }
 
+        public void CancelBlueprintMode()
+        {
+            _inputController?.CancelBlueprintMode();
+        }
+
         // Handler methods called by NetworkBridge RPCs
         public void HandleGridSize(int size)
         {

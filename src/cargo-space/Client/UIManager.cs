@@ -288,6 +288,12 @@ namespace CargoSpace.Client
             if (_buildMenu == null)
                 return;
 
+            if (!_buildMenu.Visible)
+            {
+                // Opening the menu cancels any in-progress blueprint placement
+                _clientManager?.CancelBlueprintMode();
+            }
+
             _buildMenu.Visible = !_buildMenu.Visible;
         }
 
@@ -502,6 +508,17 @@ namespace CargoSpace.Client
             if (@event.IsActionPressed("toggle_build_menu") && !@event.IsEcho())
             {
                 ToggleBuildMenu();
+                GetViewport().SetInputAsHandled();
+            }
+
+            if (@event.IsActionPressed("ui_cancel") && !@event.IsEcho())
+            {
+                if (_buildMenu != null && _buildMenu.Visible)
+                {
+                    _buildMenu.Hide();
+                }
+
+                _clientManager?.CancelBlueprintMode();
                 GetViewport().SetInputAsHandled();
             }
         }

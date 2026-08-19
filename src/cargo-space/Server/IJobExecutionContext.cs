@@ -15,5 +15,6 @@ namespace CargoSpace.Server
 
         void AddItemToGrid(Vector2I coord, string itemStringId);
         bool RemoveItemFromGrid(Vector2I coord, string itemStringId);
+        void SpawnItemToGrid(Vector2I coord, string itemStringId);
     }
 }

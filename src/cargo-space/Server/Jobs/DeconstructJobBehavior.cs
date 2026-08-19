@@ -24,7 +24,7 @@ namespace CargoSpace.Server.Jobs
                     {
                         for (int i = 0; i < kvp.Value; i++)
                         {
-                            context.AddItemToGrid(job.Target, kvp.Key);
+                            context.SpawnItemToGrid(job.Target, kvp.Key);
                         }
                     }
                 }
@@ -42,7 +42,7 @@ namespace CargoSpace.Server.Jobs
                     {
                         for (int i = 0; i < kvp.Value; i++)
                         {
-                            context.AddItemToGrid(job.Target, kvp.Key);
+                            context.SpawnItemToGrid(job.Target, kvp.Key);
                         }
                     }
                 }

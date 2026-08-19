@@ -156,6 +156,11 @@ namespace CargoSpace.Server
             _logisticsManager.AddItemToGrid(coord, itemStringId);
         }
 
+        public void SpawnItemToGrid(Vector2I coord, string itemStringId)
+        {
+            _logisticsManager.SpawnItemOnGrid(coord, itemStringId);
+        }
+
         public bool RemoveItemFromGrid(Vector2I coord, string itemStringId)
         {
             return _logisticsManager.RemoveItemFromGrid(coord, itemStringId);
@@ -235,6 +240,11 @@ namespace CargoSpace.Server
 
                 _powerManager?.OnTileChanged(target);
                 _networkBridge?.BroadcastTileUpdate(target, tileData);
+
+                if (tileDef != null && !tileDef.IsWalkable)
+                {
+                    TryRelocatePawnFromUnwalkableTile(target);
+                }
             }
         }
 
@@ -254,6 +264,11 @@ namespace CargoSpace.Server
 
                 _powerManager?.OnTileChanged(target);
                 _networkBridge?.BroadcastTileUpdate(target, tileData);
+
+                if (tileDef != null && !tileDef.IsWalkable)
+                {
+                    TryRelocatePawnFromUnwalkableTile(target);
+                }
             }
         }
 
@@ -282,6 +297,27 @@ namespace CargoSpace.Server
         public void BroadcastTileUpdate(Vector2I target, GridTileData data)
         {
             _networkBridge?.BroadcastTileUpdate(target, data);
+        }
+
+        private void TryRelocatePawnFromUnwalkableTile(Vector2I target)
+        {
+            Pawn pawn = _pawns.Values.FirstOrDefault(p => p.Position == target);
+            if (pawn == null)
+                return;
+
+            foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
+            {
+                Vector2I neighbor = target + dir;
+                if (_grid.TryGetValue(neighbor, out GridTileData n) && n.GetEffectiveDefinition()?.IsWalkable == true)
+                {
+                    pawn.UpdatePosition(neighbor);
+                    _dirtyEntities.Add(pawn);
+                    GameLogger.Debug($"Relocated pawn {pawn.Id} from {target} to {neighbor}");
+                    return;
+                }
+            }
+
+            GameLogger.Warning($"No walkable neighbor to relocate pawn {pawn.Id} from {target}");
         }
 
         public void Tick()
