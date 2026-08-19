@@ -211,11 +211,7 @@ namespace CargoSpace.Client
                 if (zoneType == ZoneType.None)
                     continue;
 
-                Color zoneColor = GetZoneColor(zoneType);
-                Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
-                image.Fill(zoneColor);
-
-                ImageTexture texture = ImageTexture.CreateFromImage(image);
+                ImageTexture texture = GenerateZoneTexture(zoneType);
                 TileSetAtlasSource atlasSource = new TileSetAtlasSource();
                 atlasSource.Texture = texture;
                 atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
@@ -226,11 +222,49 @@ namespace CargoSpace.Client
             return tileSet;
         }
 
-        private Color GetZoneColor(ZoneType zoneType)
+        private ImageTexture GenerateZoneTexture(ZoneType zoneType)
+        {
+            Color baseColor = GetZoneBaseColor(zoneType);
+            Color fillColor = new Color(baseColor.R, baseColor.G, baseColor.B, 0.12f);
+            Color borderColor = new Color(baseColor.R, baseColor.G, baseColor.B, 1.0f);
+
+            Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            image.Fill(fillColor);
+
+            int borderInset = 4;
+            int dashLength = 8;
+            int dashGap = 8;
+
+            // Top and bottom dashed borders
+            for (int x = borderInset; x < Constants.TileSize - borderInset; x++)
+            {
+                int pos = x - borderInset;
+                if ((pos % (dashLength + dashGap)) < dashLength)
+                {
+                    image.SetPixel(x, borderInset, borderColor);
+                    image.SetPixel(x, Constants.TileSize - 1 - borderInset, borderColor);
+                }
+            }
+
+            // Left and right dashed borders
+            for (int y = borderInset; y < Constants.TileSize - borderInset; y++)
+            {
+                int pos = y - borderInset;
+                if ((pos % (dashLength + dashGap)) < dashLength)
+                {
+                    image.SetPixel(borderInset, y, borderColor);
+                    image.SetPixel(Constants.TileSize - 1 - borderInset, y, borderColor);
+                }
+            }
+
+            return ImageTexture.CreateFromImage(image);
+        }
+
+        private Color GetZoneBaseColor(ZoneType zoneType)
         {
             return zoneType switch
             {
-                ZoneType.Storage => new Color(0.2f, 0.5f, 1.0f, 0.35f), // Translucent blue
+                ZoneType.Storage => new Color(0.2f, 0.5f, 1.0f, 1.0f),
                 _ => new Color(1.0f, 1.0f, 1.0f, 0.0f)
             };
         }
