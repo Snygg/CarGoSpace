@@ -132,6 +132,13 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void ReceiveMachineState_RPC(int x, int y, string key, float value)
+        {
+            GameLogger.Debug($"ReceiveMachineState_RPC: {key}={value} at ({x}, {y})");
+            _clientManager?.HandleMachineStateUpdate(new Vector2I(x, y), key, value);
+        }
+
+        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
         public void ReceiveGroundItemsUpdate_RPC(int x, int y, string[] items)
         {
             GameLogger.Debug($"ReceiveGroundItemsUpdate_RPC: {items?.Length ?? 0} items at ({x}, {y})");
@@ -212,6 +219,11 @@ namespace CargoSpace.Shared
         public void BroadcastHarpoonCatch(Vector2I coord, string itemId)
         {
             Rpc(nameof(ReceiveHarpoonCatch_RPC), coord.X, coord.Y, itemId);
+        }
+
+        public void BroadcastMachineState(Vector2I coord, string key, float value)
+        {
+            Rpc(nameof(ReceiveMachineState_RPC), coord.X, coord.Y, key, value);
         }
 
         public void BroadcastGroundItemsUpdate(Vector2I coord, List<string> items)

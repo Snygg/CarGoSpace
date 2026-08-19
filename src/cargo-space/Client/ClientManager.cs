@@ -334,6 +334,11 @@ namespace CargoSpace.Client
             _flotsamVisualLayer?.PlayCatchEffect(coord, itemId);
         }
 
+        public void HandleMachineStateUpdate(Vector2I coord, string key, float value)
+        {
+            GameLogger.Debug($"Machine {coord} updated {key} to {value}");
+        }
+
         public void HandleGroundItemsUpdate(Vector2I coord, string[] items)
         {
             GameLogger.Debug($"HandleGroundItemsUpdate: {items?.Length ?? 0} items at {coord}");

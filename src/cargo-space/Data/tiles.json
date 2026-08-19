@@ -23,5 +23,23 @@
     "Tags": ["Walkable", "Interactable", "Operable"],
     "HexColor": "#808080",
     "Stats": { "HarpoonRate": 0.2 }
+  },
+  "fusion_generator": {
+    "TypeId": 4,
+    "Name": "Fusion Generator",
+    "Tags": ["GeneratesPower", "TransfersPower"],
+    "HexColor": "#00FFFF"
+  },
+  "power_cable": {
+    "TypeId": 5,
+    "Name": "Power Cable",
+    "Tags": ["TransfersPower", "Walkable"],
+    "HexColor": "#FFD700"
+  },
+  "fabricator": {
+    "TypeId": 6,
+    "Name": "Fabricator",
+    "Tags": ["ConsumesPower", "TransfersPower"],
+    "HexColor": "#FF69B4"
   }
 }

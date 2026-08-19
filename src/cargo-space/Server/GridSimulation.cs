@@ -25,6 +25,9 @@ namespace CargoSpace.Server
         // Physical items lying on the floor
         private Dictionary<Vector2I, List<string>> _groundItems = new();
 
+        // Sparse machine entities for tiles with dynamic state
+        private Dictionary<Vector2I, MachineEntity> _activeMachines = new();
+
         public GridSimulation(NetworkBridge networkBridge = null, ZoneManager zoneManager = null)
         {
             _networkBridge = networkBridge;
@@ -89,7 +92,14 @@ namespace CargoSpace.Server
                     }
                     else if (legend.TryGetValue(c, out string stringId))
                     {
-                        _grid[coord] = new GridTileData(TileRegistry.GetId(stringId));
+                        byte typeId = TileRegistry.GetId(stringId);
+                        _grid[coord] = new GridTileData(typeId);
+
+                        TileDefinition tileDef = TileRegistry.Get(typeId);
+                        if (tileDef != null && (tileDef.HasTag("GeneratesPower") || tileDef.HasTag("ConsumesPower")))
+                        {
+                            RegisterMachine(coord);
+                        }
                     }
                     else
                     {
@@ -399,6 +409,78 @@ namespace CargoSpace.Server
             }
 
             GenerateHaulJobs();
+
+            SimulatePowerGrid();
+        }
+
+        public void RegisterMachine(Vector2I coord)
+        {
+            _activeMachines[coord] = new MachineEntity(coord);
+        }
+
+        private void SimulatePowerGrid()
+        {
+            // 1. Cache the old state for diffing
+            Dictionary<Vector2I, float> oldPowerStates = new Dictionary<Vector2I, float>();
+            foreach (var kvp in _activeMachines)
+            {
+                oldPowerStates[kvp.Key] = kvp.Value.DynamicState.GetValueOrDefault("IsPowered", 0f);
+                kvp.Value.DynamicState["IsPowered"] = 0f; // Reset for this tick
+            }
+
+            Queue<Vector2I> queue = new Queue<Vector2I>();
+            HashSet<Vector2I> visited = new HashSet<Vector2I>();
+
+            // 2. Find generators ONLY by searching the sparse active machines list
+            foreach (var kvp in _activeMachines)
+            {
+                if (_grid.TryGetValue(kvp.Key, out GridTileData tileData))
+                {
+                    if (TileRegistry.Get(tileData.TypeId)?.HasTag("GeneratesPower") == true)
+                    {
+                        queue.Enqueue(kvp.Key);
+                        visited.Add(kvp.Key);
+                        kvp.Value.DynamicState["IsPowered"] = 1f;
+                    }
+                }
+            }
+
+            // 3. Flood fill
+            while (queue.Count > 0)
+            {
+                Vector2I current = queue.Dequeue();
+
+                foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
+                {
+                    Vector2I neighbor = current + dir;
+                    if (visited.Contains(neighbor) || !_grid.TryGetValue(neighbor, out GridTileData neighborTile)) continue;
+
+                    TileDefinition def = TileRegistry.Get(neighborTile.TypeId);
+                    if (def != null && def.HasTag("TransfersPower"))
+                    {
+                        visited.Add(neighbor);
+                        queue.Enqueue(neighbor);
+
+                        if (def.HasTag("ConsumesPower") && _activeMachines.TryGetValue(neighbor, out var machine))
+                        {
+                            machine.DynamicState["IsPowered"] = 1f;
+                        }
+                    }
+                }
+            }
+
+            // 4. Delta Sync: Only broadcast changes!
+            foreach (var kvp in _activeMachines)
+            {
+                float oldState = oldPowerStates[kvp.Key];
+                float newState = kvp.Value.DynamicState["IsPowered"];
+
+                if (oldState != newState)
+                {
+                    GameLogger.Debug($"Power State Changed at {kvp.Key}: {oldState} -> {newState}");
+                    _networkBridge?.BroadcastMachineState(kvp.Key, "IsPowered", newState);
+                }
+            }
         }
 
         private float CalculateFlotsamRate()
