@@ -13,6 +13,7 @@ namespace CargoSpace.Client
         private CameraController _camera;
         private UIManager _uiManager;
         private Starfield _starfield;
+        private FlotsamVisualLayer _flotsamVisualLayer;
         private HarpoonLayer _harpoonLayer;
         private NetworkBridge _networkBridge;
         private Dictionary<Vector2I, GridTileData> _pendingGrid = new Dictionary<Vector2I, GridTileData>();
@@ -52,6 +53,11 @@ namespace CargoSpace.Client
             // Add camera first so everything else is visible
             _camera = new CameraController();
             AddChild(_camera);
+
+            _flotsamVisualLayer = new FlotsamVisualLayer();
+            _flotsamVisualLayer.CameraRef = _camera;
+            _flotsamVisualLayer.ZIndex = -1;
+            AddChild(_flotsamVisualLayer);
             
             _visualGrid = new VisualGrid();
             AddChild(_visualGrid);
@@ -324,7 +330,7 @@ namespace CargoSpace.Client
         public void HandleHarpoonCatch(Vector2I coord, string itemId)
         {
             GameLogger.Debug($"HandleHarpoonCatch: {itemId} at {coord}");
-            _harpoonLayer?.PlayCatchEffect(coord, itemId);
+            _flotsamVisualLayer?.PlayCatchEffect(coord, itemId);
         }
 
         public void HandleGroundItemsUpdate(Vector2I coord, string[] items)

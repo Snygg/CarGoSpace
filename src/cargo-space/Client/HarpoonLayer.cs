@@ -8,29 +8,6 @@ namespace CargoSpace.Client
     {
         public Dictionary<Vector2I, GridTileData> GridRef;
 
-        public void PlayCatchEffect(Vector2I targetCoord, string itemId)
-        {
-            ColorRect scrap = new ColorRect
-            {
-                Size = new Vector2(Constants.TileSize * 0.5f, Constants.TileSize * 0.5f),
-                Color = Colors.Silver
-            };
-            AddChild(scrap);
-
-            Vector2 endPos = new Vector2(
-                targetCoord.X * Constants.TileSize,
-                targetCoord.Y * Constants.TileSize
-            );
-            Vector2 startPos = endPos + new Vector2(800, -800); // Spawn off-screen top-right
-            scrap.Position = startPos;
-
-            Tween tween = CreateTween();
-            tween.TweenProperty(scrap, "position", endPos, 0.5f)
-                .SetTrans(Tween.TransitionType.Cubic)
-                .SetEase(Tween.EaseType.Out);
-            tween.TweenCallback(Callable.From(scrap.QueueFree)); // Destroy after tween
-        }
-
         public override void _Draw()
         {
             if (GridRef == null)
