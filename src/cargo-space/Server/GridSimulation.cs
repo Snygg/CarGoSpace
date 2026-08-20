@@ -20,9 +20,13 @@ namespace CargoSpace.Server
         // Flotsam collection state
         private float _flotsamProgress = 0f;
 
+        private RegionManager _regionManager;
         private LogisticsManager _logisticsManager;
         private PowerManager _powerManager;
         private ConstructionManager _constructionManager;
+        private bool _regionsDirty = true;
+
+        public RegionManager RegionManager => _regionManager;
 
         public GridSimulation(NetworkBridge networkBridge = null, ZoneManager zoneManager = null)
         {
@@ -31,6 +35,8 @@ namespace CargoSpace.Server
             _jobManager = new JobManager(networkBridge);
             _pawns = new Dictionary<PawnId, Pawn>();
             _dirtyEntities = new HashSet<IGridEntity>();
+
+            _regionManager = new RegionManager();
 
             _logisticsManager = new LogisticsManager(this, zoneManager, _jobManager, networkBridge, null);
             _constructionManager = new ConstructionManager(this, _logisticsManager, _jobManager, networkBridge);
@@ -238,6 +244,8 @@ namespace CargoSpace.Server
                     _pathfinding.SetPointSolid(target, !tileDef.IsWalkable);
                 }
 
+                _regionsDirty = true;
+
                 _powerManager?.OnTileChanged(target);
                 _networkBridge?.BroadcastTileUpdate(target, tileData);
 
@@ -261,6 +269,8 @@ namespace CargoSpace.Server
                 {
                     _pathfinding.SetPointSolid(target, !tileDef.IsWalkable);
                 }
+
+                _regionsDirty = true;
 
                 _powerManager?.OnTileChanged(target);
                 _networkBridge?.BroadcastTileUpdate(target, tileData);
@@ -349,6 +359,13 @@ namespace CargoSpace.Server
 
         public void Tick()
         {
+            if (_regionsDirty)
+            {
+                _regionManager.Recalculate(_grid);
+                _jobManager.ClearUnreachableCooldowns();
+                _regionsDirty = false;
+            }
+
             foreach (Pawn pawn in _pawns.Values)
             {
                 if (pawn.State == PawnState.Idle && _jobManager.BoardCount > 0)
@@ -369,10 +386,10 @@ namespace CargoSpace.Server
                         }
                         else
                         {
-                            // Unreachable. Discard job and release reservation.
-                            GameLogger.Warning($"Job {potentialJob.Value.Id} is unreachable. Discarding.");
-                            _networkBridge?.BroadcastJobRemoved(potentialJob.Value.Id);
+                            // Unreachable. Release reservation and requeue with a short cooldown.
+                            GameLogger.Warning($"Job {potentialJob.Value.Id} is unreachable. Requeuing.");
                             _jobManager.Release(potentialJob.Value.Target);
+                            _jobManager.RequeueWithCooldown(potentialJob.Value);
                         }
                     }
                 }
@@ -476,6 +493,15 @@ namespace CargoSpace.Server
             return best;
         }
 
+        public Vector2I? GetReachableProxy(Vector2I target, Vector2I reference)
+        {
+            if (_grid.TryGetValue(target, out GridTileData tile) &&
+                tile.GetEffectiveDefinition()?.IsWalkable == true)
+                return target;
+
+            return GetWalkableAdjacent(target, reference);
+        }
+
         private void CalculatePath(Pawn pawn, Vector2I target)
         {
             // If the target itself is unwalkable (e.g. a Wall or Space-floor blueprint),
@@ -498,6 +524,18 @@ namespace CargoSpace.Server
                 pawn.State = PawnState.Walking;
                 GameLogger.Debug($"Pawn {pawn.Id}: path calculated to {target}, {pawn.CurrentPath.Count} steps");
             }
+        }
+
+        public bool IsPathPossible(Vector2I from, Vector2I to)
+        {
+            if (!_grid.ContainsKey(from) || !_grid.ContainsKey(to))
+                return false;
+
+            if (from == to)
+                return true;
+
+            var path = _pathfinding.GetIdPath(from, to);
+            return path.Count > 0;
         }
 
         private void MoveAlongPath(Pawn pawn)
@@ -533,7 +571,19 @@ namespace CargoSpace.Server
                         if (pawn.CurrentPath.Count == 0)
                         {
                             GameLogger.Warning($"Pawn {pawn.Id}: no path to haul destination {pawn.CurrentJob.Destination}");
+
+                            if (pawn.CurrentJob.Type == JobType.Supply)
+                            {
+                                _logisticsManager?.AddItemToGrid(pawn.Position, pawn.CurrentJob.ItemId);
+                            }
+                            else if (pawn.CurrentJob.Type == JobType.Haul)
+                            {
+                                _jobManager.RequeueWithCooldown(pawn.CurrentJob);
+                            }
+
+                            pawn.State = PawnState.Idle;
                             ResetPawnState(pawn);
+                            return;
                         }
                         else
                         {

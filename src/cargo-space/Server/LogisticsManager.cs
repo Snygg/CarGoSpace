@@ -127,13 +127,18 @@ namespace CargoSpace.Server
 
         public Vector2I? FindNearestItem(Vector2I startCoord, string itemStringId)
         {
-            if (!_gridSimulation.TryGetTile(startCoord, out _))
+            Vector2I? origin = _gridSimulation.GetReachableProxy(startCoord, startCoord);
+            if (!origin.HasValue)
+                return null;
+
+            RegionManager regionManager = _gridSimulation.RegionManager;
+            if (!regionManager.TryGetRegion(origin.Value, out int startRegion))
                 return null;
 
             Queue<Vector2I> queue = new();
             HashSet<Vector2I> visited = new();
-            queue.Enqueue(startCoord);
-            visited.Add(startCoord);
+            queue.Enqueue(origin.Value);
+            visited.Add(origin.Value);
 
             while (queue.Count > 0)
             {
@@ -147,11 +152,14 @@ namespace CargoSpace.Server
                 foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
                 {
                     Vector2I next = current + dir;
-                    if (!visited.Contains(next) && _gridSimulation.TryGetTile(next, out _))
-                    {
-                        visited.Add(next);
-                        queue.Enqueue(next);
-                    }
+                    if (visited.Contains(next))
+                        continue;
+
+                    if (!regionManager.TryGetRegion(next, out int nextRegion) || nextRegion != startRegion)
+                        continue;
+
+                    visited.Add(next);
+                    queue.Enqueue(next);
                 }
             }
 
@@ -278,6 +286,22 @@ namespace CargoSpace.Server
                 if (destination == null)
                 {
                     GameLogger.Debug($"GenerateHaulJobs: no available storage destination for {itemId}");
+                    continue;
+                }
+
+                // Avoid creating haul jobs that have no reachable path. Resolve walkable
+                // proxies for the item and destination, then verify region reachability.
+                Vector2I? itemProxy = _gridSimulation.GetReachableProxy(itemCoord, itemCoord);
+                Vector2I? destProxy = _gridSimulation.GetReachableProxy(destination.Value, itemCoord);
+                if (itemProxy == null || destProxy == null)
+                    continue;
+
+                RegionManager regionManager = _gridSimulation.RegionManager;
+                bool anyPawnCanReach = _gridSimulation.GetPawns().Any(p => regionManager.IsReachable(p.Position, itemProxy.Value));
+                bool itemCanReachDest = regionManager.IsReachable(itemProxy.Value, destProxy.Value);
+                if (!anyPawnCanReach || !itemCanReachDest)
+                {
+                    GameLogger.Debug($"GenerateHaulJobs: no reachable path to haul {itemId} from {itemCoord} to {destination.Value}");
                     continue;
                 }
 

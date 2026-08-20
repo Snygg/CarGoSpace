@@ -14,6 +14,9 @@ namespace CargoSpace.Server
         private Dictionary<JobType, IJobBehavior> _behaviors = new();
         private NetworkBridge _networkBridge;
 
+        private Dictionary<JobId, ulong> _unreachableCooldowns = new();
+        private const ulong UnreachableCooldownMs = 3000;
+
         public int BoardCount => _jobBoard.Count;
 
         public JobManager(NetworkBridge networkBridge)
@@ -34,6 +37,35 @@ namespace CargoSpace.Server
 
         public bool HasPendingJobForTarget(Vector2I target) => _jobBoard.Any(j => j.Target == target);
         public bool HasPendingHaulDestination(Vector2I destination) => _jobBoard.Any(j => j.Type == JobType.Haul && j.Destination == destination);
+
+        public bool IsUnreachable(JobId id)
+        {
+            if (_unreachableCooldowns.TryGetValue(id, out ulong until))
+            {
+                if (Godot.Time.GetTicksMsec() < until)
+                    return true;
+
+                _unreachableCooldowns.Remove(id);
+            }
+
+            return false;
+        }
+
+        public void MarkUnreachable(JobId id)
+        {
+            _unreachableCooldowns[id] = Godot.Time.GetTicksMsec() + UnreachableCooldownMs;
+        }
+
+        public void ClearUnreachableCooldowns()
+        {
+            _unreachableCooldowns.Clear();
+        }
+
+        public void RequeueWithCooldown(Job job)
+        {
+            MarkUnreachable(job.Id);
+            _jobBoard.Add(job);
+        }
 
         public bool AddJob(Job job, bool isValidTile, bool isActivelyWorked, long peerId)
         {
@@ -64,10 +96,10 @@ namespace CargoSpace.Server
         {
             for (int i = 0; i < _jobBoard.Count; i++)
             {
-                if (!_reservedTiles.Contains(_jobBoard[i].Target))
+                Job job = _jobBoard[i];
+                if (!_reservedTiles.Contains(job.Target) && !IsUnreachable(job.Id))
                 {
                     index = i;
-                    Job job = _jobBoard[i];
                     _jobBoard.RemoveAt(i);
                     _reservedTiles.Add(job.Target);
                     if (job.Type == JobType.Haul)

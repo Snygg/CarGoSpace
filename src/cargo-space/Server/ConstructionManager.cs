@@ -2,6 +2,7 @@ using Godot;
 using CargoSpace.Core;
 using CargoSpace.Shared;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CargoSpace.Server
 {
@@ -149,6 +150,8 @@ namespace CargoSpace.Server
         {
             if (_blueprints.Count == 0) return;
 
+            RegionManager regionManager = _gridSimulation.RegionManager;
+
             List<Blueprint> snapshots = new List<Blueprint>(_blueprints.Values);
             foreach (Blueprint bp in snapshots)
             {
@@ -157,6 +160,10 @@ namespace CargoSpace.Server
                     TrySpawnConstructJob(bp.Position);
                     continue;
                 }
+
+                Vector2I? buildProxy = _gridSimulation.GetReachableProxy(bp.Position, bp.Position);
+                if (!buildProxy.HasValue)
+                    continue;
 
                 foreach (var req in bp.Required)
                 {
@@ -179,6 +186,19 @@ namespace CargoSpace.Server
                         Vector2I? source = _logisticsManager.FindNearestItem(bp.Position, itemId);
                         if (!source.HasValue || source.Value == bp.Position)
                             break;
+
+                        if (!regionManager.IsReachable(source.Value, buildProxy.Value))
+                        {
+                            GameLogger.Debug($"ConstructionManager: supply source {source.Value} not in same region as blueprint at {bp.Position}");
+                            break;
+                        }
+
+                        bool pawnCanReach = _gridSimulation.GetPawns().Any(p => regionManager.IsReachable(p.Position, source.Value));
+                        if (!pawnCanReach)
+                        {
+                            GameLogger.Debug($"ConstructionManager: no pawn can reach supply source {source.Value}");
+                            break;
+                        }
 
                         JobId jobId = JobId.Create();
                         Job supplyJob = new Job(jobId, 0, source.Value, bp.Position, JobType.Supply, 0, itemId);
