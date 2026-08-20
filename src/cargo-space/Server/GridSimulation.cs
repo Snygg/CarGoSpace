@@ -363,6 +363,11 @@ namespace CargoSpace.Server
             }
         }
 
+        public void SendAtmosphereToClient(long clientId)
+        {
+            _atmosphereManager?.SendAtmosphereToClient(clientId);
+        }
+
         public void Tick()
         {
             if (_regionsDirty)

@@ -153,6 +153,9 @@ namespace CargoSpace.Server
             
             // Signal that grid transfer is complete via NetworkBridge
             _networkBridge.SendGridComplete(clientId);
+
+            // Sync current atmosphere state now that the client has the grid.
+            _gridSimulation.SendAtmosphereToClient(clientId);
         }
 
         public void SendPawnPositionToClient(long clientId)

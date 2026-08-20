@@ -91,6 +91,13 @@ namespace CargoSpace.Client
             {
                 _hazardLayer?.EraseCell(coord);
             }
+
+            // If a tile becomes vacuum/space, remove any stale atmosphere overlay.
+            TileDefinition effective = tileData.GetEffectiveDefinition();
+            if (effective != null && effective.HasTag("Vacuum"))
+            {
+                _atmosphereLayer?.EraseCell(coord);
+            }
         }
 
         public void UpdateZones(IReadOnlyDictionary<Vector2I, ZoneType> zoneTiles)

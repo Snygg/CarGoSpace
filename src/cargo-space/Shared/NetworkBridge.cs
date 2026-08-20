@@ -272,6 +272,11 @@ namespace CargoSpace.Shared
             Rpc(nameof(RPC_UpdateRegionAtmosphere), regionId, safeTile, oxygen, smoke);
         }
 
+        public void SendRegionAtmosphere(long clientId, int regionId, Vector2I safeTile, byte oxygen, byte smoke)
+        {
+            RpcId(clientId, nameof(RPC_UpdateRegionAtmosphere), regionId, safeTile, oxygen, smoke);
+        }
+
         public void SendToggleZoneTiles(Vector2I[] tiles, byte zoneType)
         {
             RpcId(1, nameof(ToggleZoneTiles_RPC), new Godot.Collections.Array<Vector2I>(tiles), zoneType);

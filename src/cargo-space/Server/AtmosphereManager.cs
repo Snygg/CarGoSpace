@@ -13,6 +13,7 @@ namespace CargoSpace.Server
         public byte Smoke;
         public int EqualizationProgress;
         public int OxygenRegenProgress;
+        public bool ExposedToSpace;
     }
 
     public class AtmosphereManager
@@ -40,14 +41,16 @@ namespace CargoSpace.Server
 
         public void OnRegionsChanged()
         {
-            _leakEdges.Clear();
             _oxygenatingRegions.Clear();
+            HashSet<LeakEdge> newEdges = new();
 
-            // Ensure every current region has data, defaulting to High oxygen.
+            // Ensure every current region has data, defaulting to a vacuum.
+            // Rooms will fill from OxygenGenerators over time, making the
+            // atmosphere visibly flow in.
             foreach (int regionId in _regionManager.GetAllRegions())
             {
                 if (!_regionData.ContainsKey(regionId))
-                    _regionData[regionId] = new RegionAtmosphere { OxygenLevel = 2 };
+                    _regionData[regionId] = new RegionAtmosphere { OxygenLevel = 0 };
             }
 
             // Scan every tile for oxygen generators and leaky walls.
@@ -79,12 +82,14 @@ namespace CargoSpace.Server
                     if (nDef == null)
                         continue;
 
-                    if (nDef.Layer == "Surface" || nDef.HasTag("Vacuum"))
+                    if (nDef.HasTag("Vacuum"))
                     {
-                        if (nDef.HasTag("Vacuum"))
-                            touchesSpace = true;
+                        touchesSpace = true;
                         continue;
                     }
+
+                    if (nDef.Layer == "Surface" && !nDef.HasTag("OxygenGenerator"))
+                        continue;
 
                     if (TryGetAtmosphereRegion(n, out int regionId))
                         sides.Add(regionId);
@@ -96,7 +101,7 @@ namespace CargoSpace.Server
                 if (touchesSpace)
                 {
                     foreach (int id in sides)
-                        _leakEdges.Add(new LeakEdge(id, 0));
+                        newEdges.Add(NormalizedEdge(id, 0));
                 }
 
                 var ids = sides.ToList();
@@ -104,9 +109,67 @@ namespace CargoSpace.Server
                 {
                     for (int j = i + 1; j < ids.Count; j++)
                     {
-                        _leakEdges.Add(new LeakEdge(ids[i], ids[j]));
+                        newEdges.Add(NormalizedEdge(ids[i], ids[j]));
                     }
                 }
+            }
+
+            // Any region tile with a missing or Vacuum neighbor is open to space.
+            foreach (var kvp in _grid)
+            {
+                Vector2I coord = kvp.Key;
+                if (!_regionManager.TryGetRegion(coord, out int regionId))
+                    continue;
+
+                foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })
+                {
+                    Vector2I n = coord + dir;
+                    if (IsOpenToSpace(n))
+                        newEdges.Add(NormalizedEdge(regionId, 0));
+                }
+            }
+
+            _leakEdges = newEdges.ToList();
+
+            // Determine which regions are directly exposed to space (leak edge to region 0).
+            // A region that is open to vacuum cannot be pressurized by oxygen generators.
+            HashSet<int> exposedRegions = new();
+            foreach (LeakEdge edge in _leakEdges)
+            {
+                if (edge.A == 0)
+                    exposedRegions.Add(edge.B);
+                else if (edge.B == 0)
+                    exposedRegions.Add(edge.A);
+            }
+
+            foreach (int regionId in _regionData.Keys.ToList())
+            {
+                RegionAtmosphere atm = _regionData[regionId];
+                atm.ExposedToSpace = exposedRegions.Contains(regionId);
+                _regionData[regionId] = atm;
+            }
+
+            // Push the current atmosphere for every region so clients don't
+            // have to wait for a change to see the initial state.
+            foreach (int regionId in _regionData.Keys.ToList())
+            {
+                OnRegionAtmosphereChanged(regionId);
+            }
+        }
+
+        public void SendAtmosphereToClient(long clientId)
+        {
+            if (_networkBridge == null)
+                return;
+
+            foreach (var kvp in _regionData)
+            {
+                int regionId = kvp.Key;
+                if (!_regionManager.TryGetRepresentativeTile(regionId, out Vector2I safeTile))
+                    continue;
+
+                RegionAtmosphere atm = kvp.Value;
+                _networkBridge.SendRegionAtmosphere(clientId, regionId, safeTile, atm.OxygenLevel, atm.Smoke);
             }
         }
 
@@ -133,8 +196,10 @@ namespace CargoSpace.Server
                 byte minO2 = minNeighborOxygen.GetValueOrDefault(regionId, (byte)2);
                 bool hasCore = _oxygenatingRegions.Contains(regionId);
 
-                bool losing = minO2 < atm.OxygenLevel;
-                bool gaining = hasCore && atm.OxygenLevel < 2;
+                // A generator can only raise oxygen while the region is airtight.
+                // An exposed room decompresses steadily toward vacuum.
+                bool losing = atm.OxygenLevel > 0 && (atm.ExposedToSpace || minO2 < atm.OxygenLevel);
+                bool gaining = !atm.ExposedToSpace && hasCore && atm.OxygenLevel < 2;
 
                 if (losing)
                     atm.EqualizationProgress++;
@@ -180,7 +245,7 @@ namespace CargoSpace.Server
             if (_regionData.TryGetValue(regionId, out RegionAtmosphere atm))
                 return atm.OxygenLevel;
 
-            return 2;
+            return 0;
         }
 
         private void OnRegionAtmosphereChanged(int regionId)
@@ -202,6 +267,23 @@ namespace CargoSpace.Server
         {
             TileDefinition def = tile.GetEffectiveDefinition();
             return def != null && def.HasTag("Leaky");
+        }
+
+        private LeakEdge NormalizedEdge(int a, int b)
+        {
+            return new LeakEdge(Math.Min(a, b), Math.Max(a, b));
+        }
+
+        private bool IsOpenToSpace(Vector2I coord)
+        {
+            if (!_grid.TryGetValue(coord, out GridTileData tile))
+                return true;
+
+            TileDefinition def = tile.GetEffectiveDefinition();
+            if (def == null)
+                return true;
+
+            return def.HasTag("Vacuum");
         }
 
         private bool TryGetAtmosphereRegion(Vector2I coord, out int regionId)
