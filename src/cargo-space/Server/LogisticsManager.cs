@@ -284,10 +284,7 @@ namespace CargoSpace.Server
                 Vector2I? destination = FindStorageDestination(itemId);
 
                 if (destination == null)
-                {
-                    GameLogger.Debug($"GenerateHaulJobs: no available storage destination for {itemId}");
                     continue;
-                }
 
                 // Avoid creating haul jobs that have no reachable path. Resolve walkable
                 // proxies for the item and destination, then verify region reachability.
