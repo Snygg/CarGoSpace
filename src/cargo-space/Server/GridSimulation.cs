@@ -53,13 +53,14 @@ namespace CargoSpace.Server
         {
             string[] blueprint = new string[]
             {
-                ". . C . C . .",
-                ". . D . D . .",
-                ". . D . D . .",
-                ". . D . D . .",
-                ". . P . P . .",
-                ". H C D C . .",
-                ". . . . . . ."
+                ". H H H H H .",
+                ". H C D C H .",
+                ". H D D D H .",
+                ". H D D D H .",
+                ". H D S D H .",
+                ". H P D P H .",
+                ". H T D C H .",
+                ". H H H H H ."
             };
 
             // Map characters to the StringIds in tiles.json
@@ -68,7 +69,9 @@ namespace CargoSpace.Server
                 { '.', "space" },
                 { 'D', "deck" },
                 { 'C', "console" },
-                { 'H', "harpoon" }
+                { 'H', "hull" },
+                { 'S', "ship_core" },
+                { 'T', "harpoon" }
             };
 
             int height = blueprint.Length;
