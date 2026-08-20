@@ -212,6 +212,7 @@ namespace CargoSpace.Client
         {
             GameLogger.Debug($"HandleGridComplete: Received complete grid with {_dataCache.Grid.Count} tiles");
             _visualGrid?.RenderGrid(_dataCache.Grid);
+            _dataCache.RecalculateRegions();
             _harpoonLayer?.QueueRedraw();
             _dataCache.IsGridRendered = true;
 
@@ -361,6 +362,43 @@ namespace CargoSpace.Client
             }
 
             _visualGrid?.UpdateZones(_dataCache.GetAllZones());
+        }
+
+        public void HandleRegionAtmosphere(Vector2I safeTile, byte oxygen, byte smoke)
+        {
+            GameLogger.Debug($"HandleRegionAtmosphere: safeTile={safeTile}, oxygen={oxygen}, smoke={smoke}");
+
+            // Keep the client region graph in sync before resolving the safe tile.
+            _dataCache.RecalculateRegions();
+
+            if (!_dataCache.TryGetRegion(safeTile, out int regionId))
+            {
+                GameLogger.Warning($"HandleRegionAtmosphere: no client region for safeTile {safeTile}");
+                return;
+            }
+
+            if (!_dataCache.TryGetRegionTiles(regionId, out var tiles))
+            {
+                GameLogger.Warning($"HandleRegionAtmosphere: no tiles for region {regionId}");
+                return;
+            }
+
+            int? sourceId = null;
+
+            if (smoke > 0)
+            {
+                sourceId = _textureFactory.GetAtmosphereSourceId("Smoke");
+            }
+            else if (oxygen == 0)
+            {
+                sourceId = _textureFactory.GetAtmosphereSourceId("ZeroOxygen");
+            }
+            else if (oxygen == 1)
+            {
+                sourceId = _textureFactory.GetAtmosphereSourceId("LowOxygen");
+            }
+
+            _visualGrid?.UpdateAtmosphere(sourceId, tiles);
         }
 
         private void UpdatePawnVisual(PawnId id, Vector2I gridPosition)

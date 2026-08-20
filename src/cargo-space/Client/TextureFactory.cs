@@ -9,17 +9,32 @@ namespace CargoSpace.Client
         private TileSet _tileSet;
         private TileSet _hazardTileSet;
         private TileSet _zoneTileSet;
+        private TileSet _atmosphereTileSet;
+        private Shader _atmosphereShader;
 
         public TextureFactory()
         {
             _tileSet = CreateTileSet();
             _hazardTileSet = CreateHazardTileSet();
             _zoneTileSet = CreateZoneTileSet();
+            _atmosphereTileSet = CreateAtmosphereTileSet();
         }
 
         public TileSet GetTileSet() => _tileSet;
         public TileSet GetHazardTileSet() => _hazardTileSet;
         public TileSet GetZoneTileSet() => _zoneTileSet;
+        public TileSet GetAtmosphereTileSet() => _atmosphereTileSet;
+
+        public int GetAtmosphereSourceId(string name)
+        {
+            return name switch
+            {
+                "ZeroOxygen" => 0,
+                "LowOxygen" => 1,
+                "Smoke" => 2,
+                _ => -1
+            };
+        }
 
         public int GetSourceId(byte typeId, int state)
         {
@@ -243,6 +258,88 @@ namespace CargoSpace.Client
                 ZoneType.Storage => new Color(0.2f, 0.5f, 1.0f, 1.0f),
                 _ => new Color(1.0f, 1.0f, 1.0f, 0.0f)
             };
+        }
+
+        private TileSet CreateAtmosphereTileSet()
+        {
+            TileSet tileSet = new TileSet();
+            tileSet.TileSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+
+            AddAtmosphereSource(tileSet, 0, "ZeroOxygen", new Color(0.0f, 0.0f, 0.0f, 0.55f), 0.0f);
+            AddAtmosphereSource(tileSet, 1, "LowOxygen", new Color(0.65f, 0.85f, 1.0f, 0.55f), 1.5f);
+            AddAtmosphereSource(tileSet, 2, "Smoke", new Color(0.7f, 0.7f, 0.7f, 0.45f), 1.0f);
+
+            return tileSet;
+        }
+
+        private void AddAtmosphereSource(TileSet tileSet, int id, string name, Color color, float speed)
+        {
+            Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
+            image.Fill(Colors.White);
+
+            ImageTexture texture = ImageTexture.CreateFromImage(image);
+            TileSetAtlasSource atlasSource = new TileSetAtlasSource();
+            atlasSource.Texture = texture;
+            atlasSource.TextureRegionSize = new Vector2I(Constants.TileSize, Constants.TileSize);
+            atlasSource.CreateTile(new Vector2I(0, 0));
+
+            ShaderMaterial material = CreateAtmosphereMaterial(color, speed);
+            atlasSource.GetTileData(new Vector2I(0, 0), 0).Material = material;
+
+            tileSet.AddSource(atlasSource, id);
+        }
+
+        private Shader CreateAtmosphereShader()
+        {
+            if (_atmosphereShader == null)
+            {
+                _atmosphereShader = new Shader();
+                _atmosphereShader.Code = @"
+shader_type canvas_item;
+
+uniform vec4 base_color : source_color = vec4(0.65, 0.85, 1.0, 0.55);
+uniform float speed : hint_range(0.0, 10.0) = 1.5;
+uniform float dot_count : hint_range(1.0, 8.0) = 3.0;
+uniform float dot_size : hint_range(0.0, 0.5) = 0.12;
+
+void fragment() {
+    // Static overlay when speed is zero (Zero Oxygen).
+    if (speed == 0.0) {
+        COLOR = base_color;
+        return;
+    }
+
+    vec2 uv = UV - vec2(0.5);
+    float dist = length(uv);
+    float angle = atan(uv.y, uv.x);
+
+    // Rotating swirl pattern
+    float swirl = angle - TIME * speed + dist * 8.0;
+    float pattern = fract(swirl * dot_count / 6.28318530718);
+    float dots = 1.0 - smoothstep(0.0, dot_size, abs(pattern - 0.5));
+
+    // Fade at tile edges
+    dots *= 1.0 - smoothstep(0.35, 0.5, dist);
+
+    COLOR = base_color;
+    COLOR.a *= dots;
+}
+";
+            }
+
+            return _atmosphereShader;
+        }
+
+        private ShaderMaterial CreateAtmosphereMaterial(Color color, float speed)
+        {
+            ShaderMaterial material = new ShaderMaterial();
+            material.Shader = CreateAtmosphereShader();
+            material.SetShaderParameter("base_color", color);
+            material.SetShaderParameter("speed", speed);
+            material.SetShaderParameter("dot_count", 3.0f);
+            material.SetShaderParameter("dot_size", 0.12f);
+
+            return material;
         }
     }
 }

@@ -9,6 +9,7 @@ namespace CargoSpace.Client
         private TileMapLayer _tileMapLayer;
         private TileMapLayer _surfaceLayer;
         private TileMapLayer _hazardLayer;
+        private TileMapLayer _atmosphereLayer;
         private TileMapLayer _zoneLayer;
         private ItemOverlayLayer _itemLayer;
         private Dictionary<Vector2I, List<string>> _groundItems = new();
@@ -42,11 +43,17 @@ namespace CargoSpace.Client
             _hazardLayer.TileSet = _textureFactory.GetHazardTileSet();
             AddChild(_hazardLayer);
 
-            // Create the zone overlay layer between hazards and items
+            // Create the zone overlay layer above hazards
             _zoneLayer = new TileMapLayer();
             _zoneLayer.TileSet = _textureFactory.GetZoneTileSet();
             _zoneLayer.ZIndex = 1;
             AddChild(_zoneLayer);
+
+            // Create the atmosphere overlay layer between zones and items
+            _atmosphereLayer = new TileMapLayer();
+            _atmosphereLayer.TileSet = _textureFactory.GetAtmosphereTileSet();
+            _atmosphereLayer.ZIndex = 1;
+            AddChild(_atmosphereLayer);
 
             // Create the item overlay layer on top of everything
             _itemLayer = new ItemOverlayLayer();
@@ -105,12 +112,27 @@ namespace CargoSpace.Client
             }
         }
 
+        public void UpdateAtmosphere(int? sourceId, List<Vector2I> tiles)
+        {
+            if (tiles == null)
+                return;
+
+            foreach (Vector2I coord in tiles)
+            {
+                if (sourceId.HasValue)
+                    _atmosphereLayer?.SetCell(coord, sourceId.Value, new Vector2I(0, 0));
+                else
+                    _atmosphereLayer?.EraseCell(coord);
+            }
+        }
+
         public void RenderGrid(IReadOnlyDictionary<Vector2I, GridTileData> grid)
         {
             GameLogger.Debug($"RenderGrid called with {grid.Count} tiles");
 
             // Clear existing tiles
             _tileMapLayer.Clear();
+            _atmosphereLayer?.Clear();
 
             // Keep this Node2D at world origin
             Position = Vector2.Zero;

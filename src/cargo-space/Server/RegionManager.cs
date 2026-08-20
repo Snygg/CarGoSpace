@@ -67,5 +67,40 @@ namespace CargoSpace.Server
                    _regionByCoord.TryGetValue(b, out int regionB) &&
                    regionA == regionB;
         }
+
+        public IEnumerable<int> GetAllRegions()
+        {
+            HashSet<int> regions = new HashSet<int>();
+            foreach (int id in _regionByCoord.Values)
+            {
+                regions.Add(id);
+            }
+
+            return regions;
+        }
+
+        public bool TryGetRepresentativeTile(int regionId, out Vector2I tile)
+        {
+            foreach (var kvp in _regionByCoord)
+            {
+                if (kvp.Value == regionId)
+                {
+                    tile = kvp.Key;
+                    return true;
+                }
+            }
+
+            tile = default;
+            return false;
+        }
+
+        public IEnumerable<Vector2I> GetTilesInRegion(int regionId)
+        {
+            foreach (var kvp in _regionByCoord)
+            {
+                if (kvp.Value == regionId)
+                    yield return kvp.Key;
+            }
+        }
     }
 }

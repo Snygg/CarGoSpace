@@ -182,6 +182,13 @@ namespace CargoSpace.Shared
             _clientManager?.HandleZoneUpdate(tileArray, typeArray);
         }
 
+        [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+        public void RPC_UpdateRegionAtmosphere(int regionId, Vector2I safeTile, byte oxygen, byte smoke)
+        {
+            GameLogger.Debug($"RPC_UpdateRegionAtmosphere: region {regionId} at {safeTile}, oxygen {oxygen}, smoke {smoke}");
+            _clientManager?.HandleRegionAtmosphere(safeTile, oxygen, smoke);
+        }
+
         // Methods for managers to call RPCs
         public void SendGridSize(long clientId, int size)
         {
@@ -258,6 +265,11 @@ namespace CargoSpace.Shared
             }
 
             Rpc(nameof(ReceiveZoneUpdate_RPC), tiles, types);
+        }
+
+        public void BroadcastRegionAtmosphere(int regionId, Vector2I safeTile, byte oxygen, byte smoke)
+        {
+            Rpc(nameof(RPC_UpdateRegionAtmosphere), regionId, safeTile, oxygen, smoke);
         }
 
         public void SendToggleZoneTiles(Vector2I[] tiles, byte zoneType)

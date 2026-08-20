@@ -24,6 +24,7 @@ namespace CargoSpace.Server
         private LogisticsManager _logisticsManager;
         private PowerManager _powerManager;
         private ConstructionManager _constructionManager;
+        private AtmosphereManager _atmosphereManager;
         private bool _regionsDirty = true;
 
         public RegionManager RegionManager => _regionManager;
@@ -44,6 +45,7 @@ namespace CargoSpace.Server
             _powerManager = new PowerManager(this, networkBridge);
 
             InitializeGrid();
+            _atmosphereManager = new AtmosphereManager(_regionManager, _grid, networkBridge);
             InitializePathfinding();
         }
 
@@ -300,6 +302,7 @@ namespace CargoSpace.Server
                 GridTileData tileData = _grid[target];
                 tileData.HazardState = hazardState;
                 _grid[target] = tileData;
+                _regionsDirty = true;
                 _networkBridge?.BroadcastTileUpdate(target, tileData);
             }
         }
@@ -362,6 +365,7 @@ namespace CargoSpace.Server
             if (_regionsDirty)
             {
                 _regionManager.Recalculate(_grid);
+                _atmosphereManager.OnRegionsChanged();
                 _jobManager.ClearUnreachableCooldowns();
                 _regionsDirty = false;
             }
@@ -447,6 +451,7 @@ namespace CargoSpace.Server
             _constructionManager.Tick();
             _logisticsManager.Tick();
             _powerManager.Tick();
+            _atmosphereManager.Tick();
         }
 
         // Power and logistics logic moved to dedicated managers.
