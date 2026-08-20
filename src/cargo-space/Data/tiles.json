@@ -12,6 +12,7 @@
     "Layer": "Floor",
     "Tags": ["Walkable", "StoresUnidentified"],
     "HexColor": "#808080",
+    "Recipe": { "scrap_metal": 1 },
     "DeconstructYield": { "scrap_metal": 1 }
   },
   "console": {
@@ -50,9 +51,28 @@
   "wall": {
     "TypeId": 7,
     "Name": "Wall",
-    "Tags": ["Constructable"],
-    "HexColor": "#555555",
+    "Layer": "Surface",
+    "Tags": ["Leaky"],
+    "HexColor": "#777777",
     "Recipe": { "scrap_metal": 2 },
     "DeconstructYield": { "scrap_metal": 1 }
+  },
+  "hull": {
+    "TypeId": 8,
+    "Name": "Hull",
+    "Layer": "Surface",
+    "Tags": [],
+    "HexColor": "#333333",
+    "Recipe": { "scrap_metal": 3 },
+    "DeconstructYield": { "scrap_metal": 1 }
+  },
+  "ship_core": {
+    "TypeId": 9,
+    "Name": "Ship Core",
+    "Layer": "Surface",
+    "Tags": ["OxygenGenerator", "Interactable", "Operable", "Walkable"],
+    "HexColor": "#00FF00",
+    "Recipe": { "scrap_metal": 5 },
+    "Stats": { "HarpoonRate": 1.5 }
   }
 }

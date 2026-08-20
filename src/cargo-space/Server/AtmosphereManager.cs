@@ -79,7 +79,7 @@ namespace CargoSpace.Server
                     if (nDef == null)
                         continue;
 
-                    if (nDef.StringId == "wall" || nDef.HasTag("Vacuum"))
+                    if (nDef.Layer == "Surface" || nDef.HasTag("Vacuum"))
                     {
                         if (nDef.HasTag("Vacuum"))
                             touchesSpace = true;
@@ -201,7 +201,7 @@ namespace CargoSpace.Server
         private bool IsLeakyWall(GridTileData tile)
         {
             TileDefinition def = tile.GetEffectiveDefinition();
-            return def != null && def.StringId == "wall" && tile.HazardState == LeakHazardState;
+            return def != null && def.HasTag("Leaky");
         }
 
         private bool TryGetAtmosphereRegion(Vector2I coord, out int regionId)
@@ -216,8 +216,11 @@ namespace CargoSpace.Server
             if (def == null)
                 return false;
 
-            // Walls and vacuum tiles are not part of any room.
-            if (def.StringId == "wall" || def.HasTag("Vacuum"))
+            // Vacuum tiles, leaky walls, and non-generator surfaces are not part of any room.
+            if (def.HasTag("Vacuum"))
+                return false;
+
+            if (def.Layer == "Surface" && !def.HasTag("OxygenGenerator"))
                 return false;
 
             foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })

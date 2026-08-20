@@ -147,8 +147,8 @@ namespace CargoSpace.Client
             Image image = Image.CreateEmpty(Constants.TileSize, Constants.TileSize, false, Image.Format.Rgba8);
             image.Fill(color);
 
-            // Draw a black border on wall tiles so they stand out from the deck floor
-            if (tileDef.StringId == "wall")
+            // Draw a black border on wall/hull tiles so they stand out from the deck floor
+            if (tileDef.StringId == "wall" || tileDef.StringId == "hull")
             {
                 Color borderColor = Colors.Black;
                 int borderThickness = 2;

@@ -434,7 +434,7 @@ namespace CargoSpace.Client
 
             foreach (TileDefinition tileDef in TileRegistry.AllTiles)
             {
-                if (!tileDef.HasTag("Constructable"))
+                if (tileDef.BuildCost <= 0)
                     continue;
 
                 Button buildButton = new Button();

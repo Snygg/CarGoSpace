@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace CargoSpace.Core
@@ -21,6 +22,7 @@ namespace CargoSpace.Core
 
         public bool IsWalkable => Tags != null && Tags.Contains("Walkable");
         public bool IsInteractable => Tags != null && Tags.Contains("Interactable");
+        public int BuildCost => Recipe?.Values.Sum() ?? 0;
 
         public bool HasTag(string tag)
         {
