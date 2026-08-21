@@ -1,6 +1,7 @@
 using Godot;
 using CargoSpace.Core;
 using CargoSpace.Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -132,7 +133,7 @@ namespace CargoSpace.Server
                 return null;
 
             RegionManager regionManager = _gridSimulation.RegionManager;
-            if (!regionManager.TryGetRegion(origin.Value, out int startRegion))
+            if (!regionManager.TryGetRegion(origin.Value, out Guid startRegion))
                 return null;
 
             Queue<Vector2I> queue = new();
@@ -155,7 +156,7 @@ namespace CargoSpace.Server
                     if (visited.Contains(next))
                         continue;
 
-                    if (!regionManager.TryGetRegion(next, out int nextRegion) || nextRegion != startRegion)
+                    if (!regionManager.TryGetRegion(next, out Guid nextRegion) || nextRegion != startRegion)
                         continue;
 
                     visited.Add(next);

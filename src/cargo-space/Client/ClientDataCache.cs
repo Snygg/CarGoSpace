@@ -1,7 +1,7 @@
 using Godot;
 using CargoSpace.Core;
-using CargoSpace.Server;
 using System.Collections.Generic;
+using CargoSpace.Server;
 
 namespace CargoSpace.Client
 {
@@ -13,7 +13,7 @@ namespace CargoSpace.Client
         private Dictionary<Vector2I, ZoneType> _zoneTiles = new();
         private HashSet<Vector2I> _activeHazards = new();
         private Dictionary<Vector2I, Blueprint> _blueprints = new();
-        private RegionManager _regionManager = new();
+        private ClientRegionManager _regionManager = new();
 
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
@@ -39,7 +39,7 @@ namespace CargoSpace.Client
 
         public IReadOnlyCollection<Vector2I> ActiveHazards => _activeHazards;
         public IReadOnlyDictionary<Vector2I, Blueprint> Blueprints => _blueprints;
-        public RegionManager RegionManager => _regionManager;
+        public ClientRegionManager RegionManager => _regionManager;
 
         public void RecalculateRegions()
         {

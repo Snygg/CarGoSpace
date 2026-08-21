@@ -183,9 +183,9 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void RPC_UpdateRegionAtmosphere(int regionId, Vector2I safeTile, byte oxygen, byte smoke)
+        public void RPC_UpdateRegionAtmosphere(Vector2I safeTile, byte oxygen, byte smoke)
         {
-            GameLogger.Debug($"RPC_UpdateRegionAtmosphere: region {regionId} at {safeTile}, oxygen {oxygen}, smoke {smoke}");
+            GameLogger.Debug($"RPC_UpdateRegionAtmosphere: {safeTile}, oxygen {oxygen}, smoke {smoke}");
             _clientManager?.HandleRegionAtmosphere(safeTile, oxygen, smoke);
         }
 
@@ -267,14 +267,14 @@ namespace CargoSpace.Shared
             Rpc(nameof(ReceiveZoneUpdate_RPC), tiles, types);
         }
 
-        public void BroadcastRegionAtmosphere(int regionId, Vector2I safeTile, byte oxygen, byte smoke)
+        public void BroadcastRegionAtmosphere(Vector2I safeTile, byte oxygen, byte smoke)
         {
-            Rpc(nameof(RPC_UpdateRegionAtmosphere), regionId, safeTile, oxygen, smoke);
+            Rpc(nameof(RPC_UpdateRegionAtmosphere), safeTile, oxygen, smoke);
         }
 
-        public void SendRegionAtmosphere(long clientId, int regionId, Vector2I safeTile, byte oxygen, byte smoke)
+        public void SendRegionAtmosphere(long clientId, Vector2I safeTile, byte oxygen, byte smoke)
         {
-            RpcId(clientId, nameof(RPC_UpdateRegionAtmosphere), regionId, safeTile, oxygen, smoke);
+            RpcId(clientId, nameof(RPC_UpdateRegionAtmosphere), safeTile, oxygen, smoke);
         }
 
         public void SendToggleZoneTiles(Vector2I[] tiles, byte zoneType)
