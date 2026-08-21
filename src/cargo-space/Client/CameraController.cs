@@ -48,5 +48,23 @@ namespace CargoSpace.Client
             Position = new Vector2(gridWidth / 2f, gridHeight / 2f);
             GameLogger.Debug($"Camera centered on grid at {Position}");
         }
+
+        public Rect2 GetVisibleWorldRect()
+        {
+            Vector2 viewportSize = GetViewport().GetVisibleRect().Size;
+            Vector2 visibleSize = viewportSize / Zoom;
+            return new Rect2(Position - visibleSize / 2, visibleSize);
+        }
+
+        public bool IsWorldCoordVisible(Vector2I coord, Rect2? visibleRect = null)
+        {
+            Rect2 worldRect = visibleRect ?? GetVisibleWorldRect();
+
+            Vector2 worldMin = new Vector2(coord.X * Constants.TileSize, coord.Y * Constants.TileSize);
+            Vector2 worldMax = worldMin + new Vector2(Constants.TileSize, Constants.TileSize);
+            Rect2 tileRect = new Rect2(worldMin, worldMax - worldMin);
+
+            return worldRect.Intersects(tileRect);
+        }
     }
 }

@@ -1,14 +1,13 @@
 using Godot;
 using CargoSpace.Core;
-using CargoSpace.Server;
 using System.Collections.Generic;
+using CargoSpace.Server;
 using CargoSpace.Shared;
 
 namespace CargoSpace.Client
 {
     public partial class ClientManager : Node
     {
-        private ENetMultiplayerPeer _peer;
         private VisualGrid _visualGrid;
         private GridHighlighter _gridHighlighter;
         private TextureFactory _textureFactory;
@@ -19,7 +18,8 @@ namespace CargoSpace.Client
         private FlotsamVisualLayer _flotsamVisualLayer;
         private HarpoonLayer _harpoonLayer;
         private NetworkBridge _networkBridge;
-        private Dictionary<PawnId, PawnVisual> _pawnVisuals = new();
+        private NetworkClient _networkClient;
+        private ClientEntityManager _clientEntityManager;
 
         private ClientDataCache _dataCache;
         private InputController _inputController;
@@ -64,6 +64,9 @@ namespace CargoSpace.Client
             _harpoonLayer.ZIndex = 1;
             AddChild(_harpoonLayer);
 
+            _clientEntityManager = new ClientEntityManager();
+            AddChild(_clientEntityManager);
+
             _uiManager = new UIManager();
             _uiManager.Initialize(this, _networkBridge);
             AddChild(_uiManager);
@@ -78,80 +81,35 @@ namespace CargoSpace.Client
 
             _harpoonLayer.GridRef = _dataCache.Grid;
 
-            StartClient();
-        }
+            _networkClient = new NetworkClient();
+            AddChild(_networkClient);
 
-        private void StartClient()
-        {
-            GameLogger.Debug("Starting client connection...");
-            _peer = new ENetMultiplayerPeer();
-            var error = _peer.CreateClient(Constants.ServerAddress, Constants.ServerPort);
-
-            if (error != Error.Ok)
+            _networkClient.OnConnectedToServer += () =>
             {
-                GameLogger.Error($"Failed to start client: {error}");
-                return;
-            }
+                GameLogger.Debug("Connected to server");
+                _networkBridge?.RequestGrid();
+            };
 
-            Multiplayer.MultiplayerPeer = _peer;
-            Multiplayer.ConnectedToServer += OnConnectedToServer;
-            Multiplayer.ConnectionFailed += OnConnectionFailed;
-            Multiplayer.ServerDisconnected += OnServerDisconnected;
-        }
+            _networkClient.OnConnectionFailed += () => GameLogger.Error("Failed to connect to server");
+            _networkClient.OnServerDisconnected += () => GameLogger.Debug("Disconnected from server");
 
-        private void OnConnectedToServer()
-        {
-            GameLogger.Debug("Successfully connected to server!");
-            // Request grid data from server via NetworkBridge
-            _networkBridge.RequestGrid();
-        }
-
-        private void OnConnectionFailed()
-        {
-            GameLogger.Error("Failed to connect to server");
-        }
-
-        private void OnServerDisconnected()
-        {
-            GameLogger.Debug("Disconnected from server");
+            _networkClient.StartClient();
         }
 
         public override void _Process(double delta)
         {
             if (!_dataCache.IsGridRendered || _dataCache.ActiveHazards.Count == 0)
-            {
                 return;
-            }
 
-            Rect2 visibleRect = GetVisibleWorldRect();
+            Rect2 visibleRect = _camera.GetVisibleWorldRect();
 
-            // Only check intersection math for tiles that actually have hazards!
             foreach (Vector2I coord in _dataCache.ActiveHazards)
             {
                 if (_dataCache.TryGetTile(coord, out GridTileData tileData))
                 {
-                    _uiManager.TryDiscoverHazard(coord, tileData.HazardState, IsCoordVisible(coord, visibleRect));
+                    _uiManager.TryDiscoverHazard(coord, tileData.HazardState, _camera.IsWorldCoordVisible(coord, visibleRect));
                 }
             }
-        }
-
-        private Rect2 GetVisibleWorldRect()
-        {
-            Vector2 viewportSize = GetViewport().GetVisibleRect().Size;
-            Vector2 cameraPosition = _camera.Position;
-            Vector2 zoom = _camera.Zoom;
-            Vector2 visibleSize = viewportSize / zoom;
-
-            return new Rect2(cameraPosition - visibleSize / 2, visibleSize);
-        }
-
-        private bool IsCoordVisible(Vector2I coord, Rect2 visibleRect)
-        {
-            Vector2 worldMin = new Vector2(coord.X * Constants.TileSize, coord.Y * Constants.TileSize);
-            Vector2 worldMax = worldMin + new Vector2(Constants.TileSize, Constants.TileSize);
-            Rect2 tileRect = new Rect2(worldMin, worldMax - worldMin);
-
-            return visibleRect.Intersects(tileRect);
         }
 
         public void SetPaintingMode(byte zoneType)
@@ -180,6 +138,7 @@ namespace CargoSpace.Client
             GameLogger.Debug($"HandleGridSize: Expecting {size} tiles");
             _dataCache.ExpectedTileCount = size;
             _dataCache.ClearGrid();
+            _clientEntityManager?.ClearPawns();
             _dataCache.IsGridRendered = false;
         }
 
@@ -247,8 +206,7 @@ namespace CargoSpace.Client
 
             if (entityType == EntityType.Pawn)
             {
-                PawnId id = PawnId.FromBytes(idBytes);
-                UpdatePawnVisual(id, position);
+                _clientEntityManager?.UpdatePawnPosition(PawnId.FromBytes(idBytes), position);
             }
         }
 
@@ -399,35 +357,6 @@ namespace CargoSpace.Client
             }
 
             _visualGrid?.UpdateAtmosphere(sourceId, tiles);
-        }
-
-        private void UpdatePawnVisual(PawnId id, Vector2I gridPosition)
-        {
-            if (!_pawnVisuals.ContainsKey(id))
-            {
-                PawnVisual pawnVisual = new PawnVisual();
-                pawnVisual.ZIndex = 10;
-                AddChild(pawnVisual);
-                _pawnVisuals[id] = pawnVisual;
-            }
-
-            PawnVisual visual = _pawnVisuals[id];
-
-            // Position pawn at world coordinates (same as VisualGrid)
-            Vector2 worldPosition = new Vector2(
-                gridPosition.X * Constants.TileSize,
-                gridPosition.Y * Constants.TileSize
-            );
-
-            visual.Position = worldPosition;
-        }
-
-        public override void _ExitTree()
-        {
-            if (_peer != null)
-            {
-                _peer.Close();
-            }
         }
     }
 }
