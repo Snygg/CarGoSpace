@@ -17,12 +17,15 @@ namespace CargoSpace.Client
 
         private int _expectedTileCount = 0;
         private bool _gridRendered = false;
+        private Rect2I _gridBounds;
 
         public int ExpectedTileCount
         {
             get => _expectedTileCount;
             set => _expectedTileCount = value;
         }
+
+        public Rect2I GridBounds => _gridBounds;
 
         public bool IsGridRendered
         {
@@ -62,6 +65,7 @@ namespace CargoSpace.Client
             _grid.Clear();
             _activeHazards.Clear();
             _blueprints.Clear();
+            _gridBounds = default;
         }
 
         public void UpdateBlueprint(Vector2I coord, Blueprint blueprint)
@@ -83,6 +87,8 @@ namespace CargoSpace.Client
         public void UpdateTile(Vector2I coord, GridTileData data)
         {
             _grid[coord] = data;
+            UpdateGridBounds(coord);
+
             if (data.HazardState > 0)
             {
                 _activeHazards.Add(coord);
@@ -91,6 +97,25 @@ namespace CargoSpace.Client
             {
                 _activeHazards.Remove(coord);
             }
+        }
+
+        private void UpdateGridBounds(Vector2I coord)
+        {
+            if (_grid.Count == 0)
+                return;
+
+            if (_gridBounds.Size == Vector2I.Zero)
+            {
+                _gridBounds = new Rect2I(coord, Vector2I.One);
+                return;
+            }
+
+            int minX = System.Math.Min(_gridBounds.Position.X, coord.X);
+            int minY = System.Math.Min(_gridBounds.Position.Y, coord.Y);
+            int maxX = System.Math.Max(_gridBounds.End.X - 1, coord.X);
+            int maxY = System.Math.Max(_gridBounds.End.Y - 1, coord.Y);
+
+            _gridBounds = new Rect2I(minX, minY, maxX - minX + 1, maxY - minY + 1);
         }
 
         public bool TryGetTile(Vector2I coord, out GridTileData data) => _grid.TryGetValue(coord, out data);

@@ -42,10 +42,20 @@ namespace CargoSpace.Client
             }
         }
 
-        public void CenterOnGrid(int gridWidth, int gridHeight)
+        public void CenterOnGrid(Rect2I bounds)
         {
-            // Center camera on the grid
-            Position = new Vector2(gridWidth / 2f, gridHeight / 2f);
+            if (bounds.Size == Vector2I.Zero)
+                return;
+
+            // Center on the mid-point of the used tile range, in world pixels
+            int minX = bounds.Position.X;
+            int minY = bounds.Position.Y;
+            int maxX = bounds.End.X - 1;
+            int maxY = bounds.End.Y - 1;
+
+            float centerX = (minX + maxX) * Constants.TileSize / 2f;
+            float centerY = (minY + maxY) * Constants.TileSize / 2f;
+            Position = new Vector2(centerX, centerY);
             GameLogger.Debug($"Camera centered on grid at {Position}");
         }
 

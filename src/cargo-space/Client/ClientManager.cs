@@ -135,6 +135,15 @@ namespace CargoSpace.Client
         // Handler methods called by NetworkBridge RPCs
         public void HandleGridSize(int size)
         {
+            // `size` is a hint for the initial full-grid sync only.
+            // If a dynamic-size message arrives while a grid is already rendered,
+            // ignore it: per-tile updates from HandleTile carry the real growth.
+            if (_dataCache.IsGridRendered)
+            {
+                GameLogger.Debug($"HandleGridSize: {size} ignored; grid already rendered");
+                return;
+            }
+
             GameLogger.Debug($"HandleGridSize: Expecting {size} tiles");
             _dataCache.ExpectedTileCount = size;
             _dataCache.ClearGrid();
@@ -181,23 +190,8 @@ namespace CargoSpace.Client
 
         private void CenterCameraOnGrid()
         {
-            // Calculate grid bounds
-            int minX = int.MaxValue, maxX = int.MinValue;
-            int minY = int.MaxValue, maxY = int.MinValue;
-
-            foreach (var coord in _dataCache.Grid.Keys)
-            {
-                minX = Mathf.Min(minX, coord.X);
-                maxX = Mathf.Max(maxX, coord.X);
-                minY = Mathf.Min(minY, coord.Y);
-                maxY = Mathf.Max(maxY, coord.Y);
-            }
-
-            int gridWidth = (maxX - minX + 1) * Constants.TileSize;
-            int gridHeight = (maxY - minY + 1) * Constants.TileSize;
-
-            GameLogger.Debug($"Centering camera on grid: {gridWidth}x{gridHeight}");
-            _camera.CenterOnGrid(gridWidth, gridHeight);
+            GameLogger.Debug($"Centering camera on grid bounds: {_dataCache.GridBounds}");
+            _camera.CenterOnGrid(_dataCache.GridBounds);
         }
 
         public void HandleEntityPosition(EntityType entityType, byte[] idBytes, Vector2I position)

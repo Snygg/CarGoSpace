@@ -141,7 +141,12 @@ namespace CargoSpace.Server
         private void InitializePathfinding()
         {
             _pathfinding = new AStarGrid2D();
-            _pathfinding.Region = new Rect2I(new Vector2I(-64, -64), new Vector2I(129, 129));
+
+            // Pre-allocate the largest legal play area. This keeps A* static during
+            // normal gameplay; no expensive Update()/FillSolidRegion() calls happen
+            // while the player is building decks and walls.
+            int regionSize = Constants.MaxShipRadius * 2 + 1;
+            _pathfinding.Region = new Rect2I(-Constants.MaxShipRadius, -Constants.MaxShipRadius, regionSize, regionSize);
             _pathfinding.CellSize = new Vector2I(1, 1);
             _pathfinding.DefaultComputeHeuristic = AStarGrid2D.Heuristic.Manhattan;
             _pathfinding.DefaultEstimateHeuristic = AStarGrid2D.Heuristic.Manhattan;
@@ -177,19 +182,41 @@ namespace CargoSpace.Server
             return _grid.TryGetValue(coord, out GridTileData tileData) ? tileData : new GridTileData(0);
         }
 
+        private bool IsEmptyTile(GridTileData tile)
+        {
+            return tile.TypeId == 0 && tile.SurfaceTypeId == 0 && tile.State == 0 && tile.HazardState == 0;
+        }
+
+        private void TryPruneTile(Vector2I coord)
+        {
+            if (_grid.TryGetValue(coord, out GridTileData tile) && IsEmptyTile(tile))
+                _grid.Remove(coord);
+        }
+
         private void EnsurePathfindingRegion(Vector2I coord)
         {
             if (_pathfinding == null || _pathfinding.IsInBoundsv(coord))
                 return;
 
             Rect2I old = _pathfinding.Region;
-            const int margin = 8;
-            int minX = System.Math.Min(old.Position.X, coord.X - margin);
-            int minY = System.Math.Min(old.Position.Y, coord.Y - margin);
-            int maxX = System.Math.Max(old.End.X - 1, coord.X + margin);
-            int maxY = System.Math.Max(old.End.Y - 1, coord.Y + margin);
+            const int margin = 32;
+
+            // Clamp to the legal world bounds; never allow an unbounded A* expansion
+            int minX = System.Math.Max(-Constants.MaxShipRadius, System.Math.Min(old.Position.X, coord.X - margin));
+            int minY = System.Math.Max(-Constants.MaxShipRadius, System.Math.Min(old.Position.Y, coord.Y - margin));
+            int maxX = System.Math.Min(Constants.MaxShipRadius, System.Math.Max(old.End.X - 1, coord.X + margin));
+            int maxY = System.Math.Min(Constants.MaxShipRadius, System.Math.Max(old.End.Y - 1, coord.Y + margin));
+
+            if (maxX < minX || maxY < minY)
+            {
+                GameLogger.Warning($"EnsurePathfindingRegion: {coord} is outside the legal ship bounds");
+                return;
+            }
 
             Rect2I newRegion = new Rect2I(minX, minY, maxX - minX + 1, maxY - minY + 1);
+            if (newRegion.Position == old.Position && newRegion.Size == old.Size)
+                return;
+
             _pathfinding.Region = newRegion;
             _pathfinding.Update();
             _pathfinding.FillSolidRegion(newRegion, true);
@@ -283,6 +310,14 @@ namespace CargoSpace.Server
             }
 
             tileData.TypeId = typeId;
+
+            // A base reverted to vacuum has no meaningful state or hazard
+            if (typeId == 0)
+            {
+                tileData.State = 0;
+                tileData.HazardState = 0;
+            }
+
             _grid[target] = tileData;
 
             TileDefinition tileDef = tileData.GetEffectiveDefinition();
@@ -305,6 +340,7 @@ namespace CargoSpace.Server
 
             _powerManager?.OnTileChanged(target);
             _networkBridge?.BroadcastTileUpdate(target, tileData);
+            TryPruneTile(target);
         }
 
         public void SetSurfaceType(Vector2I target, byte typeId)
@@ -337,6 +373,7 @@ namespace CargoSpace.Server
 
             _powerManager?.OnTileChanged(target);
             _networkBridge?.BroadcastTileUpdate(target, tileData);
+            TryPruneTile(target);
         }
 
         public void SetTileState(Vector2I target, int state)
@@ -349,6 +386,7 @@ namespace CargoSpace.Server
             tileData.State = state;
             _grid[target] = tileData;
             _networkBridge?.BroadcastTileUpdate(target, tileData);
+            TryPruneTile(target);
         }
 
         public void SetTileHazard(Vector2I target, byte hazardState)
@@ -362,6 +400,7 @@ namespace CargoSpace.Server
             _grid[target] = tileData;
             _regionsDirty = true;
             _networkBridge?.BroadcastTileUpdate(target, tileData);
+            TryPruneTile(target);
         }
 
         public void BroadcastTileUpdate(Vector2I target, GridTileData data)

@@ -17,6 +17,10 @@ namespace CargoSpace.Client
             if (_dataCache == null || targetDef == null)
                 return false;
 
+            if (System.Math.Abs(coord.X) > Constants.MaxShipRadius ||
+                System.Math.Abs(coord.Y) > Constants.MaxShipRadius)
+                return false;
+
             if (_dataCache.Blueprints.ContainsKey(coord))
                 return false;
 

@@ -54,6 +54,13 @@ namespace CargoSpace.Server
             if (_gridSimulation == null)
                 return false;
 
+            if (System.Math.Abs(coord.X) > Constants.MaxShipRadius ||
+                System.Math.Abs(coord.Y) > Constants.MaxShipRadius)
+            {
+                GameLogger.Warning($"PlaceBlueprint: {coord} is outside the legal ship radius ({Constants.MaxShipRadius})");
+                return false;
+            }
+
             GridTileData currentTile = _gridSimulation.GetTileOrSpace(coord);
 
             if (_blueprints.ContainsKey(coord))
