@@ -106,7 +106,7 @@ namespace CargoSpace.Server
                         continue;
                     }
 
-                    if (nDef.Layer == "Surface" && !nDef.HasTag("OxygenGenerator"))
+                    if (nDef.Layer == LayerType.Surface && !nDef.HasTag("OxygenGenerator"))
                         continue;
 
                     if (TryGetAtmosphereRegion(n, out Guid regionId))
@@ -310,7 +310,7 @@ namespace CargoSpace.Server
             if (def.HasTag("Vacuum"))
                 return false;
 
-            if (def.Layer == "Surface" && !def.HasTag("OxygenGenerator"))
+            if (def.Layer == LayerType.Surface && !def.HasTag("OxygenGenerator"))
                 return false;
 
             foreach (Vector2I dir in new[] { Vector2I.Up, Vector2I.Down, Vector2I.Left, Vector2I.Right })

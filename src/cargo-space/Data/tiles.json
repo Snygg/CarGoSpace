@@ -2,7 +2,7 @@
   "space": {
     "TypeId": 0,
     "Name": "Space",
-    "Layer": "Base",
+    "Layer": "Floor",
     "Tags": ["Vacuum"],
     "HexColor": "#00000000"
   },
@@ -18,12 +18,14 @@
   "console": {
     "TypeId": 2,
     "Name": "Console",
+    "Layer": "Surface",
     "Tags": ["Walkable", "Interactable", "Toggleable"],
     "HexColor": "#FFA500"
   },
   "harpoon": {
     "TypeId": 3,
     "Name": "Harpoon",
+    "Layer": "Surface",
     "Tags": ["Walkable", "Interactable", "Operable"],
     "HexColor": "#808080",
     "Stats": { "HarpoonRate": 0.2 }
@@ -31,6 +33,7 @@
   "fusion_generator": {
     "TypeId": 4,
     "Name": "Fusion Generator",
+    "Layer": "Surface",
     "Tags": ["GeneratesPower", "TransfersPower"],
     "HexColor": "#00FFFF",
     "DeconstructYield": { "scrap_metal": 1 }
@@ -45,6 +48,7 @@
   "fabricator": {
     "TypeId": 6,
     "Name": "Fabricator",
+    "Layer": "Surface",
     "Tags": ["ConsumesPower", "TransfersPower"],
     "HexColor": "#FF69B4"
   },
@@ -60,7 +64,7 @@
   "hull": {
     "TypeId": 8,
     "Name": "Hull",
-    "Layer": "Surface",
+    "Layer": "Floor",
     "Tags": [],
     "HexColor": "#333333",
     "Recipe": { "scrap_metal": 3 },

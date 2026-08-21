@@ -51,8 +51,10 @@ namespace CargoSpace.Server
 
         public bool PlaceBlueprint(Vector2I coord, byte targetTypeId)
         {
-            if (_gridSimulation == null || !_gridSimulation.TryGetTile(coord, out GridTileData currentTile))
+            if (_gridSimulation == null)
                 return false;
+
+            GridTileData currentTile = _gridSimulation.GetTileOrSpace(coord);
 
             if (_blueprints.ContainsKey(coord))
                 return false;
@@ -61,49 +63,51 @@ namespace CargoSpace.Server
             if (targetDef == null || targetDef.Recipe == null || targetDef.Recipe.Count == 0)
                 return false;
 
+            TileDefinition currentDef = currentTile.GetEffectiveDefinition();
+            if (currentDef == null)
+                return false;
+
             bool canPlace;
 
-            if (targetDef.Layer == "Floor")
+            if (targetDef.Layer == LayerType.Floor)
             {
                 // Floors replace the base tile and must not be placed under an existing surface
                 if (currentTile.SurfaceTypeId != 0)
                     return false;
 
-                TileDefinition currentDef = TileRegistry.Get(currentTile.TypeId);
-                if (currentDef == null)
-                {
-                    canPlace = false;
-                }
-                else if (currentDef.Layer == "Floor")
-                {
-                    canPlace = true;
-                }
-                else if (currentDef.Layer == "Base")
+                // No reason to build the same floor on top of itself
+                if (currentTile.TypeId == targetDef.TypeId)
+                    return false;
+
+                if (currentDef.HasTag("Vacuum"))
                 {
                     // Reject floating space tiles; must touch existing ship
                     canPlace = IsAdjacentToShip(coord);
+                }
+                else if (currentDef.Layer == LayerType.Floor)
+                {
+                    canPlace = true;
                 }
                 else
                 {
                     canPlace = false;
                 }
             }
-            else if (targetDef.Layer == "Surface")
+            else if (targetDef.Layer == LayerType.Surface)
             {
-                // Surfaces can be built on a floor, or on a space tile that
-                // touches the ship so you can place a hull/wall around the edge.
-                TileDefinition currentDef = currentTile.GetEffectiveDefinition();
-                if (currentDef == null || currentTile.SurfaceTypeId != 0)
+                // Surfaces sit on top of a floor. They cannot be placed on another
+                // surface, nor can they be placed directly on space/vacuum.
+                if (currentTile.SurfaceTypeId != 0)
                 {
                     canPlace = false;
                 }
-                else if (currentDef.Layer == "Floor")
+                else if (currentDef.HasTag("Vacuum"))
+                {
+                    canPlace = false;
+                }
+                else if (currentDef.Layer == LayerType.Floor)
                 {
                     canPlace = true;
-                }
-                else if (currentDef.Layer == "Base")
-                {
-                    canPlace = IsAdjacentToShip(coord);
                 }
                 else
                 {
@@ -139,7 +143,8 @@ namespace CargoSpace.Server
                 if (_gridSimulation.TryGetTile(neighbor, out GridTileData tile))
                 {
                     TileDefinition def = tile.GetEffectiveDefinition();
-                    if (def != null && (def.Layer == "Floor" || def.Layer == "Surface"))
+                    if (def != null && !def.HasTag("Vacuum") &&
+                        (def.Layer == LayerType.Floor || def.Layer == LayerType.Surface))
                         return true;
                 }
             }
@@ -254,12 +259,31 @@ namespace CargoSpace.Server
             TileDefinition targetDef = TileRegistry.Get(bp.TargetTypeId);
             if (targetDef != null)
             {
-                if (targetDef.Layer == "Floor")
+                if (targetDef.Layer == LayerType.Floor)
                 {
+                    // A new floor clears whatever surface was sitting on the old floor.
+                    if (_gridSimulation != null && _gridSimulation.TryGetTile(coord, out GridTileData currentTile) && currentTile.SurfaceTypeId != 0)
+                    {
+                        _gridSimulation.SetSurfaceType(coord, 0);
+                    }
+
                     _gridSimulation?.SetTileType(coord, bp.TargetTypeId);
                 }
-                else
+                else if (targetDef.Layer == LayerType.Surface)
                 {
+                    if (_gridSimulation == null || !_gridSimulation.TryGetTile(coord, out GridTileData currentTile))
+                    {
+                        GameLogger.Warning($"CompleteConstruction: no tile data at {coord}");
+                        return;
+                    }
+
+                    TileDefinition baseDef = TileRegistry.Get(currentTile.TypeId);
+                    if (baseDef == null || baseDef.Layer != LayerType.Floor || baseDef.HasTag("Vacuum"))
+                    {
+                        GameLogger.Warning($"CompleteConstruction: cannot place surface {targetDef.Name} on non-floor base at {coord}");
+                        return;
+                    }
+
                     _gridSimulation?.SetSurfaceType(coord, bp.TargetTypeId);
                 }
 

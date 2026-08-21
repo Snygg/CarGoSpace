@@ -111,13 +111,22 @@ namespace CargoSpace.Server
                     else if (legend.TryGetValue(c, out string stringId))
                     {
                         byte typeId = TileRegistry.GetId(stringId);
-                        // Place surfaces on a deck floor
-                        _grid[coord] = new GridTileData(TileRegistry.GetId("deck"), typeId);
-
                         TileDefinition tileDef = TileRegistry.Get(typeId);
-                        if (tileDef != null && (tileDef.HasTag("GeneratesPower") || tileDef.HasTag("ConsumesPower")))
+
+                        if (tileDef != null && tileDef.Layer == LayerType.Floor)
                         {
-                            _powerManager.RegisterMachine(coord);
+                            // Structural floors (e.g. hull) are the base tile themselves
+                            _grid[coord] = new GridTileData(typeId);
+                        }
+                        else
+                        {
+                            // Surfaces sit on a deck floor
+                            _grid[coord] = new GridTileData(TileRegistry.GetId("deck"), typeId);
+
+                            if (tileDef != null && (tileDef.HasTag("GeneratesPower") || tileDef.HasTag("ConsumesPower")))
+                            {
+                                _powerManager.RegisterMachine(coord);
+                            }
                         }
                     }
                     else
@@ -132,21 +141,22 @@ namespace CargoSpace.Server
         private void InitializePathfinding()
         {
             _pathfinding = new AStarGrid2D();
-            _pathfinding.Region = new Rect2I(new Vector2I(-3, -3), new Vector2I(7, 7));
+            _pathfinding.Region = new Rect2I(new Vector2I(-64, -64), new Vector2I(129, 129));
             _pathfinding.CellSize = new Vector2I(1, 1);
             _pathfinding.DefaultComputeHeuristic = AStarGrid2D.Heuristic.Manhattan;
             _pathfinding.DefaultEstimateHeuristic = AStarGrid2D.Heuristic.Manhattan;
             _pathfinding.DiagonalMode = AStarGrid2D.DiagonalModeEnum.Never;
-            
+
             _pathfinding.Update();
-            
-            // Set walkable/unwalkable tiles
+            _pathfinding.FillSolidRegion(_pathfinding.Region, true);
+
+            // Open only the initial ship tiles based on walkability
             foreach (var kvp in _grid)
             {
                 Vector2I coord = kvp.Key;
                 TileDefinition tileDef = kvp.Value.GetEffectiveDefinition();
-                bool isWalkable = tileDef != null && tileDef.IsWalkable;
-                _pathfinding.SetPointSolid(coord, !isWalkable);
+                if (tileDef != null)
+                    _pathfinding.SetPointSolid(coord, !tileDef.IsWalkable);
             }
         }
 
@@ -160,6 +170,36 @@ namespace CargoSpace.Server
         public bool TryGetTile(Vector2I coord, out GridTileData tileData)
         {
             return _grid.TryGetValue(coord, out tileData);
+        }
+
+        public GridTileData GetTileOrSpace(Vector2I coord)
+        {
+            return _grid.TryGetValue(coord, out GridTileData tileData) ? tileData : new GridTileData(0);
+        }
+
+        private void EnsurePathfindingRegion(Vector2I coord)
+        {
+            if (_pathfinding == null || _pathfinding.IsInBoundsv(coord))
+                return;
+
+            Rect2I old = _pathfinding.Region;
+            const int margin = 8;
+            int minX = System.Math.Min(old.Position.X, coord.X - margin);
+            int minY = System.Math.Min(old.Position.Y, coord.Y - margin);
+            int maxX = System.Math.Max(old.End.X - 1, coord.X + margin);
+            int maxY = System.Math.Max(old.End.Y - 1, coord.Y + margin);
+
+            Rect2I newRegion = new Rect2I(minX, minY, maxX - minX + 1, maxY - minY + 1);
+            _pathfinding.Region = newRegion;
+            _pathfinding.Update();
+            _pathfinding.FillSolidRegion(newRegion, true);
+
+            foreach (var kvp in _grid)
+            {
+                TileDefinition def = kvp.Value.GetEffectiveDefinition();
+                if (def != null)
+                    _pathfinding.SetPointSolid(kvp.Key, !def.IsWalkable);
+            }
         }
 
         public void AddItemToGrid(Vector2I coord, string itemStringId)
@@ -224,7 +264,7 @@ namespace CargoSpace.Server
                 return true;
 
             TileDefinition baseDef = TileRegistry.Get(tile.TypeId);
-            return baseDef?.Layer != "Base";
+            return baseDef != null && !baseDef.HasTag("Vacuum");
         }
 
         // IJobExecutionContext
@@ -237,77 +277,91 @@ namespace CargoSpace.Server
 
         public void SetTileType(Vector2I target, byte typeId)
         {
-            if (_grid.ContainsKey(target))
+            if (!_grid.TryGetValue(target, out GridTileData tileData))
             {
-                GridTileData tileData = _grid[target];
-                tileData.TypeId = typeId;
-                _grid[target] = tileData;
+                tileData = new GridTileData(0);
+            }
 
-                TileDefinition tileDef = tileData.GetEffectiveDefinition();
-                if (_pathfinding != null && tileDef != null)
+            tileData.TypeId = typeId;
+            _grid[target] = tileData;
+
+            TileDefinition tileDef = tileData.GetEffectiveDefinition();
+            if (tileDef != null)
+            {
+                EnsurePathfindingRegion(target);
+
+                if (_pathfinding != null)
                 {
                     _pathfinding.SetPointSolid(target, !tileDef.IsWalkable);
                 }
 
-                _regionsDirty = true;
-
-                _powerManager?.OnTileChanged(target);
-                _networkBridge?.BroadcastTileUpdate(target, tileData);
-
-                if (tileDef != null && !tileDef.IsWalkable)
+                if (!tileDef.IsWalkable)
                 {
                     TryRelocatePawnFromUnwalkableTile(target);
                 }
             }
+
+            _regionsDirty = true;
+
+            _powerManager?.OnTileChanged(target);
+            _networkBridge?.BroadcastTileUpdate(target, tileData);
         }
 
         public void SetSurfaceType(Vector2I target, byte typeId)
         {
-            if (_grid.ContainsKey(target))
+            if (!_grid.TryGetValue(target, out GridTileData tileData))
             {
-                GridTileData tileData = _grid[target];
-                tileData.SurfaceTypeId = typeId;
-                _grid[target] = tileData;
+                tileData = new GridTileData(0);
+            }
 
-                TileDefinition tileDef = tileData.GetEffectiveDefinition();
-                if (_pathfinding != null && tileDef != null)
+            tileData.SurfaceTypeId = typeId;
+            _grid[target] = tileData;
+
+            TileDefinition tileDef = tileData.GetEffectiveDefinition();
+            if (tileDef != null)
+            {
+                EnsurePathfindingRegion(target);
+
+                if (_pathfinding != null)
                 {
                     _pathfinding.SetPointSolid(target, !tileDef.IsWalkable);
                 }
 
-                _regionsDirty = true;
-
-                _powerManager?.OnTileChanged(target);
-                _networkBridge?.BroadcastTileUpdate(target, tileData);
-
-                if (tileDef != null && !tileDef.IsWalkable)
+                if (!tileDef.IsWalkable)
                 {
                     TryRelocatePawnFromUnwalkableTile(target);
                 }
             }
+
+            _regionsDirty = true;
+
+            _powerManager?.OnTileChanged(target);
+            _networkBridge?.BroadcastTileUpdate(target, tileData);
         }
 
         public void SetTileState(Vector2I target, int state)
         {
-            if (_grid.ContainsKey(target))
+            if (!_grid.TryGetValue(target, out GridTileData tileData))
             {
-                GridTileData tileData = _grid[target];
-                tileData.State = state;
-                _grid[target] = tileData;
-                _networkBridge?.BroadcastTileUpdate(target, tileData);
+                tileData = new GridTileData(0);
             }
+
+            tileData.State = state;
+            _grid[target] = tileData;
+            _networkBridge?.BroadcastTileUpdate(target, tileData);
         }
 
         public void SetTileHazard(Vector2I target, byte hazardState)
         {
-            if (_grid.ContainsKey(target))
+            if (!_grid.TryGetValue(target, out GridTileData tileData))
             {
-                GridTileData tileData = _grid[target];
-                tileData.HazardState = hazardState;
-                _grid[target] = tileData;
-                _regionsDirty = true;
-                _networkBridge?.BroadcastTileUpdate(target, tileData);
+                tileData = new GridTileData(0);
             }
+
+            tileData.HazardState = hazardState;
+            _grid[target] = tileData;
+            _regionsDirty = true;
+            _networkBridge?.BroadcastTileUpdate(target, tileData);
         }
 
         public void BroadcastTileUpdate(Vector2I target, GridTileData data)
@@ -517,9 +571,11 @@ namespace CargoSpace.Server
 
         private void CalculatePath(Pawn pawn, Vector2I target)
         {
-            // If the target itself is unwalkable (e.g. a Wall or Space-floor blueprint),
-            // try to use a neighboring walkable tile and work from there.
-            if (_grid.ContainsKey(target) && _pathfinding.IsPointSolid(target))
+            // If the target itself is unwalkable, out of bounds, or does not exist yet
+            // (e.g. a Wall or a blueprint in the void), try to use a neighboring walkable tile.
+            if (!_pathfinding.IsInBoundsv(target) ||
+                _pathfinding.IsPointSolid(target) ||
+                !_grid.ContainsKey(target))
             {
                 Vector2I? adjacent = GetWalkableAdjacent(target, pawn.Position);
                 if (!adjacent.HasValue)

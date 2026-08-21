@@ -3,9 +3,43 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CargoSpace.Core
 {
+    public enum LayerType
+    {
+        Floor,
+        Surface
+    }
+
+    public class LayerTypeJsonConverter : JsonConverter<LayerType>
+    {
+        public override LayerType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.String)
+            {
+                throw new JsonException($"LayerType must be a string; found {reader.TokenType}.");
+            }
+
+            string value = reader.GetString();
+            if (value != null &&
+                Enum.TryParse<LayerType>(value, out var result) &&
+                Enum.IsDefined(typeof(LayerType), result) &&
+                result.ToString() == value)
+            {
+                return result;
+            }
+
+            throw new JsonException($"Invalid LayerType '{value}'. Expected 'Floor' or 'Surface'.");
+        }
+
+        public override void Write(Utf8JsonWriter writer, LayerType value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
+    }
+
     public class TileDefinition
     {
         public byte TypeId { get; set; }
@@ -15,7 +49,8 @@ namespace CargoSpace.Core
         public Dictionary<string, float> Stats { get; set; } = new();
         public Dictionary<string, float> Attributes { get; set; } = new();
         public Dictionary<string, int> Recipe { get; set; } = new();
-        public string Layer { get; set; } = "Surface";
+        [JsonConverter(typeof(LayerTypeJsonConverter))]
+        public LayerType Layer { get; set; }
         public Dictionary<string, int> DeconstructYield { get; set; } = new();
         public byte DeconstructInto { get; set; } = 0;
         public string HexColor { get; set; }
@@ -56,18 +91,48 @@ namespace CargoSpace.Core
 
         public static void LoadFromJson(string json)
         {
-            var parsed = JsonSerializer.Deserialize<Dictionary<string, TileDefinition>>(json, new JsonSerializerOptions
+            using JsonDocument document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                throw new System.IO.InvalidDataException("Tile registry JSON must be an object.");
+            }
+
+            var options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            });
+            };
 
             _tiles = new Dictionary<byte, TileDefinition>();
             _stringToId = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kvp in parsed)
+
+            foreach (JsonProperty property in document.RootElement.EnumerateObject())
             {
-                TileDefinition tileDef = kvp.Value;
-                tileDef.StringId = kvp.Key;
+                string stringId = property.Name;
+                JsonElement element = property.Value;
+
+                if (!element.TryGetProperty("Layer", out JsonElement layerElement) || layerElement.ValueKind != JsonValueKind.String)
+                {
+                    throw new System.IO.InvalidDataException($"Tile '{stringId}' is missing the required 'Layer' property.");
+                }
+
+                TileDefinition tileDef;
+                try
+                {
+                    tileDef = JsonSerializer.Deserialize<TileDefinition>(element.GetRawText(), options);
+                }
+                catch (JsonException ex)
+                {
+                    throw new System.IO.InvalidDataException($"Tile '{stringId}' has an invalid 'Layer' value. Expected 'Floor' or 'Surface'.", ex);
+                }
+
+                if (tileDef == null)
+                {
+                    throw new System.IO.InvalidDataException($"Tile '{stringId}' could not be deserialized.");
+                }
+
+                tileDef.StringId = stringId;
                 tileDef.Tags = new HashSet<string>(tileDef.Tags ?? new HashSet<string>(), StringComparer.OrdinalIgnoreCase);
+
                 _tiles[tileDef.TypeId] = tileDef;
                 _stringToId[tileDef.StringId] = tileDef.TypeId;
             }

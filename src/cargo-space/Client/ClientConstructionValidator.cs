@@ -20,39 +20,41 @@ namespace CargoSpace.Client
             if (_dataCache.Blueprints.ContainsKey(coord))
                 return false;
 
-            if (!_dataCache.TryGetTile(coord, out GridTileData currentTile))
+            GridTileData currentTile = _dataCache.GetTile(coord);
+            TileDefinition currentDef = currentTile.GetEffectiveDefinition();
+            if (currentDef == null)
                 return false;
 
-            if (targetDef.Layer == "Floor")
+            if (targetDef.Layer == LayerType.Floor)
             {
+                // Floors replace the base tile and must not be placed under an existing surface
                 if (currentTile.SurfaceTypeId != 0)
                     return false;
 
-                TileDefinition currentDef = TileRegistry.Get(currentTile.TypeId);
-                if (currentDef == null)
+                // No reason to build the same floor on top of itself
+                if (currentTile.TypeId == targetDef.TypeId)
                     return false;
 
-                if (currentDef.Layer == "Floor")
-                    return true;
-
-                if (currentDef.Layer == "Base")
+                if (currentDef.HasTag("Vacuum"))
                     return IsAdjacentToShip(coord);
+
+                if (currentDef.Layer == LayerType.Floor)
+                    return true;
 
                 return false;
             }
-            else if (targetDef.Layer == "Surface")
+            else if (targetDef.Layer == LayerType.Surface)
             {
-                TileDefinition currentDef = currentTile.GetEffectiveDefinition();
-                if (currentDef == null || currentTile.SurfaceTypeId != 0)
+                // Surfaces sit on top of a floor. They cannot be placed on another
+                // surface, nor can they be placed directly on space/vacuum.
+                if (currentTile.SurfaceTypeId != 0)
                     return false;
 
-                // Surfaces can be built on a floor, or on a space tile that
-                // touches the ship so you can place a hull/wall around the edge.
-                if (currentDef.Layer == "Floor")
-                    return true;
+                if (currentDef.HasTag("Vacuum"))
+                    return false;
 
-                if (currentDef.Layer == "Base")
-                    return IsAdjacentToShip(coord);
+                if (currentDef.Layer == LayerType.Floor)
+                    return true;
 
                 return false;
             }
@@ -68,7 +70,8 @@ namespace CargoSpace.Client
                 if (_dataCache.TryGetTile(neighbor, out GridTileData tile))
                 {
                     TileDefinition def = tile.GetEffectiveDefinition();
-                    if (def != null && (def.Layer == "Floor" || def.Layer == "Surface"))
+                    if (def != null && !def.HasTag("Vacuum") &&
+                        (def.Layer == LayerType.Floor || def.Layer == LayerType.Surface))
                         return true;
                 }
             }
