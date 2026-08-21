@@ -39,9 +39,8 @@ namespace CargoSpace.Server
 
         public void SpawnItemOnGrid(Vector2I coord, string itemStringId)
         {
-            if (!_gridSimulation.TryGetTile(coord, out _))
-                return;
-
+            // The source tile may have just been deconstructed into vacuum, so do not
+            // require it to exist. FindDropTile will search the surrounding floor.
             ItemDefinition def = ItemRegistry.Get(itemStringId);
             if (def == null)
             {
@@ -49,8 +48,33 @@ namespace CargoSpace.Server
                 return;
             }
 
-            Vector2I dropCoord = FindDropTile(coord, itemStringId, def.MaxStack) ?? coord;
-            AddItemToGrid(dropCoord, itemStringId);
+            Vector2I? dropCoord = FindDropTile(coord, itemStringId, def.MaxStack);
+            if (!dropCoord.HasValue || !_gridSimulation.TryGetTile(dropCoord.Value, out _))
+            {
+                GameLogger.Warning($"SpawnItemOnGrid: no valid drop tile for {itemStringId} at {coord}; item vented");
+                return;
+            }
+
+            AddItemToGrid(dropCoord.Value, itemStringId);
+        }
+
+        public void OnTilePruned(Vector2I coord)
+        {
+            if (!_groundItems.TryGetValue(coord, out List<string> items) || items.Count == 0)
+                return;
+
+            GameLogger.Debug($"OnTilePruned: {items.Count} items at {coord} must be moved or vented");
+
+            // Remove the cached items from the pruned coordinate and try to find a
+            // nearby storage floor for each one. If no storage is reachable, vent it.
+            List<string> itemsToMove = new List<string>(items);
+            _groundItems.Remove(coord);
+            _networkBridge?.BroadcastGroundItemsUpdate(coord, new List<string>());
+
+            foreach (string itemId in itemsToMove)
+            {
+                SpawnItemOnGrid(coord, itemId);
+            }
         }
 
         public void AddItemToGrid(Vector2I coord, string itemStringId)

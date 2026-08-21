@@ -190,7 +190,12 @@ namespace CargoSpace.Server
         private void TryPruneTile(Vector2I coord)
         {
             if (_grid.TryGetValue(coord, out GridTileData tile) && IsEmptyTile(tile))
+            {
+                // Any ground items on a tile that is about to become vacuum must be
+                // moved or vented before the tile is removed from the dictionary.
+                _logisticsManager?.OnTilePruned(coord);
                 _grid.Remove(coord);
+            }
         }
 
         private void EnsurePathfindingRegion(Vector2I coord)
@@ -651,6 +656,17 @@ namespace CargoSpace.Server
             if (pawn.CurrentPath.Count > 0)
             {
                 Vector2I nextStep = pawn.CurrentPath[0];
+
+                // The path was calculated on a previous tick. The tile may have been
+                // deconstructed (pruned) or turned into a wall since then, so verify
+                // it is still in-bounds and non-solid before stepping onto it.
+                if (!_pathfinding.IsInBoundsv(nextStep) || _pathfinding.IsPointSolid(nextStep))
+                {
+                    GameLogger.Warning($"Pawn {pawn.Id}: path step {nextStep} is no longer walkable; aborting job");
+                    ResetPawnState(pawn);
+                    return;
+                }
+
                 pawn.CurrentPath.RemoveAt(0);
                 pawn.UpdatePosition(nextStep);
                 _dirtyEntities.Add(pawn);
