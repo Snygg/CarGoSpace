@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using CargoSpace.Core;
 using CargoSpace.Shared;
@@ -171,7 +172,21 @@ namespace CargoSpace.Server
         }
 
         public IEnumerable<Pawn> GetPawns() => _pawns.Values;
-        public IReadOnlyList<Job> GetActiveJobs() => _jobManager?.GetActiveJobs() ?? new List<Job>();
+
+        public IReadOnlyList<Job> GetActiveJobs()
+        {
+            List<Job> active = new(_jobManager?.GetActiveJobs() ?? new List<Job>());
+            HashSet<JobId> seen = new(active.Select(j => j.Id));
+
+            foreach (Pawn pawn in _pawns.Values)
+            {
+                if (pawn.CurrentJob.Id.GetGuid() != Guid.Empty && seen.Add(pawn.CurrentJob.Id))
+                    active.Add(pawn.CurrentJob);
+            }
+
+            return active;
+        }
+
         public IReadOnlyDictionary<Vector2I, List<string>> GetGroundItems() => _logisticsManager?.GetAllGroundItems() ?? new Dictionary<Vector2I, List<string>>();
 
         public bool TryGetTile(Vector2I coord, out GridTileData tileData)

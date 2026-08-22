@@ -24,6 +24,11 @@ namespace CargoSpace.Client
         private ClientDataCache _dataCache;
         private InputController _inputController;
 
+        // Zone updates are chunked to avoid ENet large-packet disconnects.
+        private Dictionary<Vector2I, ZoneType> _zoneChunkBuffer;
+        private int _zoneChunkExpected;
+        private int _zoneChunkNext;
+
         public ClientManager(NetworkBridge networkBridge)
         {
             _networkBridge = networkBridge;
@@ -204,9 +209,9 @@ namespace CargoSpace.Client
             }
         }
 
-        public void HandleJobAdded(JobId id, Vector2I target, JobType jobType)
+        public void HandleJobAdded(JobId id, Vector2I target, JobType jobType, int destX, int destY, string itemId)
         {
-            GameLogger.Debug($"HandleJobAdded: {id} at {target}, type {jobType}");
+            GameLogger.Debug($"HandleJobAdded: {id} at {target}, type {jobType}, dest=({destX},{destY}), item={itemId}");
 
             // Ignore if we already have this job (e.g. from our own optimistic add)
             if (_dataCache.TryFindJob(id, out _))
@@ -214,7 +219,7 @@ namespace CargoSpace.Client
                 return;
             }
 
-            Job job = new Job(id, 0, target, jobType, 0);
+            Job job = new Job(id, 0, target, new Vector2I(destX, destY), jobType, 0, itemId ?? "");
             _dataCache.AddJob(job);
             _uiManager.AddJobUI(id, jobType, target);
         }
@@ -299,21 +304,42 @@ namespace CargoSpace.Client
             _visualGrid?.UpdateGroundItems(coord, itemList);
         }
 
-        public void HandleZoneUpdate(Vector2I[] tiles, byte[] types)
+        public void HandleZoneUpdate(Vector2I[] tiles, byte[] types, int chunkIndex, int totalChunks)
         {
             int count = tiles?.Length ?? 0;
-            GameLogger.Debug($"HandleZoneUpdate: {count} zone tiles");
+            GameLogger.Debug($"HandleZoneUpdate: chunk {chunkIndex}/{totalChunks}, {count} zone tiles");
 
-            _dataCache.ClearZones();
+            // First chunk resets the buffer; later chunks are appended. Reliable RPC
+            // preserves chunk order, so we can finalize on the last chunk.
+            if (chunkIndex == 0)
+            {
+                _zoneChunkBuffer = new Dictionary<Vector2I, ZoneType>();
+                _zoneChunkExpected = totalChunks;
+                _zoneChunkNext = 0;
+            }
+
+            if (_zoneChunkBuffer == null || chunkIndex != _zoneChunkNext)
+            {
+                GameLogger.Warning($"HandleZoneUpdate: zone chunk out of order (expected {_zoneChunkNext}, got {chunkIndex}); discarding");
+                return;
+            }
+
             if (tiles != null && types != null)
             {
                 for (int i = 0; i < count; i++)
                 {
-                    _dataCache.UpdateZone(tiles[i], (ZoneType)types[i]);
+                    _zoneChunkBuffer[tiles[i]] = (ZoneType)types[i];
                 }
             }
 
-            _visualGrid?.UpdateZones(_dataCache.GetAllZones());
+            _zoneChunkNext++;
+
+            if (chunkIndex == _zoneChunkExpected - 1)
+            {
+                _dataCache.SetZones(_zoneChunkBuffer);
+                _visualGrid?.UpdateZones(_dataCache.GetAllZones());
+                _zoneChunkBuffer = null;
+            }
         }
 
         public void HandleRegionAtmosphere(Vector2I safeTile, byte oxygen, byte smoke)

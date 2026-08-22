@@ -15,6 +15,7 @@ namespace CargoSpace.Server
         private NetworkBridge _networkBridge;
 
         private Dictionary<JobId, ulong> _unreachableCooldowns = new();
+        private HashSet<JobId> _knownJobIds = new();
         private const ulong UnreachableCooldownMs = 3000;
 
         public int BoardCount => _jobBoard.Count;
@@ -73,6 +74,15 @@ namespace CargoSpace.Server
             if (!isValidTile)
             {
                 GameLogger.Debug($"Job rejected: target {job.Target} not valid/interactable");
+                _networkBridge?.SendJobRejected(job.Id, peerId);
+                return false;
+            }
+
+            // A Guid collision is statistically unlikely, but malicious or buggy clients
+            // could send the same JobId twice and corrupt the job board.
+            if (!_knownJobIds.Add(job.Id))
+            {
+                GameLogger.Warning($"Job rejected: duplicate JobId {job.Id}");
                 _networkBridge?.SendJobRejected(job.Id, peerId);
                 return false;
             }

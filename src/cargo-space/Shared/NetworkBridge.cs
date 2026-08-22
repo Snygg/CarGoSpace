@@ -2,6 +2,7 @@ using Godot;
 using CargoSpace.Core;
 using CargoSpace.Server;
 using CargoSpace.Client;
+using System;
 using System.Collections.Generic;
 
 namespace CargoSpace.Shared
@@ -108,11 +109,11 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveJobAdded_RPC(byte[] jobIdBytes, Vector2I target, byte jobType)
+        public void ReceiveJobAdded_RPC(byte[] jobIdBytes, Vector2I target, byte jobType, int destX, int destY, string itemId)
         {
             JobId id = JobId.FromBytes(jobIdBytes);
-            GameLogger.Debug($"ReceiveJobAdded_RPC: {id} at {target}, type {jobType}");
-            _clientManager?.HandleJobAdded(id, target, (JobType)jobType);
+            GameLogger.Debug($"ReceiveJobAdded_RPC: {id} at {target}, type {jobType}, dest=({destX},{destY}), item={itemId}");
+            _clientManager?.HandleJobAdded(id, target, (JobType)jobType, destX, destY, itemId ?? "");
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -160,14 +161,14 @@ namespace CargoSpace.Shared
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-        public void ReceiveZoneUpdate_RPC(Godot.Collections.Array<Vector2I> tiles, Godot.Collections.Array<byte> types)
+        public void ReceiveZoneUpdate_RPC(Godot.Collections.Array<Vector2I> tiles, Godot.Collections.Array<byte> types, int chunkIndex, int totalChunks)
         {
             int count = tiles?.Count ?? 0;
-            GameLogger.Debug($"ReceiveZoneUpdate_RPC: {count} zone tiles");
+            GameLogger.Debug($"ReceiveZoneUpdate_RPC: chunk {chunkIndex}/{totalChunks}, {count} zone tiles");
 
             if (tiles == null || types == null)
             {
-                _clientManager?.HandleZoneUpdate(new Vector2I[0], new byte[0]);
+                _clientManager?.HandleZoneUpdate(new Vector2I[0], new byte[0], 0, 1);
                 return;
             }
 
@@ -179,7 +180,7 @@ namespace CargoSpace.Shared
                 typeArray[i] = i < types.Count ? types[i] : (byte)0;
             }
 
-            _clientManager?.HandleZoneUpdate(tileArray, typeArray);
+            _clientManager?.HandleZoneUpdate(tileArray, typeArray, chunkIndex, totalChunks);
         }
 
         [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -227,14 +228,14 @@ namespace CargoSpace.Shared
             {
                 if (peerId != job.OwnerPeerId)
                 {
-                    RpcId(peerId, nameof(ReceiveJobAdded_RPC), job.Id.ToNetworkBytes(), job.Target, (byte)job.Type);
+                    RpcId(peerId, nameof(ReceiveJobAdded_RPC), job.Id.ToNetworkBytes(), job.Target, (byte)job.Type, job.Destination.X, job.Destination.Y, job.ItemId ?? "");
                 }
             }
         }
 
         public void SendJobAdded(long clientId, Job job)
         {
-            RpcId(clientId, nameof(ReceiveJobAdded_RPC), job.Id.ToNetworkBytes(), job.Target, (byte)job.Type);
+            RpcId(clientId, nameof(ReceiveJobAdded_RPC), job.Id.ToNetworkBytes(), job.Target, (byte)job.Type, job.Destination.X, job.Destination.Y, job.ItemId ?? "");
         }
 
         public void BroadcastJobRemoved(JobId id)
@@ -264,32 +265,49 @@ namespace CargoSpace.Shared
 
         public void BroadcastZoneUpdate(Dictionary<Vector2I, ZoneType> zoneTiles)
         {
-            int count = zoneTiles?.Count ?? 0;
-            Godot.Collections.Array<Vector2I> tiles = new();
-            Godot.Collections.Array<byte> types = new();
-
-            foreach (var kvp in zoneTiles)
-            {
-                tiles.Add(kvp.Key);
-                types.Add((byte)kvp.Value);
-            }
-
-            Rpc(nameof(ReceiveZoneUpdate_RPC), tiles, types);
+            SendZoneChunks(zoneTiles, (chunkTiles, chunkTypes, chunkIndex, totalChunks) =>
+                Rpc(nameof(ReceiveZoneUpdate_RPC), chunkTiles, chunkTypes, chunkIndex, totalChunks));
         }
 
         public void SendZoneUpdate(long clientId, Dictionary<Vector2I, ZoneType> zoneTiles)
         {
-            int count = zoneTiles?.Count ?? 0;
-            Godot.Collections.Array<Vector2I> tiles = new();
-            Godot.Collections.Array<byte> types = new();
+            SendZoneChunks(zoneTiles, (chunkTiles, chunkTypes, chunkIndex, totalChunks) =>
+                RpcId(clientId, nameof(ReceiveZoneUpdate_RPC), chunkTiles, chunkTypes, chunkIndex, totalChunks));
+        }
 
-            foreach (var kvp in zoneTiles)
+        private void SendZoneChunks(Dictionary<Vector2I, ZoneType> zoneTiles,
+            Action<Godot.Collections.Array<Vector2I>, Godot.Collections.Array<byte>, int, int> sendChunk)
+        {
+            int count = zoneTiles?.Count ?? 0;
+            int totalChunks = count == 0 ? 1 : (count + Constants.ZoneChunkSize - 1) / Constants.ZoneChunkSize;
+
+            List<Vector2I> keys = new();
+            List<ZoneType> values = new();
+            if (zoneTiles != null)
             {
-                tiles.Add(kvp.Key);
-                types.Add((byte)kvp.Value);
+                foreach (var kvp in zoneTiles)
+                {
+                    keys.Add(kvp.Key);
+                    values.Add(kvp.Value);
+                }
             }
 
-            RpcId(clientId, nameof(ReceiveZoneUpdate_RPC), tiles, types);
+            for (int chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++)
+            {
+                int start = chunkIndex * Constants.ZoneChunkSize;
+                int end = System.Math.Min(start + Constants.ZoneChunkSize, count);
+
+                Godot.Collections.Array<Vector2I> chunkTiles = new();
+                Godot.Collections.Array<byte> chunkTypes = new();
+
+                for (int i = start; i < end; i++)
+                {
+                    chunkTiles.Add(keys[i]);
+                    chunkTypes.Add((byte)values[i]);
+                }
+
+                sendChunk(chunkTiles, chunkTypes, chunkIndex, totalChunks);
+            }
         }
 
         public void BroadcastRegionAtmosphere(Vector2I safeTile, byte oxygen, byte smoke)
