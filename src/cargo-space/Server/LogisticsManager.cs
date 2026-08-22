@@ -126,6 +126,8 @@ namespace CargoSpace.Server
             return _groundItems.TryGetValue(coord, out List<string> items) && items.Contains(itemStringId);
         }
 
+        public IReadOnlyDictionary<Vector2I, List<string>> GetAllGroundItems() => _groundItems;
+
         public bool IsItemStackFull(Vector2I coord, string itemStringId, int maxStack)
         {
             if (!_groundItems.TryGetValue(coord, out List<string> items))

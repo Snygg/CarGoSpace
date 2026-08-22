@@ -83,7 +83,6 @@ namespace CargoSpace.Server
         {
             GameLogger.Debug($"HandleGridRequest: Sending grid to client {requesterId}");
             SendGridToClient(requesterId);
-            SendPawnPositionToClient(requesterId);
         }
 
         public void HandleJobCommand(JobId id, Vector2I target, JobType jobType, int targetState, long senderId)
@@ -156,6 +155,22 @@ namespace CargoSpace.Server
 
             // Sync current atmosphere state now that the client has the grid.
             _gridSimulation.SendAtmosphereToClient(clientId);
+
+            // Late-joiner catch-up: sync the remaining world state now that the
+            // client has the grid and can resolve regions/tiles correctly.
+            SendPawnPositionToClient(clientId);
+
+            foreach (Job job in _gridSimulation.GetActiveJobs())
+            {
+                _networkBridge.SendJobAdded(clientId, job);
+            }
+
+            foreach (var kvp in _gridSimulation.GetGroundItems())
+            {
+                _networkBridge.SendGroundItemsUpdate(clientId, kvp.Key, kvp.Value);
+            }
+
+            _networkBridge.SendZoneUpdate(clientId, _zoneManager.ZoneTiles);
         }
 
         public void SendPawnPositionToClient(long clientId)

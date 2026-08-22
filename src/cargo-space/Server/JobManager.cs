@@ -18,6 +18,7 @@ namespace CargoSpace.Server
         private const ulong UnreachableCooldownMs = 3000;
 
         public int BoardCount => _jobBoard.Count;
+        public IReadOnlyList<Job> GetActiveJobs() => _jobBoard;
 
         public JobManager(NetworkBridge networkBridge)
         {

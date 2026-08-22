@@ -232,6 +232,11 @@ namespace CargoSpace.Shared
             }
         }
 
+        public void SendJobAdded(long clientId, Job job)
+        {
+            RpcId(clientId, nameof(ReceiveJobAdded_RPC), job.Id.ToNetworkBytes(), job.Target, (byte)job.Type);
+        }
+
         public void BroadcastJobRemoved(JobId id)
         {
             Rpc(nameof(ReceiveJobRemoved_RPC), id.ToNetworkBytes());
@@ -252,6 +257,11 @@ namespace CargoSpace.Shared
             Rpc(nameof(ReceiveGroundItemsUpdate_RPC), coord.X, coord.Y, items.ToArray());
         }
 
+        public void SendGroundItemsUpdate(long clientId, Vector2I coord, List<string> items)
+        {
+            RpcId(clientId, nameof(ReceiveGroundItemsUpdate_RPC), coord.X, coord.Y, items?.ToArray() ?? new string[0]);
+        }
+
         public void BroadcastZoneUpdate(Dictionary<Vector2I, ZoneType> zoneTiles)
         {
             int count = zoneTiles?.Count ?? 0;
@@ -265,6 +275,21 @@ namespace CargoSpace.Shared
             }
 
             Rpc(nameof(ReceiveZoneUpdate_RPC), tiles, types);
+        }
+
+        public void SendZoneUpdate(long clientId, Dictionary<Vector2I, ZoneType> zoneTiles)
+        {
+            int count = zoneTiles?.Count ?? 0;
+            Godot.Collections.Array<Vector2I> tiles = new();
+            Godot.Collections.Array<byte> types = new();
+
+            foreach (var kvp in zoneTiles)
+            {
+                tiles.Add(kvp.Key);
+                types.Add((byte)kvp.Value);
+            }
+
+            RpcId(clientId, nameof(ReceiveZoneUpdate_RPC), tiles, types);
         }
 
         public void BroadcastRegionAtmosphere(Vector2I safeTile, byte oxygen, byte smoke)

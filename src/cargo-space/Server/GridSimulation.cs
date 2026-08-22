@@ -171,6 +171,8 @@ namespace CargoSpace.Server
         }
 
         public IEnumerable<Pawn> GetPawns() => _pawns.Values;
+        public IReadOnlyList<Job> GetActiveJobs() => _jobManager?.GetActiveJobs() ?? new List<Job>();
+        public IReadOnlyDictionary<Vector2I, List<string>> GetGroundItems() => _logisticsManager?.GetAllGroundItems() ?? new Dictionary<Vector2I, List<string>>();
 
         public bool TryGetTile(Vector2I coord, out GridTileData tileData)
         {
